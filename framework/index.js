@@ -18,7 +18,9 @@ export {
 } from './registries/internals.js';
 
 export { waitFor } from './runtime/waitFor.js';
-export { configRead, configWrite, configChangeEmitter } from './runtime/config.js';
+export {
+    configRead, configWrite, configChangeEmitter, configHas, configAccepts, configSnapshot
+} from './runtime/config.js';
 export { VERSION, COMMIT, TREE } from './runtime/stamp.js';
 export { DEV_TOOLS } from './runtime/flags.js';
 export { answerSwitch } from './runtime/switches.js';

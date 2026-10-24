@@ -9,7 +9,7 @@ const { contentOf } = require('./crxContent.js');
 const { merge } = require('./contentMerge.js');
 const { sabiOf, versionOf } = require('./builtInCobalt.js');
 
-const SHARE = process.env.TUBE_SHARE || '/home/owner/share/tube';
+const SHARE = process.env.TUBE_SHARE || '/home/owner/share/ultimatiumtube';
 const STATE = path.join(SHARE, 'evergreen.json');
 
 // Omaha offers by model year, which the set does not name.

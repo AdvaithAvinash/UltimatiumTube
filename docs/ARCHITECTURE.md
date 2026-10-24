@@ -89,6 +89,29 @@ network → settings → ui → intercept
 anything. `intercept` last because taking over `JSON.parse` seals registration — a handler
 registered afterwards warns instead of silently never firing.
 
+## Phone settings
+
+The settings on the TV and the page for a phone are one description. `mods/settings/settingsModel.js`
+lists every row once; `phoneSchema.js` turns that list into plain data, and the TV's own rows are
+built from the same list. `mods/phone/` posts that data and the current settings to the service every
+few seconds and applies what comes back; `service/lib/phoneSettings.js` keeps the latest of each and
+the changes the phone has made since, and serves `service/lib/phonePage.js` at `/settings`. Nothing
+is stored in the service: the settings themselves live in the page's `localStorage`.
+
+A value from the phone is applied only if the setting exists and has the same shape (a list stays a
+list), in `configAccepts`. The route needs an `X-Tube` header, which a page on another site cannot
+send without the service agreeing to it.
+
+## Android
+
+`android/` is the Android TV app: one activity, a WebView, and no framework. It fetches the TV page
+itself in `shouldInterceptRequest` so `PageInjector` can put the built userscript at the top of the
+page's head, where it runs before anything else. The userscript is the same file the Samsung widgets
+carry. `window.__TUBE_NATIVE_PROXY_PATCHES__ = false` tells it that nothing proxies the page.
+`PhoneSettings.java` and `PhoneServer.java` do for the app what `phoneSettings.js` does for the
+service, and the userscript reaches them through `window.UltimatiumNative` instead of `fetch`.
+`tools/build-apk.js` builds it with javac, dx, aapt, zipalign and apksigner.
+
 ## Dev and ship
 
 Two build-time gates, one per side.
@@ -140,11 +163,11 @@ Two build-time gates, one per side.
   - How the previous run ended (`uncaught:`, `exit:`) is shown again at the top of the next run
     as `previous:`. So a crash that restarts the service stays on the boot screen, which also
     says when the service's pid changes.
-- The 5.0+ widget (`UltimatiumTube-tizen-5.0.wgt`) differs in two ways. Its service (`TUBE_TARGET=legacy`) is
+- The 5.0+ widget (`UltimatiumTubetizen5.0.wgt`) differs in two ways. Its service (`TUBE_TARGET=legacy`) is
   ES5 with core-js for node 4.4.3, and `service/legacy/` stands in for the Buffer, `mkdirSync`, http2,
   TLS-socket and `normalize` behaviour old node lacks. And Cobalt 20 keeps its trust store read-only
   with no `--content`, so instead of intercepting TLS it loads the page from the service:
-  `--base_url=http://127.0.0.2:8099/tv`, which a gold build allows over loopback. The userscript is
+  `--base_url=http://127.0.0.2:8189/tv`, which a gold build allows over loopback. The userscript is
   the same one — Cobalt 20 runs V8 6.5.
 - Served that way, every media request must reach `/cors-bypass/`, because googlevideo answers CORS
   only for `https://www.youtube.com`. Two traps stood in the way, and both failed silently.

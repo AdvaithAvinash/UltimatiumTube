@@ -3,7 +3,7 @@
 const { appendFileSync, readFileSync, statSync, renameSync, mkdirSync } = require('fs');
 const { dirname } = require('path');
 
-const LOG = process.env.TUBE_LOG || '/home/owner/share/tube/service.log';
+const LOG = process.env.TUBE_LOG || '/home/owner/share/ultimatiumtube/service.log';
 const MAX_BYTES = 64 * 1024;
 
 const state = { ready: false };

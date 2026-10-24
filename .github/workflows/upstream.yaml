@@ -1,0 +1,46 @@
+# Weekly: has YouTube for Tizen fixed something since the commit this project last took from it?
+# It opens or refreshes one issue; nothing is merged automatically.
+
+name: Upstream
+
+on:
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+
+      - name: What is new upstream
+        run: node tools/upstream.js > upstream.md
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Open or refresh the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if grep -q '^Nothing new upstream' upstream.md; then
+            echo "Nothing new."
+            exit 0
+          fi
+          existing="$(gh issue list --state open --label upstream --json number --jq '.[0].number')"
+          if [ -n "$existing" ]; then
+            gh issue edit "$existing" --body-file upstream.md
+          else
+            gh label create upstream --description "Changes in YouTube for Tizen" --color 0e8a16 2>/dev/null || true
+            gh issue create --title "YouTube for Tizen has new commits" --label upstream --body-file upstream.md
+          fi

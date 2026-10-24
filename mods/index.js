@@ -10,6 +10,7 @@ import { start as startScrollSpeed } from './scroller/speed.js';
 import { start as startRapidPress } from './scroller/rapidPress.js';
 import { start as startSmoothNavigation } from './scroller/smoothNavigation.js';
 import { start as startSpeed } from './player/speed.js';
+import { start as startPhone } from './phone/index.js';
 
 import './feed/index.js';
 import './adblock/index.js';
@@ -23,6 +24,8 @@ import './endScreen/index.js';
 import './paidPromotion/index.js';
 import './youThere/index.js';
 import './shell/guide.js';
+import './channels/index.js';
+import './channelFilter/index.js';
 import './sponsorblock/index.js';
 import './subtitles/index.js';
 import './quality/index.js';
@@ -45,6 +48,7 @@ register('rapid press', 'ui', startRapidPress);
 register('smooth navigation', 'ui', startSmoothNavigation);
 register('playback speed', 'ui', startSpeed);
 register('voice capability', 'ui', startVoiceCapability);
+register('phone settings', 'ui', startPhone);
 
 // Taking over JSON.parse seals registration.
 register('json', 'intercept', interceptJson);

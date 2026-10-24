@@ -20,5 +20,4 @@ TODO.md
 test-results/
 playwright-report/
 
-# The ready-to-install widgets are kept in the repository.
-!/wgt/*.wgt
+*.apk

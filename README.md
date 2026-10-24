@@ -2,63 +2,87 @@
 
 <img src="app/icon.png" width="160" align="right">
 
-Ad-free YouTube on Samsung (Tizen) TVs, with SponsorBlock, while keeping the TV's own YouTube app look.
+Ad-free YouTube with SponsorBlock for **Samsung (Tizen) TVs** and **Android TV, Google TV and Fire TV**,
+with YouTube's own TV interface left as it is.
 
-- **The stock YouTube TV interface.** UltimatiumTube runs inside Samsung's own Cobalt engine, the one
-  the built-in YouTube app uses. You get the same interface, the same playback, and the same 4K, HDR
-  and 60fps your TV supports. It is not a browser page with a different skin on top.
+- **The stock YouTube TV interface.** On a Samsung TV it runs inside the TV's own YouTube engine
+  (Cobalt), so you get the same interface, the same playback, and the same 4K, HDR and 60fps your TV
+  supports. On Android TV it is YouTube's TV page in a full-screen WebView. Neither is a different
+  skin.
 - **No ads.** Ads are removed from YouTube's responses before the player knows they exist.
-- **SponsorBlock.** Sponsor segments, intros, outros, subscribe reminders and self-promotion are
-  skipped automatically. The segments are drawn on YouTube's own progress bar.
-- **One settings entry.** Open YouTube's own **Settings** and scroll to the bottom. Everything
-  UltimatiumTube adds is in the **UltimatiumTube** section there. YouTube's own settings are not moved
-  or changed.
-- **The mods ship inside the app.** Nothing is downloaded from a CDN at launch, so there is no
-  "failed to load script" network error.
-
-## Settings › UltimatiumTube
-
-| Setting | Default |
-| --- | --- |
-| SponsorBlock, plus which segments to skip, which to ask about, and skip notifications | On |
-| Block ads | On |
-| DeArrow (community titles and thumbnails instead of clickbait) | Off |
-| Return YouTube Dislike | On |
-| Startup page, Who's watching prompts | YouTube's own |
-| Shorts, high-quality thumbnails, hide watched videos | YouTube's own |
-| Sidebar sections | All shown |
-| Scroll speed, rapid press, smoother navigation | YouTube's own |
-| Preferred quality, preferred codec, remember playback speed, speed steps | Highest, any |
-| Subtitles in your language, hidden subtitle tracks | On, off |
-| Previous/next and mini player buttons, Super Thanks, Ask | YouTube's own |
-| Shopping card, end screen cards, paid promotion notice, Up next card, "Are you still watching?", sign-in reminder | YouTube's own |
-
-Out of the box only the ads and sponsor segments are removed. Every other setting starts out the
-way the stock app behaves, and you can turn it on yourself.
+- **SponsorBlock, with more control.** Sponsor segments, intros, outros, subscribe reminders and
+  self-promotion are skipped automatically and drawn on YouTube's own progress bar. You can mute a
+  kind of segment instead of skipping it, ignore short segments, switch it off on channels you want
+  to support, and see how much time it has saved you.
+- **Hide channels and words.** Videos from channels you pick, or with words you list in the title,
+  are left out of every shelf.
+- **A speed for each channel.** Watch one channel at 1.5x and the next time it starts at 1.5x.
+- **Settings from your phone.** The same settings in a page you open on a phone or computer, where
+  typing a word is easy, with backup and restore.
+- **One settings entry on the TV.** Open YouTube's own **Settings** and scroll to the bottom:
+  everything UltimatiumTube adds is in the **UltimatiumTube** section. YouTube's own settings are not
+  moved or changed.
+- **The mods ship inside the app.** Nothing is downloaded at launch, so there is no "failed to load
+  script" network error.
 
 ## Install
 
-The ready-made widgets are in [`wgt/`](wgt):
+Pick the file for your TV from the [releases](https://github.com/AdvaithAvinash/UltimatiumTube/releases).
+[docs/INSTALL.md](docs/INSTALL.md) has the steps for each route.
 
 | File | For |
 | --- | --- |
-| [`UltimatiumTube-tizen-5.5.wgt`](wgt/UltimatiumTube-tizen-5.5.wgt) | Tizen 5.5 and newer (2020+ TVs). Use this one if you're unsure. |
-| [`UltimatiumTube-tizen-5.0.wgt`](wgt/UltimatiumTube-tizen-5.0.wgt) | Tizen 5.0 (2019 TVs) |
+| `UltimatiumTubetizen5.5.wgt` | Samsung TVs on Tizen 5.5 or newer (2020 and later). Use this one if you are unsure. |
+| `UltimatiumTubetizen5.0.wgt` | Samsung TVs on Tizen 5.0 (2019) |
+| `UltimatiumTube.apk` | Android TV, Google TV, Fire TV, or an Android phone or tablet |
 
-A Samsung TV installs a widget only if it is signed for that TV, so these files are **unsigned**.
-They are signed while you install them, in one of these ways:
+A Samsung TV installs only an app signed for that TV, so the `.wgt` files are unsigned and are signed
+while you install them: through [Apps2Samsung](https://github.com/Apps2Samsung/Apps2Samsung),
+[Tizen Homebrew](https://github.com/SushyDev/tizen-homebrew) or Tizen Studio.
 
-1. **[Tizen Homebrew](https://github.com/SushyDev/tizen-homebrew)** (easiest). Set it up once by its
-   README, then load the `.wgt` through its **Upload** tab. Homebrew signs it for your TV.
-2. **Apps2Samsung or Tizen Studio.** Use your own Samsung certificate, with your TV's DUID in the
-   distributor certificate. Then install the `.wgt` over Developer Mode.
+If something goes wrong on a Samsung TV, the boot screen shows an address you can open on a phone.
+That page says what failed. Please [open an issue](https://github.com/AdvaithAvinash/UltimatiumTube/issues)
+and include what it says.
 
-After installation, open **UltimatiumTube** from the TV's apps. The first launch shows a short boot
-log while the app sets itself up, and then the normal YouTube home screen opens.
+### Alongside YouTube for Tizen and TizenTube
 
-If something goes wrong, the boot screen shows an address you can open on a phone. That page says
-what failed. Please [open an issue](https://github.com/AdvaithAvinash/UltimatiumTube/issues) and
-include what it says.
+UltimatiumTube uses its own service port, folder, boot page and package id, so installing it does not
+overwrite, or stop starting, YouTube for Tizen or TizenTube. One thing is shared: every one of these
+apps runs in Samsung's YouTube container, and a TV has one. Close the other app (or switch the TV off
+and on) before opening this one. [docs/UPSTREAM.md](docs/UPSTREAM.md) has the details.
+
+## Settings
+
+Out of the box only ads and sponsor segments are removed. Everything else starts the way the stock
+app behaves, and you turn on what you want under **Settings > UltimatiumTube** on the TV, or from the
+phone page.
+
+| Section | What is in it |
+| --- | --- |
+| SponsorBlock | On or off, segments to skip, segments to ask about first, segments to mute, shortest segment to act on, channels to leave alone, skip notices, time saved |
+| Ad blocking | On or off |
+| DeArrow | Community titles and thumbnails instead of clickbait (off by default) |
+| Return YouTube Dislike | The real dislike count |
+| Startup | The page to open, who's-watching prompts |
+| Channels and words | Hidden channels, hidden words, a speed for each channel, the phone page |
+| Feed, Sidebar, Navigation | Shorts, hide watched videos, thumbnails, sidebar sections, scroll speed |
+| Playback, Subtitles, Player controls | Quality, codec, remembered speed, subtitle tracks, extra player buttons |
+| Overlays and prompts | Shopping card, end screen cards, up next, "Are you still watching?", sign-in reminder |
+
+### From your phone
+
+The **Channels and words** section of the TV's settings shows the address to open (for example
+`http://192.168.1.20:8189/settings`) once the app has started. On a Samsung TV it is also listed
+under **Settings > About** (the TV's address, then `:8189/settings`). Open it on any phone or computer
+on the same network. Changes reach the TV within a few seconds. **Back up settings** saves a file you
+can restore from later.
+
+### What is not here
+
+Automatic frame-rate matching, which TizenTube Cobalt offers, is not in UltimatiumTube. It needs a
+function that exists only in that project's own modified Cobalt build. The Samsung TV's stock engine,
+which this app runs in, does not have it. Models that match frame rate for the stock YouTube app do
+so here too.
 
 ## Building it yourself
 
@@ -66,9 +90,15 @@ You need Node 20 or newer.
 
 ```sh
 npm install
-npm test           # lint, types, userscript and service suites
-npm run package    # release/UltimatiumTube-tizen-5.5.wgt and UltimatiumTube-tizen-5.0.wgt
+npm test                  # lint, types, userscript and service suites
+npm run package           # release/UltimatiumTubetizen5.5.wgt and UltimatiumTubetizen5.0.wgt
+npm run package:android   # release/UltimatiumTube.apk
 ```
+
+The Android app needs no Android SDK, only tools Debian and Ubuntu package:
+`apt install aapt apksigner dalvik-exchange zipalign libandroid-23-java openjdk-17-jdk-headless`.
+It is signed with a key made on first use, kept in `~/.ultimatiumtube/`. Keep that key: an update has
+to be signed with the same one as the version it replaces.
 
 [docs/DEVELOP.md](docs/DEVELOP.md) lists every command. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 explains how the app is put together.

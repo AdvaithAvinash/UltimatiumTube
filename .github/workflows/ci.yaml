@@ -48,6 +48,28 @@ jobs:
       - name: Audit the widget
         run: npm run audit
 
+      # The Android TV app needs no Android SDK: Ubuntu packages every tool the build calls.
+      - name: Android tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends aapt apksigner dalvik-exchange zipalign libandroid-23-java
+
+      - name: Android logic
+        run: node tools/test-android.js
+
+      - name: Package the Android app
+        run: npm run package:android
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ultimatiumtube-packages
+          path: |
+            release/UltimatiumTubetizen5.5.wgt
+            release/UltimatiumTubetizen5.0.wgt
+            release/UltimatiumTube.apk
+          retention-days: 14
+          if-no-files-found: error
+
       - uses: actions/upload-artifact@v7
         with:
           name: service-bundle

@@ -11,11 +11,14 @@
 | `npm run test:e2e` | The userscript against real YouTube, in Chromium cut down to the container |
 | `npm run test:cobalt` | The same in Cobalt itself, from the published image; needs Docker and a `TUBE_DEV=1` build |
 | `npm run test:matrix` | Load both service bundles on every Node from 4.4.3 up; needs fnm |
-| `npm run package` | Build the unsigned `.wgt`s for Tizen Homebrew: `UltimatiumTube-tizen-5.5.wgt` and `UltimatiumTube-tizen-5.0.wgt` |
+| `npm run package` | Build the unsigned `.wgt`s: `UltimatiumTubetizen5.5.wgt` and `UltimatiumTubetizen5.0.wgt` |
+| `npm run package:android` | Build and sign `release/UltimatiumTube.apk` (no Android SDK; see the README for the apt packages) |
+| `node tools/test-android.js` | The Android app's logic on a plain JVM: page injection, the settings meeting point and its server |
+| `node tools/upstream.js` | What YouTube for Tizen has changed since the commit this project last took from it |
 | `npm run audit` | Check what is inside both `.wgt`s; `-- --release` fails on anything dev-only |
 | `npm run deploy` | Package a dev build and install it on the set; needs `TUBE_DEV_TOKEN` |
 | `npm run dev` | YouTube with the mods in a browser, no hardware needed |
-| `npm run dev:service` | The service off-TV, on `:8099` |
+| `npm run dev:service` | The service off-TV, on `:8189` |
 | `npm run chii` | Remote inspector for the page inside the container |
 | `npm run doctor:tv` | Ask a `TUBE_DEV=1` build on a set whether YouTube still has what the mods reach into — after a YouTube update, and before tagging a release |
 | `npm run probe:cobalt` | Ask a `TUBE_DEV=1` build on a set which browser APIs it lacks, for `test/e2e/cobalt.js` to take away |
@@ -41,7 +44,7 @@ way back from that is a reinstall. Arm it through the dev bridge, then reopen th
 the switch is read only when the app starts.
 
 ```
-curl -X POST http://<tv-ip>:8097/eval -H "x-tube-token: $TUBE_DEV_TOKEN" \
+curl -X POST http://<tv-ip>:8187/eval -H "x-tube-token: $TUBE_DEV_TOKEN" \
      --data-binary "localStorage.setItem('tube.inspector', 'on')"
 ```
 

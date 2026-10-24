@@ -1,6 +1,8 @@
 import { configChangeEmitter, onResponse } from '../../framework/index.js';
 import { sectionFor, SECTION } from './settingRows.js';
 import { categoryOf } from './settingsResponse.js';
+import { phoneSchema } from './phoneSchema.js';
+import { provideSchema } from '../phone/index.js';
 import { claimDrawnRows } from './claimDrawn.js';
 import { redrawSettingRows } from './settingComponents.js';
 
@@ -27,6 +29,7 @@ function PatchSettings(response) {
 onResponse('settings', ['items'], PatchSettings);
 
 const start = () => {
+    provideSchema(phoneSchema);
     configChangeEmitter.addEventListener('configChange', () => redrawSettingRows());
 };
 

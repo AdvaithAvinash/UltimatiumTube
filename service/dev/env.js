@@ -162,7 +162,7 @@ const survey = (switches) => {
         release: { tizen: text('/etc/tizen-release'), os: text('/etc/os-release'), info: text('/etc/info.ini') },
         tizen: tizenFacts(),
         writable: [
-            '/home/owner/share/tube', '/home/owner/share', '/home/owner/share/tmp/sdk_tools', '/tmp',
+            '/home/owner/share/ultimatiumtube', '/home/owner/share', '/home/owner/share/tmp/sdk_tools', '/tmp',
             '/opt/usr/home/owner', path.resolve(__dirname, '..', '..')
         ].reduce((out, dir) => Object.assign(out, { [dir]: writable(dir) }), {}),
         listings: {

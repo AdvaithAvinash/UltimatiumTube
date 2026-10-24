@@ -4,6 +4,9 @@ global.window = { localStorage: { 'tube.settings': '{}' }, addEventListener: () 
 global.window.JSON = JSON;
 
 const { autoSkipper } = await import('../../../mods/sponsorblock/autoSkip.js');
+const { configRead, configWrite } = await import('../../../framework/runtime/config.js');
+const { noteVideo } = await import('../../../mods/channels/index.js');
+global.CustomEvent = class { constructor(type, init) { this.type = type; Object.assign(this, init); } };
 
 const results = [];
 
@@ -132,6 +135,181 @@ check('a manual-only segment does not extend an auto-skip past it', () => {
     timers.fire();
 
     assert.strictEqual(v.currentTime, 20, `expected the jump to stop at sponsor's own end, got ${v.currentTime}`);
+});
+
+const withSetting = (key, value, run) => {
+    const before = configRead(key);
+    configWrite(key, value);
+    try {
+        run();
+    } finally {
+        configWrite(key, before);
+    }
+};
+
+check('a segment shorter than the chosen minimum is left alone', () => {
+    const timers = fakeTimers();
+    const v = video();
+
+    withSetting('sponsorBlockMinDuration', 3, () => {
+        const skipper = autoSkipper([seg('sponsor', 10, 12)], ['sponsor'], []);
+        skipper.watch(v);
+        skipper.schedule();
+
+        assert.strictEqual(timers.delay(), null, 'a 2s segment was scheduled with a 3s minimum');
+    });
+});
+
+check('one at the minimum is skipped', () => {
+    const timers = fakeTimers();
+    const v = video();
+
+    withSetting('sponsorBlockMinDuration', 3, () => {
+        const skipper = autoSkipper([seg('sponsor', 10, 13)], ['sponsor'], []);
+        skipper.watch(v);
+        skipper.schedule();
+        timers.fire();
+
+        assert.strictEqual(v.currentTime, 13);
+    });
+});
+
+check('a skip is counted, with the time it saved', () => {
+    const timers = fakeTimers();
+    const v = video({ currentTime: 9.5 });
+
+    const count = configRead('sponsorBlockSkipCount');
+    const saved = configRead('sponsorBlockSavedSeconds');
+
+    const skipper = autoSkipper([seg('sponsor', 10, 20)], ['sponsor'], []);
+    skipper.watch(v);
+    skipper.schedule();
+    timers.fire();
+
+    assert.strictEqual(configRead('sponsorBlockSkipCount'), count + 1);
+    assert.strictEqual(configRead('sponsorBlockSavedSeconds'), Math.round((saved + 10.5) * 10) / 10);
+});
+
+check('nothing happens on a channel the viewer exempted', () => {
+    const timers = fakeTimers();
+    const v = video();
+
+    noteVideo({ videoId: 'a', author: 'Some Creator' });
+
+    withSetting('sponsorBlockExemptChannels', ['some creator'], () => {
+        const skipper = autoSkipper([seg('sponsor', 10, 20)], ['sponsor'], []);
+        skipper.watch(v);
+        skipper.schedule();
+
+        assert.strictEqual(timers.delay(), null, 'a segment was scheduled on an exempt channel');
+    });
+});
+
+check('and it does on any other', () => {
+    const timers = fakeTimers();
+    const v = video();
+
+    noteVideo({ videoId: 'b', author: 'Someone Else' });
+
+    withSetting('sponsorBlockExemptChannels', ['some creator'], () => {
+        const skipper = autoSkipper([seg('sponsor', 10, 20)], ['sponsor'], []);
+        skipper.watch(v);
+        skipper.schedule();
+
+        assert.strictEqual(timers.delay(), 10000);
+    });
+});
+
+check('a category chosen for muting is muted for its length, not skipped', () => {
+    const timers = fakeTimers();
+    const v = video({ muted: false });
+
+    const skipper = autoSkipper([seg('selfpromo', 10, 20)], ['selfpromo'], [], ['selfpromo']);
+    skipper.watch(v);
+    skipper.schedule();
+
+    v.currentTime = 10;
+    timers.fire();
+
+    assert.strictEqual(v.muted, true, 'the video was not muted at the segment start');
+    assert.strictEqual(v.currentTime, 10, 'a muted segment was jumped over');
+    assert.strictEqual(timers.delay(), 10000, 'no timer was left to unmute at the end');
+
+    v.currentTime = 20;
+    timers.fire();
+    assert.strictEqual(v.muted, false, 'the video stayed muted after the segment');
+});
+
+check('a segment the API marks as a mute is muted whatever the category', () => {
+    const timers = fakeTimers();
+    const v = video({ muted: false });
+
+    const skipper = autoSkipper([Object.assign(seg('music_offtopic', 5, 8), { actionType: 'mute' })], ['music_offtopic'], []);
+    skipper.watch(v);
+    skipper.schedule();
+
+    v.currentTime = 5;
+    timers.fire();
+
+    assert.strictEqual(v.muted, true);
+    assert.strictEqual(v.currentTime, 5);
+});
+
+check('a TV the viewer had already muted is left muted afterwards', () => {
+    const timers = fakeTimers();
+    const v = video({ muted: true });
+
+    const skipper = autoSkipper([seg('selfpromo', 10, 20)], ['selfpromo'], [], ['selfpromo']);
+    skipper.watch(v);
+    skipper.schedule();
+
+    v.currentTime = 10;
+    timers.fire();
+    v.currentTime = 20;
+    timers.fire();
+
+    assert.strictEqual(v.muted, true);
+});
+
+check('finishing while muted gives the sound back', () => {
+    const timers = fakeTimers();
+    const v = video({ muted: false });
+
+    const skipper = autoSkipper([seg('selfpromo', 10, 20)], ['selfpromo'], [], ['selfpromo']);
+    skipper.watch(v);
+    skipper.schedule();
+
+    v.currentTime = 10;
+    timers.fire();
+    skipper.finish();
+
+    assert.strictEqual(v.muted, false);
+});
+
+check('seeking into the middle of a mute segment mutes at once', () => {
+    const timers = fakeTimers();
+    const v = video({ muted: false, currentTime: 15 });
+
+    const skipper = autoSkipper([seg('selfpromo', 10, 20)], ['selfpromo'], [], ['selfpromo']);
+    skipper.watch(v);
+    skipper.schedule();
+
+    assert.strictEqual(v.muted, true);
+    assert.ok(timers.delay() !== null);
+});
+
+check('and seeking out of one unmutes', () => {
+    fakeTimers();
+    const v = video({ muted: false, currentTime: 15 });
+
+    const skipper = autoSkipper([seg('selfpromo', 10, 20)], ['selfpromo'], [], ['selfpromo']);
+    skipper.watch(v);
+    skipper.schedule();
+
+    v.currentTime = 50;
+    skipper.schedule();
+
+    assert.strictEqual(v.muted, false);
 });
 
 const failed = results.filter((ok) => !ok).length;

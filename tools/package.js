@@ -19,8 +19,9 @@ const APPS = [
         include: paths.WIDGET_LEGACY,
         requiredVersion: '5.0',
         servedFrom: `http://127.0.0.2:${PROXY}/tv`,
-        // Its own package, so neither widget installs over the other.
-        packageId: 'U1tmTube50'
+        // The same package as the 5.5 widget: a TV runs one of the two, and a store that lists both
+        // must see one app.
+        packageId: null
     }
 ];
 

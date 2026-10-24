@@ -91,12 +91,12 @@ check('a url that already carries it is recognised, so it is not redirected twic
 
 check('a protocol-relative gstatic font is routed through the bypass', () => {
     const out = rewrites.rewriteStaticHosts('@font-face{src:url(//www.gstatic.com/ytlr/fonts/x.ttf)}');
-    assert.ok(out.indexOf('url(http://tv.example:8099/cors-bypass/https://www.gstatic.com/ytlr/fonts/x.ttf)') !== -1, out);
+    assert.ok(out.indexOf('url(http://tv.example:8189/cors-bypass/https://www.gstatic.com/ytlr/fonts/x.ttf)') !== -1, out);
 });
 
 check('an http gstatic url is routed too', () => {
     const out = rewrites.rewriteStaticHosts('a="http://fonts.gstatic.com/s/x.woff2"');
-    assert.ok(out.indexOf('http://tv.example:8099/cors-bypass/https://fonts.gstatic.com/s/x.woff2') !== -1, out);
+    assert.ok(out.indexOf('http://tv.example:8189/cors-bypass/https://fonts.gstatic.com/s/x.woff2') !== -1, out);
 });
 
 check('an https gstatic url routes once, not doubled', () => {

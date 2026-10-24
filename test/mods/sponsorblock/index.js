@@ -392,7 +392,7 @@ const suite = async () => {
         assert.strictEqual((await segmentsFor('dQw4w9WgXcQ')).length, 2);
     });
 
-    await checkAsync('mute, chapter and full segments are dropped, having no skip target we handle', async () => {
+    await checkAsync('chapter and full segments are dropped, having no target we handle, but a mute is kept', async () => {
         answer.body = [{
             videoID: 'dQw4w9WgXcQ',
             segments: [
@@ -402,7 +402,8 @@ const suite = async () => {
             ]
         }];
 
-        assert.deepStrictEqual(await segmentsFor('dQw4w9WgXcQ'), []);
+        assert.deepStrictEqual(await segmentsFor('dQw4w9WgXcQ'),
+            [{ category: 'music_offtopic', segment: [0, 5], actionType: 'mute' }]);
     });
 
     const failed = results.filter((ok) => !ok).length;

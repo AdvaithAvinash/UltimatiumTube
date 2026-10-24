@@ -1,5 +1,7 @@
 import { configRead } from '../../framework/index.js';
 import { SPEEDS } from '../scroller/index.js';
+import { phoneAddress } from '../phone/index.js';
+import { savedTimeSummary } from '../sponsorblock/index.js';
 
 const ART = 'https://www.gstatic.com/ytlr/img/';
 
@@ -21,8 +23,20 @@ const Switch = (key, title, summary, image, on = true, note) =>
 const Choice = (key, title, summary, image, options, prefix, note) =>
   ({ kind: 'choice', key, title, summary, image, options, prefix: prefix || title, note });
 
-const Set_ = (key, title, summary, image, options, invert = false) =>
-  ({ kind: 'set', key, title, summary, image, options, invert });
+// Options may be a function, for lists that only exist once something has been watched.
+const Set_ = (key, title, summary, image, options, invert = false, phone) => {
+  const item = { kind: 'set', key, title, summary, image, invert, phone };
+  Object.defineProperty(item, 'options', {
+    enumerable: true,
+    get: () => (typeof options === 'function' ? options() : options)
+  });
+
+  return item;
+};
+
+// A row that shows a value and offers actions: each action writes some settings, or none.
+const Panel = (key, title, summary, image, value, actions, phone) =>
+  ({ kind: 'panel', key, title, summary, image, value, options: actions, phone });
 
 const Flags = (id, title, summary, image, options) =>
   ({ kind: 'flags', id, title, summary, image, options });
@@ -60,6 +74,40 @@ const SEGMENTS = [
   { label: 'Exclusive access plugs', key: 'enableSponsorBlockExclusiveAccess' },
   { label: 'Jump to the highlight', key: 'enableSponsorBlockHighlight' }
 ];
+
+const NOTHING_YET = [{ label: 'Play a video first: the channels you watch will be listed here', value: '' }];
+
+// Offered from what has been played, plus whatever is already ticked so it can be unticked.
+const channelOptions = (key) => () => {
+  const names = (configRead('recentChannels') || []).concat(configRead(key) || [])
+    .filter((name, at, all) => name && all.indexOf(name) === at);
+
+  return names.length ? names.map((name) => ({ label: name, value: name })) : NOTHING_YET;
+};
+
+const countOf = (key, noun) => () => {
+  const count = (configRead(key) || []).length;
+  return count ? `${count} ${noun}${count === 1 ? '' : 's'}` : 'None';
+};
+
+const countOfSpeeds = () => {
+  const count = Object.keys(configRead('channelSpeeds') || {}).length;
+  return count ? `${count} channel${count === 1 ? '' : 's'}` : 'None';
+};
+
+const DURATIONS = [0, 1, 2, 3, 5, 10]
+  .map((seconds) => ({ label: seconds ? `${seconds} s` : 'Off', value: seconds }));
+
+// The highlight is left out: it's a point, never auto-skipped, and already has its own "Skip to highlight" button.
+const SEGMENT_VALUES = SEGMENTS.filter((segment) => segment.key !== 'enableSponsorBlockHighlight').map((segment) => ({
+  label: segment.label,
+  value: segment.key
+    .replace('enableSponsorBlock', '')
+    .replace('MusicOfftopic', 'music_offtopic')
+    .replace('SelfPromo', 'selfpromo')
+    .replace('ExclusiveAccess', 'exclusive_access')
+    .toLowerCase()
+}));
 
 const SIDEBAR = [
   { label: 'Search', value: 'SEARCH' },
@@ -117,18 +165,22 @@ const GROUPS = [
         'Skipped as soon as they start, with no prompt', SKIPPING, SEGMENTS),
       // The highlight is left out: it's a point, never auto-skipped, and already has its own "Skip to highlight" button.
       Set_('sponsorBlockManualSkips', 'SponsorBlock: ask before skipping',
-        'These segments offer a button instead of skipping on their own', SKIPPING,
-        SEGMENTS.filter((segment) => segment.key !== 'enableSponsorBlockHighlight').map((segment) => ({
-          label: segment.label,
-          value: segment.key
-            .replace('enableSponsorBlock', '')
-            .replace('MusicOfftopic', 'music_offtopic')
-            .replace('SelfPromo', 'selfpromo')
-            .replace('ExclusiveAccess', 'exclusive_access')
-            .toLowerCase()
-        }))),
+        'These segments offer a button instead of skipping on their own', SKIPPING, SEGMENT_VALUES),
+      Set_('sponsorBlockMuteSegments', 'SponsorBlock: mute instead of skipping',
+        'These segments go quiet for their length and the picture keeps playing', SKIPPING, SEGMENT_VALUES),
+      Choice('sponsorBlockMinDuration', 'SponsorBlock: ignore short segments',
+        'Segments shorter than this are left alone', SKIPPING, DURATIONS, 'Ignore under'),
+      Set_('sponsorBlockExemptChannels', 'SponsorBlock: never on these channels',
+        'Skipped and muted nowhere on a ticked channel, so a creator\u2019s own sponsor reads still play',
+        SKIPPING, channelOptions('sponsorBlockExemptChannels'), false, 'words'),
       Switch('enableSponsorBlockToasts', 'SponsorBlock: skip notifications',
-        'A message over the picture each time a segment is skipped', MESSAGE)
+        'A message over the picture each time a segment is skipped', MESSAGE),
+      Panel('sponsorBlockSavedSeconds', 'SponsorBlock: time saved',
+        'What skipping has saved you so far', MESSAGE, savedTimeSummary,
+        [{
+          label: 'Reset the counter',
+          writes: [{ key: 'sponsorBlockSavedSeconds', value: 0 }, { key: 'sponsorBlockSkipCount', value: 0 }]
+        }])
     ]
   },
   {
@@ -173,6 +225,27 @@ const GROUPS = [
         'Asked again even when the app was only in the background', PRIVACY),
       Switch('enableWhosWatchingMenuOnAppExit', 'Ask on the way out',
         'Asked again when the app closes; off puts the home button back', PRIVACY)
+    ]
+  },
+  {
+    id: 'tube_channels',
+    title: 'Channels and words',
+    items: [
+      Panel('phoneSettings', 'Settings from your phone',
+        () => (phoneAddress() ? `Open ${phoneAddress()} on a phone or computer` : 'Open the address listed under About on a phone or computer'),
+        CONTROLS, () => 'On your phone', [{ label: 'Typing words is easier there', writes: [] }]),
+      Set_('blockedChannels', 'Hidden channels',
+        'Videos from a ticked channel are left out of every shelf', WATCHED,
+        channelOptions('blockedChannels'), false, 'words'),
+      Panel('blockedKeywords', 'Hidden words',
+        'Videos with one of these words in the title are left out. Add them from your phone', WATCHED,
+        countOf('blockedKeywords', 'word'),
+        [{ label: 'Clear the list', writes: [{ key: 'blockedKeywords', value: [] }] }], 'words'),
+      Switch('rememberChannelSpeed', 'Speed for each channel',
+        'A speed you pick on a video is used for that channel\u2019s next ones', SKIPPING),
+      Panel('channelSpeeds', 'Channel speeds',
+        'The channels that have a speed of their own', SKIPPING, countOfSpeeds,
+        [{ label: 'Forget them all', writes: [{ key: 'channelSpeeds', value: {} }] }])
     ]
   },
   {

@@ -21,7 +21,7 @@ require.cache[require.resolve('../lib/claimants.js')] = {
     exports: { survey: () => {}, rivals: () => claimed.rivals }
 };
 
-const manifest = { switches: '--base_url=file:///tube/boot.html --content=/tmp/tube-test-content' };
+const manifest = { switches: '--base_url=file:///ultimatiumtube/boot.html --content=/tmp/tube-test-content' };
 
 require.cache[require.resolve('../lib/cobaltConfig.js')] = {
     exports: {
@@ -62,7 +62,7 @@ check('the content directory is reported with what is in it', of('content').ok =
     && of('content').detail.indexOf('fonts.xml') !== -1, of('content').detail);
 
 check('the switches are read back as the container was given them', of('container').ok === true
-    && /--base_url=file:\/\/\/tube\/boot\.html/.test(of('container').detail), of('container').detail);
+    && /--base_url=file:\/\/\/ultimatiumtube\/boot\.html/.test(of('container').detail), of('container').detail);
 
 check('and no certificate is asked about', of('certificate').name === undefined);
 

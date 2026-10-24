@@ -64,7 +64,12 @@ const sponsorBlockFor = (videoID) => {
 
         held.segments = segments;
         held.overlay = segmentOverlay(segments);
-        held.skipper = autoSkipper(segments, skippableCategories(), configRead('sponsorBlockManualSkips'));
+        held.skipper = autoSkipper(
+            segments,
+            skippableCategories(),
+            configRead('sponsorBlockManualSkips'),
+            configRead('sponsorBlockMuteSegments')
+        );
 
         held.onTick = () => held.skipper.schedule();
 
@@ -146,4 +151,5 @@ window.addEventListener('hashchange', () => {
 
 const segmentsForVideo = () => (window.sponsorblock && window.sponsorblock.segments) || [];
 
+export { recordSkip, summary as savedTimeSummary } from './stats.js';
 export { segmentsForVideo, videoIdIn };

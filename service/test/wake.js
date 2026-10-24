@@ -15,7 +15,7 @@ require.cache[require.resolve('../lib/cobaltConfig.js')] = {
     exports: {
         CONTAINER,
         config: () => '<widget/>',
-        switches: () => '--base_url=file:///tube/boot.html --dial_name=Tube --use_eden',
+        switches: () => '--base_url=file:///ultimatiumtube/boot.html --dial_name=Tube --use_eden',
         configuredContent: () => null,
         container: () => CONTAINER,
         appId: () => ME

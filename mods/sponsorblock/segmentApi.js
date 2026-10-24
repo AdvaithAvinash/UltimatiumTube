@@ -10,9 +10,9 @@ const ASKED_FOR = [
     'preview', 'filler', 'music_offtopic', 'exclusive_access', 'poi_highlight'
 ];
 
-// Other actions exist (mute, chapter, full-video warning) but aren't handled yet, so only skip and point are kept.
+// Other actions exist (chapter, full-video warning) but aren't handled yet, so only skip, mute and point are kept.
 // A missing actionType defaults to skip, matching the API's own default.
-const KEPT_ACTION_TYPES = ['skip', 'poi'];
+const KEPT_ACTION_TYPES = ['skip', 'mute', 'poi'];
 
 const segmentsFor = async (videoID) => {
     const videoHash = sha256(videoID).substring(0, 4);

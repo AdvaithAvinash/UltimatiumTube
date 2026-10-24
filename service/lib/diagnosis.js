@@ -12,7 +12,7 @@ const cobaltIfItLoads = require('./cobaltIfItLoads.js');
 const { appId, configuredContent, container, switches } = require('./cobaltConfig.js');
 const { STOCK, locate } = require('./cobaltContent.js');
 
-const SHARE = process.env.TUBE_SHARE || '/home/owner/share/tube';
+const SHARE = process.env.TUBE_SHARE || '/home/owner/share/ultimatiumtube';
 const SHOWN = 8;
 
 const result = (name, ok, detail) => ({ name, ok, detail });
@@ -99,7 +99,7 @@ const icu = (content) => {
 };
 
 const bootPage = (content) => {
-    const file = path.join(content, 'web', 'tube', 'boot.html');
+    const file = path.join(content, 'web', 'ultimatiumtube', 'boot.html');
     const age = ageOf(file);
 
     return result('boot screen', age !== null, age === null ? `${file} is missing` : `written ${Math.round(age / 1000)}s ago`);

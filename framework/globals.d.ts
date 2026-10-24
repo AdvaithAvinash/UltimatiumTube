@@ -24,6 +24,9 @@ interface Window {
 
     yt?: { config_?: Record<string, any> };
 
+    /** The Android app's bridge into the page; absent on a Samsung TV and in a browser. */
+    UltimatiumNative?: { exit: () => void, phoneSync: (body: string) => string };
+
     /** Set by the proxy before our script runs; false means it patched the page itself. */
     __TUBE_NATIVE_PROXY_PATCHES__?: boolean;
 

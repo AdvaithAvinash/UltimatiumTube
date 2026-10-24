@@ -1,6 +1,6 @@
 import assert from 'assert';
 
-global.window = { localStorage: { 'tube.settings': '{}' } };
+global.window = { localStorage: { 'tube.settings': '{}' }, addEventListener: () => undefined };
 global.document = { querySelectorAll: () => [] };
 
 const { PatchSettings } = await import('../../mods/settings/nativeSettings.js');

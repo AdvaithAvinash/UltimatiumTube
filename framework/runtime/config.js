@@ -20,6 +20,14 @@ const defaultConfig = {
   enableSponsorBlockFiller: false,
   enableSponsorBlockHighlight: true,
   sponsorBlockManualSkips: ['intro', 'outro', 'filler'],
+  // Seconds; a segment shorter than this is left alone.
+  sponsorBlockMinDuration: 0,
+  // Categories that go quiet for the length of the segment instead of being jumped over.
+  sponsorBlockMuteSegments: [],
+  // Channel names SponsorBlock stays out of, so a creator's own sponsor reads still play.
+  sponsorBlockExemptChannels: [],
+  sponsorBlockSkipCount: 0,
+  sponsorBlockSavedSeconds: 0,
 
   enableDeArrow: false,
   enableDeArrowThumbnails: false,
@@ -31,7 +39,16 @@ const defaultConfig = {
   enableDevBridge: DEV_TOOLS,
   videoSpeed: 1,
   rememberPlaybackSpeed: false,
+  rememberChannelSpeed: false,
+  // Channel name -> the speed it was last watched at.
+  channelSpeeds: {},
   speedSettingsIncrement: 0.25,
+
+  // Channel names and words dropped from every shelf; managed from the phone page.
+  blockedChannels: [],
+  blockedKeywords: [],
+  // The last channels played, newest first, so the settings can offer them as a pick list.
+  recentChannels: [],
 
   enableShorts: true,
   disabledSidebarContents: [],
@@ -100,6 +117,30 @@ export function configWrite(key, value) {
   }
 
   configChangeEmitter.dispatchEvent(new CustomEvent('configChange', { detail: { key, value } }));
+}
+
+export function configHas(key) {
+  return Object.prototype.hasOwnProperty.call(defaultConfig, key);
+}
+
+// A value is accepted only in the shape its default has, so the phone page cannot store nonsense.
+export function configAccepts(key, value) {
+  if (!configHas(key)) return false;
+
+  const shape = defaultConfig[key];
+  if (Array.isArray(shape)) return Array.isArray(value);
+  if (shape !== null && typeof shape === 'object') return value !== null && typeof value === 'object' && !Array.isArray(value);
+
+  return typeof value === typeof shape;
+}
+
+export function configSnapshot() {
+  const all = {};
+  Object.keys(defaultConfig).forEach((key) => {
+    all[key] = configRead(key);
+  });
+
+  return all;
 }
 
 export const configChangeEmitter = {

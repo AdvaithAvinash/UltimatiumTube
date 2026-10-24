@@ -181,8 +181,8 @@ upstream.listen(0, '127.0.0.1', () => {
                 const body = res.body.toString();
 
                 check('with the hooks off, the body routes attestation through the service',
-                    body.indexOf('http://tv.example:8099/cors-bypass/https://jnn-pa.googleapis.com') !== -1
-                    && body.indexOf('http:\\/\\/tv.example:8099\\/cors-bypass\\/https:\\/\\/www.google.com') !== -1,
+                    body.indexOf('http://tv.example:8189/cors-bypass/https://jnn-pa.googleapis.com') !== -1
+                    && body.indexOf('http:\\/\\/tv.example:8189\\/cors-bypass\\/https:\\/\\/www.google.com') !== -1,
                     body);
 
                 return bypass('/truncated');

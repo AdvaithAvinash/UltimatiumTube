@@ -26,7 +26,7 @@ const check = (label, ok, detail) => {
 fs.mkdirSync(path.join(content, 'icu'), { recursive: true });
 fs.writeFileSync(path.join(content, 'icu', 'icudt68l.dat'), 'data');
 
-const html = page('192.168.1.29:8099');
+const html = page('192.168.1.29:8189');
 
 check('it is a whole page', html.indexOf('<!DOCTYPE html>') === 0 && html.indexOf('</html>') !== -1);
 check('it fits a phone', html.indexOf('width=device-width') !== -1);
@@ -40,10 +40,10 @@ check('it says where to open an issue', html.indexOf(ISSUES) !== -1);
 check('and the repository', html.indexOf(REPO) !== -1);
 
 check('it links the log at the address the phone reached the TV on',
-    html.indexOf('http://192.168.1.29:8099/__tube/log') !== -1);
+    html.indexOf('http://192.168.1.29:8189/__tube/log') !== -1);
 
-check('a host arriving without a port is still linked once', html.indexOf('http://192.168.1.29:8099:8099') === -1
-    && page('192.168.1.29').indexOf('http://192.168.1.29:8099/__tube/log') !== -1);
+check('a host arriving without a port is still linked once', html.indexOf('http://192.168.1.29:8189:8099') === -1
+    && page('192.168.1.29').indexOf('http://192.168.1.29:8189/__tube/log') !== -1);
 
 check('it runs the same checks the boot screen asks for', html.indexOf('icu') !== -1
     && html.indexOf('share') !== -1);
@@ -72,7 +72,7 @@ containerAgent.remember('Mozilla/5.0 (LINUX; Tizen/9.0/2025.20.1034877) '
     + 'Cobalt/25.lts.40.1035033-gold (unlike Gecko) v8/8.8.278.17-jit');
 check('and so does a Tizen 9 one', build() === '2025.20.1034877', String(build()));
 
-const named = page('192.168.1.29:8099');
+const named = page('192.168.1.29:8189');
 
 check('it names the Cobalt the container reports', named.indexOf('cobalt 25.lts.40.1035033-gold') !== -1);
 check('and the platform build', named.indexOf('2025.20.1034877') !== -1);

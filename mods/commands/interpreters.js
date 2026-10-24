@@ -3,6 +3,8 @@ import { PASS, buttonItem, configRead, configWrite, onCommand, resolve, showToas
 import { openOptions, OPTIONS_ACTION } from '../settings/settingsOptions.js';
 import { openSpeedOptions } from '../player/speed.js';
 import { enterMiniPlayer } from '../player/pictureInPicture.js';
+import { recordSkip } from '../sponsorblock/index.js';
+import { rememberSpeedForChannel } from '../player/speed.js';
 
 
 const APP_NAME = 'YouTube';
@@ -20,12 +22,18 @@ const ACTIONS = {
         document.dispatchEvent(escape);
 
         const video = document.querySelector('video');
-        if (video) video.currentTime = parameters.time;
+        if (!video) return;
+
+        recordSkip(parameters.time - video.currentTime);
+        video.currentTime = parameters.time;
     },
 
     SET_PLAYER_SPEED: (parameters) => {
         const video = document.querySelector('video');
-        if (video) video.playbackRate = Number(parameters);
+        if (!video) return;
+
+        video.playbackRate = Number(parameters);
+        rememberSpeedForChannel(video.playbackRate);
     },
 
     ENTER_MP: () => enterMiniPlayer(),
@@ -86,6 +94,9 @@ const applyOurSettings = (command) => {
         const value = field === 'intValue' ? Number(setting[field]) : setting[field];
 
         if (field !== 'arrayValue') return configWrite(key, value);
+
+        // The empty row that stands in for a list nothing has filled yet.
+        if (value === '') return undefined;
 
         const current = configRead(key) || [];
         configWrite(key, current.indexOf(value) === -1

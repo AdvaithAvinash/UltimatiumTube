@@ -1,4 +1,5 @@
-import { buttonItem, configRead, onKey, overlayPanelItemListRenderer, showModal, whenVideo } from '../../framework/index.js';
+import { buttonItem, configRead, configWrite, onKey, overlayPanelItemListRenderer, showModal, whenVideo } from '../../framework/index.js';
+import { currentChannel, normal } from '../channels/index.js';
 
 const SPEED_KEYS = [406, 191];
 
@@ -45,8 +46,36 @@ function openSpeedOptions() {
     );
 }
 
+// Keyed by the lower-cased name, so a channel that changes its capitals keeps its speed.
+const channelSpeed = () => {
+    const channel = currentChannel();
+    const speeds = configRead('channelSpeeds') || {};
+
+    return channel ? speeds[normal(channel)] : undefined;
+};
+
+// A speed set on a video is that channel's from now on; 1x forgets it, which is what stock plays at.
+const rememberSpeedForChannel = (speed) => {
+    const channel = currentChannel();
+    if (!configRead('rememberChannelSpeed') || !channel) return;
+
+    const kept = Object.assign({}, configRead('channelSpeeds'));
+
+    if (speed === 1) delete kept[normal(channel)];
+    else kept[normal(channel)] = speed;
+
+    configWrite('channelSpeeds', kept);
+};
+
 const rememberSpeed = (video) => {
     video.addEventListener('canplay', () => {
+        const forChannel = configRead('rememberChannelSpeed') ? channelSpeed() : undefined;
+
+        if (forChannel) {
+            video.playbackRate = forChannel;
+            return;
+        }
+
         if (!configRead('rememberPlaybackSpeed')) return;
         video.playbackRate = configRead('videoSpeed');
     });
@@ -63,4 +92,4 @@ const start = () => {
     whenVideo('playback speed', rememberSpeed);
 };
 
-export { openSpeedOptions, start };
+export { openSpeedOptions, rememberSpeedForChannel, start };

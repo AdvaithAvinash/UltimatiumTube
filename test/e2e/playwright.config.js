@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { AGENT } from './cobalt.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-// 8199 so a dev service on 8099 can keep running.
+// 8199 so a dev service on 8189 can keep running.
 const PORT = Number(process.env.TUBE_E2E_PORT) || 8199;
 const ROOT = join(HERE, '..', '..');
 

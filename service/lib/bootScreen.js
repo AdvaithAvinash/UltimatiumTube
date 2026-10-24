@@ -10,10 +10,10 @@ const { STAMP } = require('./stamp.js');
 const { ISSUES, REPO } = require('./links.js');
 const { BOOT_PAGE, read } = require('./shipped.js');
 
-const BOOT_URL = 'file:///tube/boot.html';
+const BOOT_URL = 'file:///ultimatiumtube/boot.html';
 
 // file:// resolves against <content>/web.
-const RELATIVE = path.join('web', 'tube', 'boot.html');
+const RELATIVE = path.join('web', 'ultimatiumtube', 'boot.html');
 
 const YOUTUBE = 'https://www.youtube.com';
 

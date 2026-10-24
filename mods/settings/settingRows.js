@@ -9,10 +9,13 @@ const picture = (url) => ({ thumbnails: [{ url }] });
 // the same shape.
 const idFor = (item) => `TUBE_${item.key || item.id}`;
 
+// A summary may be worded at draw time, for rows that carry an address or a count.
+const said = (text) => (typeof text === 'function' ? text() : text);
+
 const switchRow = (item) => ({
     settingBooleanRenderer: {
         title: runs(item.title),
-        summary: runs(item.summary),
+        summary: runs(said(item.summary)),
         enabled: configRead(item.key) === item.on,
         enableServiceEndpoint: storeCommand(item.key, item.on),
         disableServiceEndpoint: storeCommand(item.key, !item.on),
@@ -27,7 +30,7 @@ const switchRow = (item) => ({
 const openerRow = (item, path, label) => {
     const row = {
         title: runs(item.title),
-        summary: runs(item.summary),
+        summary: runs(said(item.summary)),
         serviceEndpoint: optionsCommand(path),
         tubeNote: item.note,
         trackingParams: 'null',
@@ -43,7 +46,9 @@ const rowFor = (item, path) =>
     item.kind === 'switch' ? switchRow(item)
         : item.kind === 'choice'
             ? openerRow(item, path, () => `${item.prefix}: ${chosenLabel(item)}`)
-            : openerRow(item, path, () => chosenSummary(item));
+            : item.kind === 'panel'
+                ? openerRow(item, path, () => item.value())
+                : openerRow(item, path, () => chosenSummary(item));
 
 const SECTION = 'ultimatiumtube';
 

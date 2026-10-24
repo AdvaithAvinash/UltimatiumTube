@@ -54,7 +54,7 @@ const manifestFailures = (config, ports) => [].concat(
     // A --proxy names one fixed address, and the container cannot reach any address we can fix.
     unless(!/--proxy=/.test(config),
         'config.xml carries a --proxy switch, which no set the boot screen serves can reach'),
-    unless(config.indexOf(`--base_url=file:///tube/boot.html`) !== -1
+    unless(config.indexOf(`--base_url=file:///ultimatiumtube/boot.html`) !== -1
         || config.indexOf(`--base_url=http://`) !== -1,
         'config.xml does not start the container on a page we serve')
 );

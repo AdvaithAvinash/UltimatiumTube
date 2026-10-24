@@ -13,7 +13,7 @@ const USERDATA = 'http://samsung.com/tv/metadata/native.userdata';
 const METADATA = {
     'tUb3Xq7Lm9.Tube': [
         { key: NATIVE_ID, value: 'com.samsung.tv.cobalt-yt' },
-        { key: USERDATA, value: '--base_url=file:///tube/boot.html --proxy=http://127.0.0.2:8099' }
+        { key: USERDATA, value: '--base_url=file:///ultimatiumtube/boot.html --proxy=http://127.0.0.2:8099' }
     ],
     'other.TizenTube': [{ key: NATIVE_ID, value: 'com.samsung.tv.cobalt-yt' }],
     'plain.App': []
@@ -62,7 +62,7 @@ const check = (label, ok) => {
 };
 
 check('our claim is named with its base URL',
-    log.indexOf('tUb3Xq7Lm9.Tube "YouTube" 1.0.1 → com.samsung.tv.cobalt-yt file:///tube/boot.html') !== -1);
+    log.indexOf('tUb3Xq7Lm9.Tube "YouTube" 1.0.1 → com.samsung.tv.cobalt-yt file:///ultimatiumtube/boot.html') !== -1);
 check('so is any other app on the slot', log.indexOf('other.TizenTube "TizenTube" 2.0.0 → com.samsung.tv.cobalt-yt') !== -1);
 check('an app claiming nothing is left out', log.indexOf('Weather') === -1);
 check('metadata it may not read is counted', log.indexOf('1 apps\' metadata unreadable: Permission denied') !== -1);

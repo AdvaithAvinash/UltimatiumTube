@@ -269,8 +269,8 @@ const checks = (script) => {
     const written = writeBootScreen(scratch, script);
     const undated = (text) => text.replace(/"at":\d+/, '');
 
-    check('it is written where file:///tube/boot.html resolves',
-        written === path.join(scratch, 'web', 'tube', 'boot.html') && undated(fs.readFileSync(written, 'utf8')) === undated(page));
+    check('it is written where file:///ultimatiumtube/boot.html resolves',
+        written === path.join(scratch, 'web', 'ultimatiumtube', 'boot.html') && undated(fs.readFileSync(written, 'utf8')) === undated(page));
 
     fs.rmSync(scratch, { recursive: true, force: true });
 };

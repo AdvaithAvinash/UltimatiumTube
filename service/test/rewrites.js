@@ -1,0 +1,110 @@
+'use strict';
+
+const assert = require('assert');
+
+process.env.TUBE_PROXY_HOST = 'tv.example';
+
+const rewrites = require('../lib/rewrites.js');
+const { flagOverrides } = require('../lib/knobs.js');
+
+const results = [];
+const check = (name, run) => {
+    try {
+        run();
+        results.push(true);
+        console.log(`PASS  ${name}`);
+    } catch (failure) {
+        results.push(false);
+        console.log(`FAIL  ${name}\n      ${String(failure.message).split('\n').slice(0, 5).join('\n      ')}`);
+    }
+};
+
+check('the innertube host override is added ahead of the client name', () => {
+    const out = rewrites.overrideInnertubeHost('{"INNERTUBE_CONTEXT_CLIENT_NAME":7}');
+    assert.ok(out.indexOf('INNERTUBE_HOST_OVERRIDE') !== -1, out);
+    assert.ok(out.indexOf('INNERTUBE_HOST_OVERRIDE') < out.indexOf('"INNERTUBE_CONTEXT_CLIENT_NAME":7'), out);
+});
+
+check('the one SABR media url is sent back through the proxy', () => {
+    const out = rewrites.rerouteAbr('{"serverAbrStreamingUrl":"https://rr1.googlevideo.com/x"}');
+    assert.ok(out.indexOf('rr1.googlevideo.com') !== -1, out);
+    assert.ok(out.indexOf('"serverAbrStreamingUrl":"https://rr1') === -1,
+        'the url was left pointing straight at googlevideo');
+});
+
+check('the attestation program url is rewritten in its escaped form', () => {
+    const escaped = '{\\"privateDoNotAccessOrElseTrustedResourceUrlWrappedValue\\":\\"\\/\\/www.google.com\\/js\\/th\\/p\\"}';
+    const out = rewrites.rewriteAttestation(escaped);
+    assert.ok(out.indexOf('cors-bypass\\/https:\\/\\/www.google.com\\/js\\/th\\/p') !== -1, out);
+});
+
+check('a flag already in the blob is retuned in place', () => {
+    flagOverrides.clear();
+    flagOverrides.set('some_flag', 'false');
+
+    const out = rewrites.retuneFlags('"serializedExperimentFlags\\":\\"some_flag\\u003dtrue\\u0026other\\u003d1');
+    assert.ok(out.indexOf('some_flag\\u003dfalse') !== -1, out);
+    assert.ok(out.indexOf('other\\u003d1') !== -1, 'the flags beside it were lost');
+    flagOverrides.clear();
+});
+
+// An absent flag reads as off, so turning one on means adding it.
+check('a flag not in the blob is added to the front of it', () => {
+    flagOverrides.clear();
+    flagOverrides.set('new_flag', 'true');
+
+    const out = rewrites.retuneFlags('"serializedExperimentFlags\\":\\"other\\u003d1');
+    assert.strictEqual(out, '"serializedExperimentFlags\\":\\"new_flag\\u003dtrue\\u0026other\\u003d1');
+    flagOverrides.clear();
+});
+
+// __Secure- and __Host- prefixed cookies are refused over plain HTTP, so they are renamed in both
+// directions rather than dropped.
+check('a prefixed cookie is renamed and its https-only attributes dropped', () => {
+    const [out] = rewrites.rewriteSetCookie(
+        ['__Secure-A=1; Domain=.youtube.com; Secure; SameSite=None; Path=/']
+    );
+
+    assert.ok(out.indexOf('__LocalSecure-A=1') === 0, out);
+    assert.ok(!/;\s*Secure/i.test(out), out);
+    assert.ok(!/SameSite=None/i.test(out), out);
+    assert.ok(out.indexOf('Domain=tv.example') !== -1, out);
+});
+
+check('and put back on the way up', () => {
+    assert.strictEqual(rewrites.restoreCookiePrefixes('__LocalSecure-A=1; __LocalHost-B=2'),
+        '__Secure-A=1; __Host-B=2');
+});
+
+check('the watermark switch is added to a bare page url', () => {
+    assert.strictEqual(rewrites.withHiddenWatermark('/tv'), '/tv?env_hideWatermark=true');
+});
+
+check('and after the launch parameters already on it', () => {
+    assert.strictEqual(rewrites.withHiddenWatermark('/tv?launch=menu'), '/tv?launch=menu&env_hideWatermark=true');
+});
+
+check('a url that already carries it is recognised, so it is not redirected twice', () => {
+    assert.ok(rewrites.hidesWatermark('/tv?launch=menu&env_hideWatermark=true'));
+    assert.ok(!rewrites.hidesWatermark('/tv?launch=menu'));
+});
+
+check('a protocol-relative gstatic font is routed through the bypass', () => {
+    const out = rewrites.rewriteStaticHosts('@font-face{src:url(//www.gstatic.com/ytlr/fonts/x.ttf)}');
+    assert.ok(out.indexOf('url(http://tv.example:8099/cors-bypass/https://www.gstatic.com/ytlr/fonts/x.ttf)') !== -1, out);
+});
+
+check('an http gstatic url is routed too', () => {
+    const out = rewrites.rewriteStaticHosts('a="http://fonts.gstatic.com/s/x.woff2"');
+    assert.ok(out.indexOf('http://tv.example:8099/cors-bypass/https://fonts.gstatic.com/s/x.woff2') !== -1, out);
+});
+
+check('an https gstatic url routes once, not doubled', () => {
+    const out = rewrites.rewriteStaticHosts('a="https://www.gstatic.com/x"');
+    assert.ok(out.indexOf('/cors-bypass/https://www.gstatic.com/x') !== -1, out);
+    assert.ok(out.indexOf('https://tv.example') === -1, out);
+});
+
+const failed = results.filter((ok) => !ok).length;
+console.log(`\n${results.length - failed}/${results.length} checks passed.`);
+process.exit(failed ? 1 : 0);

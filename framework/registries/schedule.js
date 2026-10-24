@@ -1,0 +1,67 @@
+// Named timers: rescheduling a name replaces its timer rather than stacking a second.
+
+import { report } from './journal.js';
+
+const timers = Object.create(null);
+
+const stop = (name) => {
+    const held = timers[name];
+    if (!held) return;
+
+    clearTimeout(held.timer);
+    clearInterval(held.timer);
+    timers[name] = null;
+};
+
+const guarded = (name, run) => {
+    try {
+        run();
+    } catch (failure) {
+        report(`schedule:${name}`, 'failed', failure);
+    }
+};
+
+const every = (name, ms, tick) => {
+    stop(name);
+    timers[name] = { timer: setInterval(() => guarded(name, tick), ms) };
+    return () => stop(name);
+};
+
+const after = (name, ms, run) => {
+    stop(name);
+    timers[name] = {
+        timer: setTimeout(() => {
+            timers[name] = null;
+            guarded(name, run);
+        }, ms)
+    };
+    return () => stop(name);
+};
+
+// Calling it again while it is running extends the deadline rather than starting a second timer.
+const until = (name, ms, tick, forMs) => {
+    const deadline = Date.now() + forMs;
+    const held = timers[name];
+
+    if (held && held.until !== undefined) {
+        held.until = Math.max(held.until, deadline);
+        return () => stop(name);
+    }
+
+    stop(name);
+
+    const record = {
+        until: deadline,
+        timer: setInterval(() => {
+            guarded(name, tick);
+            if (Date.now() > record.until) stop(name);
+        }, ms)
+    };
+
+    timers[name] = record;
+    return () => stop(name);
+};
+
+const running = (name) => !!timers[name];
+
+export { every, after, until, stop, running };

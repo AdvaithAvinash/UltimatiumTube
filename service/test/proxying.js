@@ -1,0 +1,238 @@
+'use strict';
+
+process.env.TUBE_PROXY_HOST = 'tv.example';
+
+delete global.AbortController;
+
+const HEADERS_DEADLINE = 20000;
+const setTimer = global.setTimeout;
+global.setTimeout = (run, ms, ...rest) => setTimer(run, ms === HEADERS_DEADLINE ? 1000 : ms, ...rest);
+
+const http = require('http');
+
+const proxy = require('../lib/proxy.js');
+const knobs = require('../lib/knobs.js');
+const containerAgent = require('../lib/containerAgent.js');
+
+const COBALT_UA = 'Mozilla/5.0 (LINUX; Tizen/10.0/2026.10.1040000) Cobalt/25.lts.20.1034877-gold '
+    + '(unlike Gecko) v8/8.8 gles Evergreen/5.20.2 Starboard/16';
+
+const ATTESTED = 'const a="https://jnn-pa.googleapis.com";const b="\\/\\/www.google.com\\/js\\/th\\/p.js";';
+
+const results = [];
+
+const check = (name, ok, detail) => {
+    results.push(ok);
+    console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : `  <- ${detail}`}`);
+};
+
+const truncation = { asked: 0 };
+
+const upstream = http.createServer((req, res) => {
+    if (req.url === '/truncated') {
+        truncation.asked += 1;
+
+        if (truncation.asked > 1) {
+            res.writeHead(200, { 'content-type': 'application/json', 'x-answer': 'second' });
+            return res.end('{"whole":true}');
+        }
+
+        res.writeHead(200, { 'content-type': 'application/json', 'content-length': '40', 'x-answer': 'first' });
+        res.write('{"half":');
+        return res.destroy();
+    }
+
+    if (req.url === '/stalled') return undefined;
+
+    if (req.url === '/json') {
+        res.writeHead(200, {
+            'content-type': 'application/json',
+            'set-cookie': ['__Secure-A=1; Domain=.youtube.com; Secure']
+        });
+        return res.end('{"hello":"world"}');
+    }
+
+    if (req.url === '/bin') {
+        res.writeHead(200, { 'content-type': 'video/mp4' });
+        return res.end(Buffer.from([1, 2, 3, 4, 5]));
+    }
+
+    if (req.url === '/moved') {
+        res.writeHead(302, { location: 'http://example.invalid/next' });
+        return res.end();
+    }
+
+    if (req.url === '/attested') {
+        res.writeHead(200, { 'content-type': 'application/javascript' });
+        return res.end(ATTESTED);
+    }
+
+    if (req.url === '/echo') {
+        res.writeHead(200, { 'content-type': 'application/json' });
+        return res.end(JSON.stringify({ headers: req.headers }));
+    }
+
+    res.writeHead(404);
+    return res.end('no');
+});
+
+const app = proxy.create();
+proxy.attachFallback(app);
+
+upstream.listen(0, '127.0.0.1', () => {
+    const target = `http://127.0.0.1:${upstream.address().port}`;
+    const server = app.listen(0, '127.0.0.1', () => {
+        const port = server.address().port;
+
+        const ask = (path, options) => new Promise((resolve, reject) => {
+            const settings = Object.assign({ host: '127.0.0.1', port, path, timeout: 8000 }, options);
+            const req = http.request(settings, (res) => {
+                const parts = [];
+                res.on('data', (chunk) => parts.push(chunk));
+                res.on('end', () => resolve({
+                    status: res.statusCode, headers: res.headers, body: Buffer.concat(parts)
+                }));
+            });
+
+            req.on('error', reject);
+            req.on('timeout', () => { req.destroy(); reject(new Error('timed out')); });
+            req.end();
+        });
+
+        const get = (path) => ask(path);
+        const bypass = (path) => get(`/cors-bypass/${target}${path}`);
+
+        const preflight = (path, headers) => ask(path, {
+            method: 'OPTIONS',
+            headers: Object.assign({
+                origin: 'https://www.youtube.com',
+                'access-control-request-method': 'GET'
+            }, headers)
+        });
+
+        const done = (code) => {
+            server.close();
+            upstream.close();
+            process.exit(code);
+        };
+
+        bypass('/json')
+            .then((res) => {
+                check('a textual body comes back through the bypass',
+                    res.status === 200 && res.body.toString() === '{"hello":"world"}', res.body.toString());
+                check('__Secure- cookies are renamed on the plain-HTTP path',
+                    String(res.headers['set-cookie']).indexOf('__LocalSecure-A') === 0,
+                    res.headers['set-cookie']);
+                check('CORS is opened for the page',
+                    res.headers['access-control-allow-origin'] === '*',
+                    res.headers['access-control-allow-origin']);
+
+                return bypass('/bin');
+            })
+            .then((res) => {
+                check('a binary body is streamed through untouched',
+                    res.status === 200 && res.body.equals(Buffer.from([1, 2, 3, 4, 5])),
+                    res.body.toString('hex'));
+
+                return bypass('/moved');
+            })
+            .then((res) => {
+                check('a redirect is routed back through the proxy',
+                    res.status === 302
+                    && /\/cors-bypass\/http:\/\/example\.invalid\/next$/.test(res.headers.location),
+                    res.headers.location);
+
+                return bypass('/echo');
+            })
+            .then((res) => {
+                const sent = JSON.parse(res.body.toString()).headers;
+
+                check('the upstream Host is the target, not the proxy',
+                    sent.host === `127.0.0.1:${upstream.address().port}`, sent.host);
+                check('only readable encodings are asked for',
+                    sent['accept-encoding'] === 'gzip, deflate', sent['accept-encoding']);
+
+                return preflight('/complete/search', {
+                    'access-control-request-headers': 'authorization, x-goog-visitor-id'
+                });
+            })
+            .then((res) => {
+                check('a preflight names the origin rather than wildcarding it',
+                    res.headers['access-control-allow-origin'] === 'https://www.youtube.com',
+                    res.headers['access-control-allow-origin']);
+                check('a preflight allows credentials',
+                    res.headers['access-control-allow-credentials'] === 'true',
+                    res.headers['access-control-allow-credentials']);
+                check('a preflight echoes the headers that were asked for',
+                    res.headers['access-control-allow-headers'] === 'authorization, x-goog-visitor-id',
+                    res.headers['access-control-allow-headers']);
+
+                return bypass('/attested');
+            })
+            .then((res) => {
+                check('served as the service, attestation is left to the page\'s hooks',
+                    res.body.toString() === ATTESTED, res.body.toString());
+
+                knobs.upstream.nativeProxyPatches = false;
+                return bypass('/attested');
+            })
+            .then((res) => {
+                knobs.upstream.nativeProxyPatches = true;
+                const body = res.body.toString();
+
+                check('with the hooks off, the body routes attestation through the service',
+                    body.indexOf('http://tv.example:8099/cors-bypass/https://jnn-pa.googleapis.com') !== -1
+                    && body.indexOf('http:\\/\\/tv.example:8099\\/cors-bypass\\/https:\\/\\/www.google.com') !== -1,
+                    body);
+
+                return bypass('/truncated');
+            })
+            .then((res) => {
+                check('a body that dies mid-read is asked for again rather than becoming a 500',
+                    res.status === 200 && res.body.toString() === '{"whole":true}',
+                    `${res.status} ${res.body.toString().slice(0, 60)}`);
+                check('a truncated body is asked for exactly once more',
+                    truncation.asked === 2, String(truncation.asked));
+                check('a body asked for again is answered with its own headers',
+                    res.headers['x-answer'] === 'second', res.headers['x-answer']);
+
+                return bypass('/stalled');
+            })
+            .then((res) => {
+                check('a request that never answers is given up on without AbortController',
+                    res.status === 500 && res.body.toString().indexOf('tube:') === 0,
+                    `${res.status} ${res.body.toString().slice(0, 60)}`);
+
+                return get('/cors-bypass/http://127.0.0.1:1/dead');
+            })
+            .then((res) => {
+                check('an unreachable upstream is answered, not left hanging',
+                    res.status === 500 && res.body.toString().indexOf('tube:') === 0,
+                    `${res.status} ${res.body.toString().slice(0, 60)}`);
+
+                return ask('/__tube/ping', { headers: { 'user-agent': 'curl/8.7.1' } });
+            })
+            .then(() => {
+                check('something that is not the container is not taken for it',
+                    containerAgent.agent() === null, String(containerAgent.agent()));
+
+                return ask('/__tube/ping', { headers: { 'user-agent': COBALT_UA } });
+            })
+            .then(() => {
+                check('the container is identified from an ordinary request',
+                    containerAgent.agent() === COBALT_UA, String(containerAgent.agent()));
+                check('and its engine and platform build are read out of that',
+                    containerAgent.engine() === 'cobalt 25.lts.20.1034877-gold, evergreen 5.20.2, starboard 16'
+                    && containerAgent.build() === '2026.10.1040000',
+                    `${containerAgent.engine()} | ${containerAgent.build()}`);
+
+                const failed = results.filter((ok) => !ok).length;
+                console.log(`\n${results.length - failed}/${results.length} checks passed.`);
+                done(failed ? 1 : 0);
+            })
+            .catch((error) => {
+                console.error('Harness error:', error.message);
+                done(1);
+            });
+    });
+});

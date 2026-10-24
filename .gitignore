@@ -1,0 +1,21 @@
+node_modules/
+dist/
+dist-legacy/
+.dev/
+release/
+.package/
+*.wgt
+*.p12
+*.log
+
+# npm workspaces: only the root lockfile is authoritative.
+*/package-lock.json
+!/package-lock.json
+
+.DS_Store
+
+docs-internal/
+
+TODO.md
+test-results/
+playwright-report/

@@ -87,3 +87,7 @@ Sponsor segments, community titles and dislike counts come from
 [SponsorBlock](https://github.com/ajayyy/SponsorBlock),
 [DeArrow](https://github.com/ajayyy/DeArrow) and
 [Return YouTube Dislike](https://github.com/Anarios/return-youtube-dislike).
+
+**FAQ**
+**Why Is ultimatiumtube named "ultimatiumtube"** 
+See, UltimatiumTube's name was inspired by AniUltimatium, the name was supposed to be AniUltimatum but i mispelled it and didn't care much since my most starred repo is AniUltimatium, I decided to make my entire samsung collection full of Ultimatium's (except for some exceptions)

@@ -1,0 +1,94 @@
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+
+const ports = require('./ports.js');
+const { lanAddresses, serviceAddress } = require('./serviceAddress.js');
+const { SCREEN } = require('./pageLines.js');
+const { STAMP } = require('./stamp.js');
+const { ISSUES, REPO } = require('./links.js');
+const { BOOT_PAGE, read } = require('./shipped.js');
+
+const BOOT_URL = 'file:///tube/boot.html';
+
+// file:// resolves against <content>/web.
+const RELATIVE = path.join('web', 'tube', 'boot.html');
+
+const YOUTUBE = 'https://www.youtube.com';
+
+const origin = (address) => `http://${address}:${ports.PROXY}`;
+
+// Tried when the chosen address does not answer, to tell a blocked address from a dead service.
+const alternates = () => ['127.0.0.1'].concat(lanAddresses())
+    .filter((address) => address !== serviceAddress())
+    .map(origin);
+
+const HELP = { issues: ISSUES, repo: REPO };
+
+// The viewer reads these on a phone, where loopback is useless.
+const onTheLan = (route) => `http://${lanAddresses()[0] || '127.0.0.1'}:${ports.PROXY}${route}`;
+
+const configFor = () => ({
+    service: origin(serviceAddress()),
+    alternates: alternates(),
+    // Served by us rather than fetched from YouTube: there is no proxy to intercept the real host.
+    target: `${origin(serviceAddress())}/tv`,
+    probeUrl: `${origin(serviceAddress())}/__tube/ping`,
+    screen: SCREEN,
+    journal: onTheLan('/__tube/log'),
+    diag: onTheLan('/diag'),
+    help: HELP,
+    written: { at: Date.now(), patch: STAMP, pid: process.pid }
+});
+
+// Cobalt refuses whatever the policy omits, navigation included.
+const policyFor = (config) => `default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; `
+    + `connect-src ${[config.service].concat(config.alternates).join(' ')} ${YOUTUBE}; `
+    + `h5vcc-location-src ${YOUTUBE} ${config.service}`;
+
+const STYLE = `html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000000; }
+body { color: #aaaaaa; font-family: monospace; font-size: 19px; line-height: 29px; }
+#log { position: absolute; left: 24px; right: 24px; top: 16px; white-space: pre; }
+.t { color: #00aa00; }
+.s { color: #aa5500; }
+.ok { color: #55ff55; }
+.warn { color: #ffff55; }
+.bad { color: #ff5555; }
+.note { color: #55ffff; }`;
+
+const page = (script, config) => `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="${policyFor(config)}">
+<title>UltimatiumTube</title>
+<style>
+${STYLE}
+</style>
+</head>
+<body>
+<div id="log"></div>
+<script>window.TUBE_BOOT = ${JSON.stringify(config)};</script>
+<script>
+${script}
+</script>
+</body>
+</html>
+`;
+
+const html = (script) => page(script, configFor());
+
+// Renamed into place, so a container starting meanwhile never reads half a page.
+const writeBootScreen = (content, script) => {
+    const file = path.join(content, RELATIVE);
+    const staged = `${file}.${process.pid}`;
+
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(staged, html(script || read(BOOT_PAGE)));
+    fs.renameSync(staged, file);
+
+    return file;
+};
+
+module.exports = { BOOT_URL, html, writeBootScreen };

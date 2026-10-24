@@ -1,0 +1,49 @@
+# Developing
+
+## Commands
+
+| | |
+| --- | --- |
+| `npm run doctor` | Check prerequisites when something looks wrong |
+| `npm run build` | The userscript, and the service twice: for Tizen 5.5+, and on node 4.4.3 for 5.0+ |
+| `npm run typecheck` | `tsc --noEmit` on its own |
+| `npm test` | Lint, types, then the userscript and service suites |
+| `npm run test:e2e` | The userscript against real YouTube, in Chromium cut down to the container |
+| `npm run test:cobalt` | The same in Cobalt itself, from the published image; needs Docker and a `TUBE_DEV=1` build |
+| `npm run test:matrix` | Load both service bundles on every Node from 4.4.3 up; needs fnm |
+| `npm run package` | Build the unsigned `.wgt`s for Tizen Homebrew: `UltimatiumTube-tizen-5.5.wgt` and `UltimatiumTube-tizen-5.0.wgt` |
+| `npm run audit` | Check what is inside both `.wgt`s; `-- --release` fails on anything dev-only |
+| `npm run deploy` | Package a dev build and install it on the set; needs `TUBE_DEV_TOKEN` |
+| `npm run dev` | YouTube with the mods in a browser, no hardware needed |
+| `npm run dev:service` | The service off-TV, on `:8099` |
+| `npm run chii` | Remote inspector for the page inside the container |
+| `npm run doctor:tv` | Ask a `TUBE_DEV=1` build on a set whether YouTube still has what the mods reach into — after a YouTube update, and before tagging a release |
+| `npm run probe:cobalt` | Ask a `TUBE_DEV=1` build on a set which browser APIs it lacks, for `test/e2e/cobalt.js` to take away |
+| `npm run version:set 1.2.0` | Set the version everywhere it is written |
+| `npm run clean` | Remove every build artefact |
+
+## Remote inspector
+
+The page inside Cobalt has no console. `npm run chii` starts one here and prints the `TUBE_CHII`
+value to build against; the widget then carries chii's target script and opens the socket back
+through the proxy. Both halves have to be addressed to youtube.com — Cobalt sends HTTP through
+`--proxy` but not WebSockets, so a socket opened straight at this machine cannot leave the
+container and closes 1006.
+
+```
+npm run chii                                    # leave it running
+TUBE_CHII=<laptop-ip>:8711 npm run deploy       # bake the address into the widget
+```
+
+It attaches only when asked, and forgets being asked the moment it has read it: an inspector that
+attaches on every boot is one bad build away from a television that will not start, and the only
+way back from that is a reinstall. Arm it through the dev bridge, then reopen the app on the set —
+the switch is read only when the app starts.
+
+```
+curl -X POST http://<tv-ip>:8097/eval -H "x-tube-token: $TUBE_DEV_TOKEN" \
+     --data-binary "localStorage.setItem('tube.inspector', 'on')"
+```
+
+Then open <http://localhost:8711> and pick the target. If `/__tube/chii/target.js` on the set
+answers 502, nothing is listening here — `npm run chii` is not running.

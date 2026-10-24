@@ -1,0 +1,57 @@
+{
+  "name": "ultimatiumtube",
+  "version": "1.0.0",
+  "private": true,
+  "description": "UltimatiumTube: the stock YouTube TV app on Samsung Tizen TVs, without ads, with SponsorBlock.",
+  "license": "GPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AdvaithAvinash/UltimatiumTube.git"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "service"
+  ],
+  "scripts": {
+    "doctor": "node tools/doctor.js",
+    "lint": "eslint .",
+    "build": "node tools/build.js",
+    "test": "node tools/test.js",
+    "test:matrix": "node tools/matrix.js",
+    "probe:engine": "node tools/engine-probe.js",
+    "package": "node tools/package.js",
+    "dev": "node tools/dev.js",
+    "chii": "node tools/chii.js",
+    "dev:service": "node service/index.js",
+    "clean": "node tools/clean.js",
+    "version:show": "node tools/version.js",
+    "version:check": "node tools/version.js --check",
+    "version:set": "node tools/version.js --set",
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test --config test/e2e/playwright.config.js",
+    "audit": "node tools/audit.js",
+    "probe:cobalt": "node tools/probe-cobalt.js",
+    "doctor:tv": "node tools/doctor-tv.js",
+    "test:cobalt": "node test/cobalt/run.js"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.29.7",
+    "@babel/preset-env": "^7.22.9",
+    "@playwright/test": "^1.49.0",
+    "@rollup/plugin-babel": "^6.0.3",
+    "@rollup/plugin-commonjs": "^29.0.0",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "@rollup/plugin-replace": "^6.0.3",
+    "@rollup/plugin-terser": "^1.0.0",
+    "acorn": "^8.14.0",
+    "core-js": "^3.50.0",
+    "eslint": "^10.9.1",
+    "jszip": "^3.10.1",
+    "rollup": "^3.26.2",
+    "rollup-plugin-string": "^3.0.0",
+    "typescript": "^7.0.2"
+  }
+}

@@ -140,7 +140,7 @@ Two build-time gates, one per side.
   - How the previous run ended (`uncaught:`, `exit:`) is shown again at the top of the next run
     as `previous:`. So a crash that restarts the service stays on the boot screen, which also
     says when the service's pid changes.
-- The 5.0+ widget (`tube-tizen-5.0.wgt`) differs in two ways. Its service (`TUBE_TARGET=legacy`) is
+- The 5.0+ widget (`UltimatiumTube-tizen-5.0.wgt`) differs in two ways. Its service (`TUBE_TARGET=legacy`) is
   ES5 with core-js for node 4.4.3, and `service/legacy/` stands in for the Buffer, `mkdirSync`, http2,
   TLS-socket and `normalize` behaviour old node lacks. And Cobalt 20 keeps its trust store read-only
   with no `--content`, so instead of intercepting TLS it loads the page from the service:

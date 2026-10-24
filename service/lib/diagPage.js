@@ -7,7 +7,7 @@ const os = require('os');
 
 const ports = require('./ports.js');
 const { STAMP } = require('./stamp.js');
-const { DISCORD, REPO } = require('./links.js');
+const { ISSUES, REPO } = require('./links.js');
 const { facts } = require('./platform.js');
 const { checks } = require('./diagnosis.js');
 const containerAgent = require('./containerAgent.js');
@@ -84,12 +84,12 @@ const page = (host) => {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tube diagnostics</title>
+<title>UltimatiumTube diagnostics</title>
 </head>
 <body>
 <main>
 <header>
-<h1>Tube</h1>
+<h1>UltimatiumTube</h1>
 <p>
 <meter value="${passed}" max="${found.length}" optimum="${found.length}">${passed} of ${found.length}</meter>
 ${failed.length ? `<strong>${failed.length} of ${found.length} checks failed.</strong>` : `All ${found.length} checks passed.`}
@@ -100,9 +100,9 @@ Patch <code>${escaped(STAMP)}</code>.
 <nav>
 <h2>Help</h2>
 <ul>
-<li><a href="${escaped(DISCORD)}">Join the Discord</a> — ask there, with the log below</li>
+<li><a href="${escaped(ISSUES)}">Open an issue on GitHub</a> — with the log below</li>
 <li><a href="${escaped(here)}/__tube/log">Open the log</a></li>
-<li><a href="${escaped(REPO)}">Report on GitHub</a></li>
+<li><a href="${escaped(REPO)}">UltimatiumTube on GitHub</a></li>
 </ul>
 </nav>
 

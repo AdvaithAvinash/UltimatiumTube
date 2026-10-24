@@ -107,25 +107,16 @@ const START_PAGES = [
 
 const GROUPS = [
   {
-    id: 'tube_adblock',
-    title: 'Ad blocking',
-    items: [
-      Switch('enableAdBlock', 'Enable',
-        'Adverts are dropped from every response before the player is told they exist',
-        BLOCKING)
-    ]
-  },
-  {
     id: 'tube_sponsorblock',
     title: 'SponsorBlock',
     items: [
-      Switch('enableSponsorBlock', 'Enable',
+      Switch('enableSponsorBlock', 'SponsorBlock',
         'Skip the parts of a video the community has marked',
         MONEY, true, 'SponsorBlock — github.com/ajayyy/SponsorBlock'),
-      Flags('segments', 'Segments to skip',
+      Flags('segments', 'SponsorBlock: segments to skip',
         'Skipped as soon as they start, with no prompt', SKIPPING, SEGMENTS),
       // The highlight is left out: it's a point, never auto-skipped, and already has its own "Skip to highlight" button.
-      Set_('sponsorBlockManualSkips', 'Ask before skipping',
+      Set_('sponsorBlockManualSkips', 'SponsorBlock: ask before skipping',
         'These segments offer a button instead of skipping on their own', SKIPPING,
         SEGMENTS.filter((segment) => segment.key !== 'enableSponsorBlockHighlight').map((segment) => ({
           label: segment.label,
@@ -136,18 +127,27 @@ const GROUPS = [
             .replace('ExclusiveAccess', 'exclusive_access')
             .toLowerCase()
         }))),
-      Switch('enableSponsorBlockToasts', 'Skip notifications',
+      Switch('enableSponsorBlockToasts', 'SponsorBlock: skip notifications',
         'A message over the picture each time a segment is skipped', MESSAGE)
+    ]
+  },
+  {
+    id: 'tube_adblock',
+    title: 'Ad blocking',
+    items: [
+      Switch('enableAdBlock', 'Block ads',
+        'Adverts are dropped from every response before the player is told they exist',
+        BLOCKING)
     ]
   },
   {
     id: 'tube_dearrow',
     title: 'DeArrow',
     items: [
-      Switch('enableDeArrow', 'Enable',
+      Switch('enableDeArrow', 'DeArrow',
         'Replace clickbait titles with ones submitted by the community',
         LOOKING, true, 'DeArrow — github.com/ajayyy/DeArrow'),
-      Switch('enableDeArrowThumbnails', 'Thumbnails',
+      Switch('enableDeArrowThumbnails', 'DeArrow thumbnails',
         'Thumbnails are replaced too, which loads slower over a thin connection', LOOKING)
     ]
   },
@@ -155,7 +155,7 @@ const GROUPS = [
     id: 'tube_return_dislike',
     title: 'Return YouTube Dislike',
     items: [
-      Switch('enableReturnDislike', 'Enable',
+      Switch('enableReturnDislike', 'Return YouTube Dislike',
         'Show the real dislike count on the player’s own dislike button',
         LOOKING, true, 'Return YouTube Dislike — github.com/Anarios/return-youtube-dislike')
     ]
@@ -164,7 +164,7 @@ const GROUPS = [
     id: 'tube_startup',
     title: 'Startup',
     items: [
-      Choice('startupPage', 'Page to open',
+      Choice('startupPage', 'Startup page',
         'Opened at launch, so the home feed is never drawn first',
         RESTART, START_PAGES, 'Startup'),
       Switch('enableWhoIsWatchingMenu', 'Ask who\u2019s watching',
@@ -197,7 +197,7 @@ const GROUPS = [
     id: 'tube_sidebar',
     title: 'Sidebar',
     items: [
-      Set_('disabledSidebarContents', 'Sections',
+      Set_('disabledSidebarContents', 'Sidebar sections',
         'Unchecked entries are dropped from the guide', CONTROLS, SIDEBAR, true)
     ]
   },

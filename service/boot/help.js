@@ -9,5 +9,5 @@ export const sayHelp = () => {
 
     say('tube', `open ${diag} on a phone or computer: it says what failed and what to do`, 'note');
     say('tube', `the whole log is at ${journal}`, 'note');
-    say('tube', `report what it says at ${help.discord} or ${help.repo}`, 'note');
+    say('tube', `report what it says at ${help.issues}`, 'note');
 };

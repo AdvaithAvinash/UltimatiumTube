@@ -3,7 +3,8 @@
 import assert from 'assert';
 
 // Set before the graph loads: config.js reads window.localStorage at module scope.
-global.window = { localStorage: { 'tube.settings': '{}' } };
+// Shorts and the sign-in nudge are shown by default now; these checks are about removing them.
+global.window = { localStorage: { 'tube.settings': JSON.stringify({ enableShorts: false, enableSigninReminder: false }) } };
 global.location = { hash: '#/' };
 
 const fetches = { calls: [] };

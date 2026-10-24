@@ -2,17 +2,8 @@ import { DEV_TOOLS } from './flags.js';
 
 const CONFIG_KEY = 'tube.settings';
 
-const HIDDEN_SIDEBAR_ITEMS = [
-  'YOUTUBE_SHORTS_FILL_24',
-  'TROPHY',
-  'NEWS',
-  'YOUTUBE_MUSIC',
-  'BROADCAST',
-  'CLAPPERBOARD',
-  'LIVE',
-  'GAMING'
-];
-
+// Out of the box the TV looks and behaves like the stock YouTube app; only ads and sponsor
+// segments go. Everything else is opt-in under Settings > UltimatiumTube.
 const defaultConfig = {
   enableAdBlock: true,
 
@@ -42,18 +33,18 @@ const defaultConfig = {
   rememberPlaybackSpeed: false,
   speedSettingsIncrement: 0.25,
 
-  enableShorts: false,
-  disabledSidebarContents: HIDDEN_SIDEBAR_ITEMS,
+  enableShorts: true,
+  disabledSidebarContents: [],
 
   enableHqThumbnails: true,
 
-  hideShoppingAction: true,
+  hideShoppingAction: false,
   enableHideEndScreenCards: false,
   enablePaidPromotionOverlay: true,
   enableUpNextCard: true,
   enableYouThereRenderer: true,
-  enableSigninReminder: false,
-  enableWhoIsWatchingMenu: false,
+  enableSigninReminder: true,
+  enableWhoIsWatchingMenu: true,
   permanentlyEnableWhoIsWatchingMenu: false,
   enableWhosWatchingMenuOnAppExit: false,
 
@@ -61,10 +52,10 @@ const defaultConfig = {
   hideWatchedVideosThreshold: 80,
   hideWatchedVideosPages: [],
 
-  enablePreviousNextButtons: true,
-  enableMPButton: true,
-  enableSuperThanksButton: false,
-  enableAIAskButton: false,
+  enablePreviousNextButtons: false,
+  enableMPButton: false,
+  enableSuperThanksButton: true,
+  enableAIAskButton: true,
 
   enableShowUserLanguage: true,
   enableShowOtherLanguages: false,
@@ -75,7 +66,7 @@ const defaultConfig = {
   // A rung such as '2', empty for YouTube's own pacing.
   scrollSpeed: '',
   enableRapidPress: true,
-  enableSmoothNavigation: true,
+  enableSmoothNavigation: false,
 };
 
 function readStoredSettings() {

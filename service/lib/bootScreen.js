@@ -7,7 +7,7 @@ const ports = require('./ports.js');
 const { lanAddresses, serviceAddress } = require('./serviceAddress.js');
 const { SCREEN } = require('./pageLines.js');
 const { STAMP } = require('./stamp.js');
-const { DISCORD, REPO } = require('./links.js');
+const { ISSUES, REPO } = require('./links.js');
 const { BOOT_PAGE, read } = require('./shipped.js');
 
 const BOOT_URL = 'file:///tube/boot.html';
@@ -24,7 +24,7 @@ const alternates = () => ['127.0.0.1'].concat(lanAddresses())
     .filter((address) => address !== serviceAddress())
     .map(origin);
 
-const HELP = { discord: DISCORD, repo: REPO };
+const HELP = { issues: ISSUES, repo: REPO };
 
 // The viewer reads these on a phone, where loopback is useless.
 const onTheLan = (route) => `http://${lanAddresses()[0] || '127.0.0.1'}:${ports.PROXY}${route}`;
@@ -62,7 +62,7 @@ const page = (script, config) => `<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="${policyFor(config)}">
-<title>YouTube</title>
+<title>UltimatiumTube</title>
 <style>
 ${STYLE}
 </style>

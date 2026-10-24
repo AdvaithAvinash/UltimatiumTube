@@ -67,30 +67,48 @@ const response = () => ({
     ]
 });
 
-check('YouTube’s Previews row is adopted into our Feed category', () => {
+const categoryIds = (items) => items
+    .map((item) => item.settingCategoryCollectionRenderer)
+    .filter(Boolean)
+    .map((c) => c.categoryId);
+
+check('UltimatiumTube is one category, at the very bottom', () => {
     const r = response();
     PatchSettings(r);
 
-    const ours = rowsIn(r.items, 'tube_feed');
-    assert.ok(ours, 'our Feed category was never injected');
-    assert.ok(ours.indexOf('Previews') !== -1,
-        `Previews did not land in Feed — it holds ${JSON.stringify(ours)}`);
+    const ids = categoryIds(r.items);
+    assert.deepStrictEqual(ids, ['SETTING_CAT_TVHTML5_GENERAL', 'SETTING_CAT_TVHTML5_ABOUT', 'ultimatiumtube'],
+        `categories came out as ${JSON.stringify(ids)}`);
+
+    const title = r.items[r.items.length - 1].settingCategoryCollectionRenderer.title.runs[0].text;
+    assert.strictEqual(title, 'UltimatiumTube');
 });
 
-check('the Previews row leaves General rather than being copied', () => {
+check('it carries every row of every group, SponsorBlock first', () => {
     const r = response();
     PatchSettings(r);
 
-    const general = rowsIn(r.items, 'SETTING_CAT_TVHTML5_GENERAL') || [];
-    assert.strictEqual(general.indexOf('Previews'), -1,
-        'Previews is still in YouTube’s own category as well as ours');
+    const rows = rowsIn(r.items, 'ultimatiumtube');
+    const total = GROUPS.reduce((count, group) => count + group.items.length, 0);
+    assert.strictEqual(rows.length, total, `${rows.length} rows for ${total} items`);
+    assert.strictEqual(rows[0], 'SponsorBlock');
+});
 
-    const everywhere = r.items
-        .map((item) => item.settingCategoryCollectionRenderer)
-        .filter(Boolean)
-        .reduce((count, c) => count + c.items.filter((row) => titleOf(row) === 'Previews').length, 0);
+check('YouTube’s own rows are left exactly as sent', () => {
+    const r = response();
+    PatchSettings(r);
 
-    assert.strictEqual(everywhere, 1, `Previews appears ${everywhere} times; there must be exactly one`);
+    assert.deepStrictEqual(rowsIn(r.items, 'SETTING_CAT_TVHTML5_GENERAL'),
+        ['Previews', 'Restricted mode', 'Autoplay next video', 'Something of theirs we do not touch']);
+});
+
+check('a second settings response is not patched twice', () => {
+    const r = response();
+    PatchSettings(r);
+    PatchSettings(r);
+
+    const ours = categoryIds(r.items).filter((id) => id === 'ultimatiumtube');
+    assert.strictEqual(ours.length, 1);
 });
 
 const oursKeyed = (key) => GROUPS.some((group) => group.items.some((item) => item.key === key));
@@ -101,15 +119,6 @@ check('we ship no second previews switch of our own', () => {
 
 check('we ship no long press toggle of our own', () => {
     assert.ok(!oursKeyed('enableLongPress'), 'the long press toggle is back');
-});
-
-check('the rows we do not claim are left where YouTube put them', () => {
-    const r = response();
-    PatchSettings(r);
-
-    const general = rowsIn(r.items, 'SETTING_CAT_TVHTML5_GENERAL') || [];
-    assert.ok(general.indexOf('Something of theirs we do not touch') !== -1,
-        `an unclaimed row was moved — General holds ${JSON.stringify(general)}`);
 });
 
 const failed = results.filter((ok) => !ok).length;

@@ -1,5 +1,5 @@
 import { configRead } from '../../framework/index.js';
-import { chosenLabel, chosenSummary } from './settingsModel.js';
+import { GROUPS, chosenLabel, chosenSummary } from './settingsModel.js';
 import { optionsCommand, storeCommand } from './settingsOptions.js';
 import { category, runs } from './settingsResponse.js';
 
@@ -45,11 +45,15 @@ const rowFor = (item, path) =>
             ? openerRow(item, path, () => `${item.prefix}: ${chosenLabel(item)}`)
             : openerRow(item, path, () => chosenSummary(item));
 
-// The path is how the option panel finds this item again: which group, then which item within it.
-const categoryFor = (group, groupIndex) => category(
-    group.id,
-    group.title,
-    group.items.map((item, index) => rowFor(item, [groupIndex, index]))
+const SECTION = 'ultimatiumtube';
+
+// Every group's rows in one category, so all of UltimatiumTube sits under a single entry.
+// The path is how the option panel finds an item again: which group, then which item within it.
+const sectionFor = () => category(
+    SECTION,
+    'UltimatiumTube',
+    GROUPS.reduce((rows, group, groupIndex) =>
+        rows.concat(group.items.map((item, index) => rowFor(item, [groupIndex, index]))), [])
 );
 
-export { categoryFor };
+export { SECTION, sectionFor };

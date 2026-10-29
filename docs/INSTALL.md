@@ -48,6 +48,25 @@ The first launch shows a short boot log while the app prepares its certificate. 
 screen opens. If it stays on the log, the page names what it waits on, with an address to open on a
 phone that says what failed.
 
+### "A network error has occurred", or the app never gets past the boot log
+
+This means the YouTube engine on the TV cannot reach UltimatiumTube's own service, which runs on the
+TV and is what serves YouTube to it. In order of how often it is the cause:
+
+1. **The service is not running.** The TV starts it at boot and after an install, not when you press
+   the icon. Switch the TV off at the remote and on again (not standby), wait a minute, then open the
+   app. This is the usual fix after installing or updating.
+2. **The app was not signed as a service.** The service needs a Samsung certificate with the
+   partner level. In Apps2Samsung turn on both **Force Samsung Certificate** and **Partner Signing**,
+   then install again. A widget signed without them installs but its service never starts.
+3. **Another YouTube app has the container.** YouTube for Tizen, TizenTube and this app share the
+   TV's one YouTube container. Close the other app, or switch the TV off and on, then open this one.
+4. **A VPN, a guest network or a router that isolates devices.** The TV talks to itself over its own
+   network address, and some routers block that.
+
+If it still fails, the boot screen shows an address to open on a phone, and that page says what
+failed.
+
 ### Other YouTube apps on the same TV
 
 UltimatiumTube does not clash with YouTube for Tizen or TizenTube over ports, folders or package ids.
@@ -62,6 +81,9 @@ on, before opening this one.
 2. Get the file onto the TV: **Downloader** (type the link to the `.apk`), a USB stick, or
    `adb install UltimatiumTube.apk` (`adb connect <the TV's address>` first).
 3. Open **UltimatiumTube** from the apps row.
+
+If YouTube can't be reached, the app says so, with the reason, and tries again every few seconds; OK
+tries at once and Back leaves.
 
 Back goes back. Holding Back for a second leaves the app. The coloured buttons and the media keys
 on the remote work as they do on a Samsung TV (blue opens the speed menu).

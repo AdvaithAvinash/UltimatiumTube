@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.util.Log;
 import android.util.SparseIntArray;
@@ -16,6 +18,7 @@ import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceError;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -40,10 +43,13 @@ public class MainActivity extends Activity {
     private static final String TAG = "UltimatiumTube";
     private static final String HOME = "https://www.youtube.com/tv";
 
-    // The user agent the Samsung app presents, which is what the userscript is written and tested
-    // against: it makes YouTube serve its TV application.
-    private static final String AGENT = "Mozilla/5.0 (LINUX; Tizen/9.0/2025.20.1034877) "
-            + "Cobalt/25.lts.30.1034943-gold (unlike Gecko) v8/8.8.278.17-jit gles Evergreen-Full";
+    // A Samsung TV's own browser, which is what YouTube serves its TV application to and what the
+    // userscript has been run against in a browser. Claiming to be Samsung's YouTube engine instead
+    // would have the page expect functions that only that engine has.
+    private static final String AGENT = "Mozilla/5.0 (SMART-TV; LINUX; Tizen 6.5) AppleWebKit/537.36 "
+            + "(KHTML, like Gecko) 94.0.4606.31/6.5 TV Safari/537.36";
+
+    private static final long RETRY_MS = 5000;
 
     private static final long LONG_BACK_MS = 1200;
 
@@ -70,6 +76,11 @@ public class MainActivity extends Activity {
     private PhoneServer phoneServer;
     private long backDownAt = 0;
     private boolean backExited = false;
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private boolean trouble = false;
+    private final Runnable retry = new Runnable() {
+        @Override public void run() { reload(); }
+    };
 
     @Override
     protected void onCreate(Bundle state) {
@@ -141,6 +152,29 @@ public class MainActivity extends Activity {
         return HOME + "#/watch?v=" + video;
     }
 
+    private void reload() {
+        handler.removeCallbacks(retry);
+        trouble = false;
+        web.loadUrl(addressFor(getIntent()));
+    }
+
+    /** What the viewer sees when YouTube cannot be reached: the reason, and that it is trying again. */
+    private void showTrouble(String reason) {
+        if (trouble) return;
+        trouble = true;
+
+        String safe = reason == null ? "" : reason.replace("&", "&amp;").replace("<", "&lt;");
+        String page = "<html><body style=\"margin:0;background:#000;color:#ddd;font-family:sans-serif;"
+                + "display:flex;align-items:center;justify-content:center;height:100vh;text-align:center\">"
+                + "<div><h1 style=\"font-weight:400\">Can't reach YouTube</h1>"
+                + "<p style=\"font-size:22px\">Trying again in a few seconds. Press OK to try now, Back to leave.</p>"
+                + "<p style=\"font-size:18px;color:#888\">" + safe + "</p></div></body></html>";
+
+        web.loadDataWithBaseURL("about:blank", page, "text/html", "utf-8", null);
+        handler.removeCallbacks(retry);
+        handler.postDelayed(retry, RETRY_MS);
+    }
+
     private String readAsset(String name) {
         try {
             InputStream in = getAssets().open(name);
@@ -193,10 +227,19 @@ public class MainActivity extends Activity {
                     finish();
                 }
             } else if (!backExited && !event.isCanceled()) {
-                press("keydown", 27);
-                press("keyup", 27);
+                if (trouble) {
+                    finish();
+                } else {
+                    press("keydown", 27);
+                    press("keyup", 27);
+                }
             }
 
+            return true;
+        }
+
+        if (trouble && down && (code == KeyEvent.KEYCODE_DPAD_CENTER || code == KeyEvent.KEYCODE_ENTER)) {
+            reload();
             return true;
         }
 
@@ -227,6 +270,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        handler.removeCallbacks(retry);
         if (phoneServer != null) phoneServer.stop();
         if (web != null) {
             web.removeJavascriptInterface("UltimatiumNative");
@@ -277,6 +321,23 @@ public class MainActivity extends Activity {
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
             Uri uri = Uri.parse(url);
             return !"https".equals(uri.getScheme()) || !ours(uri.getHost());
+        }
+
+        @Override
+        public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+            String why = String.valueOf(error.getDescription());
+
+            // A load replaced by another is not a failure.
+            if (request.isForMainFrame() && !why.contains("ERR_ABORTED")) {
+                showTrouble(why + " (" + error.getErrorCode() + ")");
+            }
+        }
+
+        @Override
+        public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse response) {
+            if (request.isForMainFrame() && response.getStatusCode() >= 400) {
+                showTrouble("YouTube answered " + response.getStatusCode());
+            }
         }
 
         @Override
@@ -342,9 +403,10 @@ public class MainActivity extends Activity {
 
                 int code = connection.getResponseCode();
 
-                List<String> setCookies = connection.getHeaderFields().get("Set-Cookie");
-                if (setCookies != null) {
-                    for (String value : setCookies) CookieManager.getInstance().setCookie(current, value);
+                // The name arrives in whatever case the server used.
+                for (Map.Entry<String, List<String>> field : connection.getHeaderFields().entrySet()) {
+                    if (field.getKey() == null || !field.getKey().equalsIgnoreCase("Set-Cookie")) continue;
+                    for (String value : field.getValue()) CookieManager.getInstance().setCookie(current, value);
                 }
 
                 if (code >= 300 && code < 400) {

@@ -56,6 +56,17 @@ later();
 check('a changed address is followed rather than remembered', serviceAddress() === '10.0.0.77',
     serviceAddress());
 
+held.interfaces = {
+    wan0: [{ address: '100.72.3.9', internal: false, family: 'IPv4' }],
+    eth0: [{ address: '192.168.1.40', internal: false, family: 'IPv4' }],
+    wlan0: [{ address: '172.20.0.8', internal: false, family: 'IPv4' }]
+};
+later();
+
+check('a private address is offered before one the container would refuse', lanAddresses().join() === '192.168.1.40,172.20.0.8,100.72.3.9',
+    lanAddresses().join());
+check('and is the one the page is sent to', serviceAddress() === '192.168.1.40', serviceAddress());
+
 held.interfaces = { lo: [{ address: '127.0.0.1', internal: true, family: 'IPv4' }] };
 later();
 

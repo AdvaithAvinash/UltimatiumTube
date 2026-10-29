@@ -20,13 +20,21 @@ const readAddresses = () => {
         .map((entry) => entry.address)), []);
 };
 
+// The container opens the app at this address over plain HTTP, which it allows only to a private
+// range. A set with more than one interface may list a public or carrier-style address first, so
+// the private ones come first; the rest follow in case nothing else answers.
+const PRIVATE = /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/;
+
+const privateFirst = (addresses) => addresses.filter((address) => PRIVATE.test(address))
+    .concat(addresses.filter((address) => !PRIVATE.test(address)));
+
 const lanAddresses = () => {
     const now = Date.now();
 
     if (held.addresses && now - held.at < FRESH_FOR) return held.addresses;
 
     held.at = now;
-    held.addresses = readAddresses();
+    held.addresses = privateFirst(readAddresses());
 
     return held.addresses;
 };

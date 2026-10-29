@@ -223,7 +223,10 @@ check('every setting the model names is one the config knows', () => {
     const named = (item) => (item.kind === 'flags' ? item.options.map((option) => option.key) : [item.key]);
     const keys = GROUPS.reduce((all, group) => group.items.reduce((inner, item) => inner.concat(named(item)), all), []);
 
-    keys.filter((key) => key !== 'phoneSettings').forEach((key) => {
+    // Rows that are buttons, not settings: they hold nothing in the config.
+    const buttons = ['phoneSettings', 'themeReset', 'tubeVersion', 'tubeReset', 'openAniUltimatium'];
+
+    keys.filter((key) => buttons.indexOf(key) === -1).forEach((key) => {
         assert.ok(key in known, `${key} is shown in the settings but not in the config`);
     });
 });

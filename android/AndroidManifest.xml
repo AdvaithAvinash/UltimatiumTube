@@ -22,7 +22,7 @@
         android:hardwareAccelerated="true"
         android:largeHeap="true"
         android:allowBackup="false"
-        android:usesCleartextTraffic="false">
+        android:usesCleartextTraffic="true">
 
         <activity
             android:name=".MainActivity"
@@ -47,5 +47,13 @@
                 <data android:scheme="https" android:host="youtu.be" />
             </intent-filter>
         </activity>
+
+        <!-- Aniultimatium mode: opened from the settings, closed back to YouTube. -->
+        <activity
+            android:name=".AniultimatiumActivity"
+            android:exported="false"
+            android:screenOrientation="sensorLandscape"
+            android:windowSoftInputMode="stateHidden|adjustPan"
+            android:configChanges="orientation|screenSize|keyboard|keyboardHidden|navigation|uiMode|screenLayout|smallestScreenSize" />
     </application>
 </manifest>

@@ -19,6 +19,9 @@ const describe = (item) => {
     if (item.kind === 'set') return Object.assign(base, { kind: 'set', invert: item.invert, options: optionsOf(item) });
 
     if (item.kind === 'panel' && item.phone === 'words') return Object.assign(base, { kind: 'words' });
+    if (item.kind === 'panel' && (item.phone === 'text' || item.phone === 'textarea')) {
+        return Object.assign(base, { kind: 'text', multiline: item.phone === 'textarea' });
+    }
 
     return Object.assign(base, {
         kind: 'panel',
@@ -32,7 +35,7 @@ const phoneSchema = () => GROUPS
     .map((group) => ({
         id: group.id,
         title: group.title,
-        items: group.items.filter((item) => item.key !== 'phoneSettings').map(describe)
+        items: group.items.filter((item) => item.key !== 'phoneSettings' && item.kind !== 'action').map(describe)
     }))
     .filter((group) => group.items.length);
 

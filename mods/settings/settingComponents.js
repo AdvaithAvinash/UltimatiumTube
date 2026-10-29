@@ -58,11 +58,23 @@ const noteFor = (H, note) => H(
     H('div', { className: 'vAMQc', 'aria-label': note }, note)
 );
 
+// A row marked tubeStyle gets that class on its outermost element, which theme/ colours and glows.
+const styled = (tree, style) => {
+    if (!style || !tree || typeof tree !== 'object') return;
+
+    const held = tree.props && typeof tree.props.className === 'string' ? tree.props.className : '';
+    if (held.indexOf(`tube-${style}`) !== -1) return;
+
+    tree.props = Object.assign({}, tree.props, { className: `${held} tube-${style}`.trim() });
+};
+
 const withNote = (original, H) => function withTubeNote(props, rowState) {
     const tree = original.call(this, props, rowState);
-    const note = props && props.data && props.data.tubeNote;
+    const data = props && props.data;
+    const note = data && data.tubeNote;
 
     if (note && tree && Array.isArray(tree.children)) tree.children.push(noteFor(H, note));
+    styled(tree, data && data.tubeStyle);
 
     return tree;
 };
@@ -150,4 +162,4 @@ function redrawSettingRows() {
     Array.from(document.querySelectorAll(ROWS)).forEach(redraw);
 }
 
-export { claimBooleanRows, claimActionRows, redrawSettingRows, ROWS };
+export { claimBooleanRows, claimActionRows, redrawSettingRows, styled, ROWS };

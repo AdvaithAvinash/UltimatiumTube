@@ -162,6 +162,14 @@ a { color:var(--accent); }
       return el('div', { 'class': 'row stack' }, [title(item), area]);
     }
 
+    if (item.kind === 'text') {
+      var field = item.multiline ? el('textarea', { spellcheck: 'false' }) : el('input', { type: 'text', spellcheck: 'false', autocapitalize: 'off' });
+      if (!item.multiline) field.style.width = '100%';
+      field.addEventListener('change', function () { save(key, field.value.trim()); });
+      setters[key] = function (v) { field.value = typeof v === 'string' ? v : ''; };
+      return el('div', { 'class': 'row stack' }, [title(item), field]);
+    }
+
     var value = el('p', { 'class': 'value', text: item.value || '' });
     var buttons = (item.actions || []).map(function (a) {
       var b = el('button', { type: 'button', text: a.label });
@@ -199,7 +207,8 @@ a { color:var(--accent); }
 
     var shape = JSON.stringify(data.schema.map(function (g) { return [g.id, g.items.map(function (i) { return [i.key, i.value || '', (i.options || []).length]; })]; }));
     if (shape !== drawn) { drawn = shape; draw(); }
-    if (!document.activeElement || document.activeElement.tagName !== 'TEXTAREA') fill();
+    var typing = document.activeElement && (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT' && document.activeElement.type === 'text');
+    if (!typing) fill();
   }
 
   function poll() {

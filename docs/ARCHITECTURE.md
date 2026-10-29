@@ -112,6 +112,23 @@ carry. `window.__TUBE_NATIVE_PROXY_PATCHES__ = false` tells it that nothing prox
 service, and the userscript reaches them through `window.UltimatiumNative` instead of `fetch`.
 `tools/build-apk.js` builds it with javac, dx, aapt, zipalign and apksigner.
 
+## Ultimate settings, customization and AniUltimatium
+
+`mods/settings/settingsModel.js` lists the settings once. Groups marked `ultimate` are not listed in
+the category: the first row ("UltimatiumTube Ultimate Settings", marked `tubeStyle: 'ultimate'`)
+opens a menu of them, each section opens as a list of its settings, and each setting opens its own
+list. `settingComponents.js` puts the class `tube-ultimate` on the row YouTube draws for a marked
+row, and `mods/theme/` writes the stylesheet that makes that class blue and glowing, and applies the
+wallpaper, colours, font and the custom rules. All of it is rebuilt when a setting changes.
+
+AniUltimatium is the unmodified `public/` of its repository, copied by
+`tools/update_aniultimatium.js` into `aniultimatium/` (minus the website-only files, listed there).
+On a Samsung TV a widget's own pages are never shown, so `service/lib/aniultimatium.js` serves the
+folder at `/aniultimatium/` and adds one small `window.AniNative` before the page's own scripts;
+its `exit()` returns to `/tv`, which is what the page's own Back handling calls at its home screen.
+On Android, `AniultimatiumActivity` loads the same files from the app's assets as Aniultimatium's
+own app does, and `exit()` closes it, which returns to YouTube.
+
 ## Dev and ship
 
 Two build-time gates, one per side.

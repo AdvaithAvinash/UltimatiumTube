@@ -22,6 +22,13 @@ with YouTube's own TV interface left as it is.
 - **One settings entry on the TV.** Open YouTube's own **Settings** and scroll to the bottom:
   everything UltimatiumTube adds is in the **UltimatiumTube** section. YouTube's own settings are not
   moved or changed.
+- **UltimatiumTube Ultimate Settings.** The first row of that section, in glowing blue. Behind it:
+  **Customization** (wallpaper, colours, font), **Ultimate Dev Options** (advanced settings) and
+  **AniUltimatium**.
+- **Speed up to 15x**, from the speed button in the player and as a default speed in the settings.
+- **AniUltimatium inside the app.** Turn it on and an extra blue row opens
+  [AniUltimatium](https://github.com/AdvaithAvinash/AniUltimatium), the anime, movie and live TV app,
+  bundled in the app. Back returns to YouTube.
 - **The mods ship inside the app.** Nothing is downloaded at launch, so there is no "failed to load
   script" network error.
 
@@ -66,8 +73,29 @@ phone page.
 | Startup | The page to open, who's-watching prompts |
 | Channels and words | Hidden channels, hidden words, a speed for each channel, the phone page |
 | Feed, Sidebar, Navigation | Shorts, hide watched videos, thumbnails, sidebar sections, scroll speed |
-| Playback, Subtitles, Player controls | Quality, codec, remembered speed, subtitle tracks, extra player buttons |
+| Playback, Subtitles, Player controls | Quality, codec, default speed (up to 15x), remembered speed, subtitle tracks, extra player buttons |
 | Overlays and prompts | Shopping card, end screen cards, up next, "Are you still watching?", sign-in reminder |
+
+### UltimatiumTube Ultimate Settings
+
+The first row of the UltimatiumTube section. It opens three sections.
+
+| Section | What is in it |
+| --- | --- |
+| Customization | Wallpaper (ten built-in, starting with Blue flames, or a picture from a web address), wallpaper dimming, background colour, accent colour of the UltimatiumTube rows, font, and a reset |
+| Ultimate Dev Options | Phone page on or off and how often it refreshes, a SponsorBlock server of your own, custom style rules (CSS), the version, and reset everything |
+| AniUltimatium | A switch. While it is on, an **Open AniUltimatium** entry appears here, and one more blue row in the category |
+
+Text such as a server address or style rules is typed on the phone page.
+
+### AniUltimatium
+
+[AniUltimatium](https://github.com/AdvaithAvinash/AniUltimatium) is bundled in the app, as its own
+files, in `aniultimatium/`. On a Samsung TV the service serves it as a page, and on Android it opens
+in a screen of its own. It talks to its own online service, so it needs the internet.
+`node tools/update_aniultimatium.js` brings the bundled copy up to date; `aniultimatium/VERSION.txt`
+says which commit it is. On a Samsung TV its profiles are kept for the address the TV has on your
+network, so a changed address starts it afresh.
 
 ### From your phone
 

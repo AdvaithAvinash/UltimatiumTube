@@ -38,6 +38,8 @@ const defaultConfig = {
   videoPreferredCodec: 'any',
   enableDevBridge: DEV_TOOLS,
   videoSpeed: 1,
+  // The speed every video starts at, up to 15x; a remembered or per-channel speed wins over it.
+  defaultPlaybackSpeed: 1,
   rememberPlaybackSpeed: false,
   rememberChannelSpeed: false,
   // Channel name -> the speed it was last watched at.
@@ -49,6 +51,25 @@ const defaultConfig = {
   blockedKeywords: [],
   // The last channels played, newest first, so the settings can offer them as a pick list.
   recentChannels: [],
+
+  // AniUltimatium, bundled in this app: the switch only decides whether it is offered.
+  enableAniUltimatium: false,
+
+  // Customization: the look of YouTube's own screens. The defaults change nothing.
+  themeWallpaper: 'none',
+  themeWallpaperUrl: '',
+  themeDim: 0,
+  themeBackground: 'default',
+  themeAccent: 'blue',
+  themeFont: 'default',
+
+  // Ultimate Dev Options.
+  enablePhoneSync: true,
+  phoneSyncSeconds: 4,
+  // An address (https://...) that answers like sponsor.ajay.app; empty uses the official one.
+  sponsorBlockServer: '',
+  // Rules added to the page last, so they win. Typed on the phone page.
+  customCss: '',
 
   enableShorts: true,
   disabledSidebarContents: [],
@@ -132,6 +153,10 @@ export function configAccepts(key, value) {
   if (shape !== null && typeof shape === 'object') return value !== null && typeof value === 'object' && !Array.isArray(value);
 
   return typeof value === typeof shape;
+}
+
+export function configDefaults() {
+  return Object.assign({}, defaultConfig);
 }
 
 export function configSnapshot() {

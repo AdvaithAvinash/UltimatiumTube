@@ -1,5 +1,5 @@
 import { buttonItem, configRead, overlayPanelItemListRenderer, showModal } from '../../framework/index.js';
-import { at, isChosen } from './settingsModel.js';
+import { at, chosenLabel, chosenSummary, isChosen, ultimateGroups } from './settingsModel.js';
 
 const OPTIONS_ACTION = 'TUBE_OPTIONS';
 
@@ -9,6 +9,8 @@ const optionsCommand = (path, index, update) => ({
         parameters: { path, index: index || 0, update: !!update }
     }
 });
+
+const actionCommand = (action) => ({ customAction: { action, parameters: {} } });
 
 // Neither listValue nor objectValue is arrayValue, so both replace the setting outright.
 const fieldFor = (value) => (typeof value === 'boolean' ? 'boolValue'
@@ -78,18 +80,55 @@ function rowsFor(item, path) {
     ));
 }
 
+const said = (text) => (typeof text === 'function' ? text() : text);
+
+const valueText = (item) => (item.kind === 'choice' ? `${item.prefix}: ${chosenLabel(item)}`
+    : item.kind === 'panel' ? item.value()
+        : chosenSummary(item));
+
+// The first step: the Ultimate sections.
+const menuRows = () => ultimateGroups().map((entry) => buttonItem(
+    { title: entry.group.title, subtitle: entry.group.summary },
+    null,
+    [optionsCommand([entry.index])]
+));
+
+// A section: each of its settings as one row, a switch flipping where it stands and anything else
+// opening its own list.
+const groupRows = (group, groupIndex) => group.items.map((item, index) => {
+    const title = { title: item.title, subtitle: said(item.summary) };
+
+    if (item.kind === 'switch') {
+        const enabled = configRead(item.key) === item.on;
+
+        return buttonItem(title, { secondaryIcon: checkbox(enabled) },
+            writeThenRedraw(storeCommand(item.key, enabled ? !item.on : item.on), [groupIndex], index));
+    }
+
+    if (item.kind === 'action') return buttonItem(title, null, [actionCommand(item.action)]);
+
+    return buttonItem({ title: item.title, subtitle: valueText(item) }, null, [optionsCommand([groupIndex, index])]);
+});
+
 function openOptions(parameters) {
     const options = parameters || {};
-    const item = at(options.path || []);
+    const path = options.path || [];
+    const item = at(path);
 
-    if (!item || !item.options) return;
+    if (!item) return;
 
-    showModal(
-        { title: item.title, subtitle: item.summary },
-        overlayPanelItemListRenderer(rowsFor(item, options.path), options.index || 0),
-        `tube-options-${options.path.join('-')}`,
+    const open = (shown, rows, id) => showModal(
+        { title: shown.title, subtitle: said(shown.summary) },
+        overlayPanelItemListRenderer(rows, options.index || 0),
+        id,
         !!options.update
     );
+
+    if (path[0] === 'ultimate') return open(item, menuRows(), 'tube-options-ultimate');
+    if (path.length === 1) return open(item, groupRows(item, path[0]), `tube-options-${path[0]}`);
+    if (!item.options) return undefined;
+
+    return open(item, rowsFor(item, path), `tube-options-${path.join('-')}`);
 }
 
-export { openOptions, OPTIONS_ACTION, optionsCommand, storeCommand };
+export { actionCommand, openOptions, OPTIONS_ACTION, optionsCommand, storeCommand };

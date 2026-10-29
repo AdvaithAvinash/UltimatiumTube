@@ -1,6 +1,6 @@
 import { configRead } from '../../framework/index.js';
-import { GROUPS, chosenLabel, chosenSummary } from './settingsModel.js';
-import { optionsCommand, storeCommand } from './settingsOptions.js';
+import { GROUPS, ULTIMATE_MENU, chosenLabel, chosenSummary } from './settingsModel.js';
+import { actionCommand, optionsCommand, storeCommand } from './settingsOptions.js';
 import { category, runs } from './settingsResponse.js';
 
 const picture = (url) => ({ thumbnails: [{ url }] });
@@ -27,12 +27,13 @@ const switchRow = (item) => ({
 });
 
 // A getter rather than a value: the row object outlives the choice, so the label is read at draw time.
-const openerRow = (item, path, label) => {
+const openerRow = (item, endpoint, label, style) => {
     const row = {
         title: runs(item.title),
         summary: runs(said(item.summary)),
-        serviceEndpoint: optionsCommand(path),
+        serviceEndpoint: endpoint,
         tubeNote: item.note,
+        tubeStyle: style,
         trackingParams: 'null',
         itemId: idFor(item),
         thumbnail: picture(item.image),
@@ -45,20 +46,36 @@ const openerRow = (item, path, label) => {
 const rowFor = (item, path) =>
     item.kind === 'switch' ? switchRow(item)
         : item.kind === 'choice'
-            ? openerRow(item, path, () => `${item.prefix}: ${chosenLabel(item)}`)
+            ? openerRow(item, optionsCommand(path), () => `${item.prefix}: ${chosenLabel(item)}`)
             : item.kind === 'panel'
-                ? openerRow(item, path, () => item.value())
-                : openerRow(item, path, () => chosenSummary(item));
+                ? openerRow(item, optionsCommand(path), () => item.value())
+                : openerRow(item, optionsCommand(path), () => chosenSummary(item));
+
+const OPEN = () => 'Open';
+
+// The way into Customization, Ultimate Dev Options and AniUltimatium. Blue and glowing, so it is
+// found among YouTube's own rows.
+const ultimateRow = () => openerRow(ULTIMATE_MENU, optionsCommand(['ultimate']), OPEN, 'ultimate');
+
+// While AniUltimatium is switched on, one more row, in the same colour, opens it.
+const aniRow = () => openerRow(
+    { title: 'AniUltimatium', summary: 'Anime, movies and live TV, inside UltimatiumTube', image: ULTIMATE_MENU.image },
+    actionCommand('OPEN_ANIULTIMATIUM'), OPEN, 'ultimate'
+);
 
 const SECTION = 'ultimatiumtube';
 
-// Every group's rows in one category, so all of UltimatiumTube sits under a single entry.
+// Every group's rows in one category, so all of UltimatiumTube sits under a single entry. The
+// Ultimate groups are not listed here: they are behind the first row.
 // The path is how the option panel finds an item again: which group, then which item within it.
 const sectionFor = () => category(
     SECTION,
     'UltimatiumTube',
-    GROUPS.reduce((rows, group, groupIndex) =>
-        rows.concat(group.items.map((item, index) => rowFor(item, [groupIndex, index]))), [])
+    [ultimateRow()]
+        .concat(configRead('enableAniUltimatium') ? [aniRow()] : [])
+        .concat(GROUPS.reduce((rows, group, groupIndex) => (group.ultimate
+            ? rows
+            : rows.concat(group.items.map((item, index) => rowFor(item, [groupIndex, index])))), []))
 );
 
 export { SECTION, sectionFor };

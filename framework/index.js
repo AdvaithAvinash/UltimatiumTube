@@ -19,7 +19,7 @@ export {
 
 export { waitFor } from './runtime/waitFor.js';
 export {
-    configRead, configWrite, configChangeEmitter, configHas, configAccepts, configSnapshot
+    configRead, configWrite, configChangeEmitter, configHas, configAccepts, configSnapshot, configDefaults
 } from './runtime/config.js';
 export { VERSION, COMMIT, TREE } from './runtime/stamp.js';
 export { DEV_TOOLS } from './runtime/flags.js';

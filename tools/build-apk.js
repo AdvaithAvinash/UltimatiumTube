@@ -106,6 +106,14 @@ const stage = (config) => {
     cpSync(join(ROOT, 'android', 'res'), join(STAGING, 'res'), { recursive: true });
     copyFileSync(userScript, join(STAGING, 'assets', 'userScript.js'));
 
+    // Aniultimatium, as bundled (node tools/update_aniultimatium.js brings it up to date).
+    const ani = join(ROOT, 'aniultimatium');
+    if (!existsSync(join(ani, 'index.html'))) throw friendly('aniultimatium/ is missing. Run `node tools/update_aniultimatium.js`.');
+    cpSync(ani, join(STAGING, 'assets', 'aniultimatium'), { recursive: true });
+
+    // The wallpapers of the Customization settings, which the app serves to the page.
+    cpSync(join(ROOT, 'wallpapers'), join(STAGING, 'assets', 'wallpapers'), { recursive: true });
+
     // The phone's settings page is the one the Tizen service serves.
     writeFileSync(join(STAGING, 'assets', 'phone.html'), require('../service/lib/phonePage.js').page());
 
@@ -128,11 +136,13 @@ function build(config) {
     stage(config);
 
     const classes = join(STAGING, 'classes');
-    const sources = filesUnder(join(ROOT, 'android', 'src'), '.java');
+    // The stub classes stand in for ones newer Androids have; they are compiled against and not packaged.
+    const sources = filesUnder(join(ROOT, 'android', 'src'), '.java').concat(filesUnder(join(ROOT, 'android', 'stubs'), '.java'));
 
     // Source level 8 and no lambdas: dx reads the class files as they are.
     run(t.javac, ['-source', '8', '-target', '8', '-Xlint:-options', '-bootclasspath', t.jar,
         '-d', classes].concat(sources));
+    rmSync(join(classes, 'android'), { recursive: true, force: true });
     ui.ok('java', `${sources.length} files`);
 
     run(t.dx, ['--dex', '--min-sdk-version=21', `--output=${join(STAGING, 'classes.dex')}`, classes]);

@@ -15,6 +15,7 @@
 | `npm run package:android` | Build and sign `release/UltimatiumTube.apk` (no Android SDK; see the README for the apt packages) |
 | `node tools/test-android.js` | The Android app's logic on a plain JVM: page injection, the settings meeting point and its server |
 | `node tools/upstream.js` | What YouTube for Tizen has changed since the commit this project last took from it |
+| `node tools/update_aniultimatium.js` | Copy the bundled Aniultimatium from its repository (main), and record the commit in `aniultimatium/VERSION.txt` |
 | `npm run audit` | Check what is inside both `.wgt`s; `-- --release` fails on anything dev-only |
 | `npm run deploy` | Package a dev build and install it on the set; needs `TUBE_DEV_TOKEN` |
 | `npm run dev` | YouTube with the mods in a browser, no hardware needed |

@@ -20,6 +20,8 @@ const bootRoutes = require('./lib/bootRoutes.js');
 const journalRoutes = require('./lib/journalRoutes.js');
 const diagRoutes = require('./lib/diagRoutes.js');
 const phoneSettings = require('./lib/phoneSettings.js');
+const aniultimatium = require('./lib/aniultimatium.js');
+const wallpapers = require('./lib/wallpapers.js');
 const routeErrors = require('./lib/routeErrors.js');
 const dev = require('./dev/index.js');
 const upgrade = require('./lib/upgrade.js');
@@ -84,6 +86,8 @@ journalRoutes.attach(app, { heard: retraceOnBoot });
 bootRoutes.attach(app, { cobalt, script: userScript });
 diagRoutes.attach(app);
 phoneSettings.attach(app);
+aniultimatium.attach(app);
+wallpapers.attach(app);
 
 // dev/ may not know about the container route, and on a set without one it is absent.
 dev.routes(app, {

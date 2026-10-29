@@ -1,11 +1,10 @@
-import { configAccepts, configSnapshot, configWrite, every } from '../../framework/index.js';
+import { after, configAccepts, configRead, configSnapshot, configWrite } from '../../framework/index.js';
 
 // The TV's own settings page is a remote control away from awkward; the phone page is the same
 // settings with a keyboard. The two meet in the service: this side posts what it holds and takes
 // back whatever the phone changed since.
 
 const ROUTE = '/__tube/phone/sync';
-const EVERY = 4000;
 
 // A service that is not there (the stock engine, a browser) is asked far less often.
 const GIVE_UP_AFTER = 3;
@@ -66,12 +65,19 @@ const sync = () => exchange(body())
 const tick = () => {
     state.ticks += 1;
 
+    if (!configRead('enablePhoneSync')) return;
     if (state.failures >= GIVE_UP_AFTER && state.ticks % RETRY_EVERY !== 0) return;
     sync();
 };
 
+// Asked again after the interval the viewer chose, read each time so a change applies at once.
+const loop = () => after('phone sync', (Number(configRead('phoneSyncSeconds')) || 4) * 1000, () => {
+    tick();
+    loop();
+});
+
 const start = () => {
-    every('phone sync', EVERY, tick);
+    loop();
 };
 
 export { phoneAddress, provideSchema, start, apply };

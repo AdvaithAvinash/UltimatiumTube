@@ -38,6 +38,16 @@ const ACTIONS = {
 
     ENTER_MP: () => enterMiniPlayer(),
 
+    // The Android app opens it in its own screen; on a Samsung TV it is a page of the service.
+    OPEN_ANIULTIMATIUM: () => {
+        if (window.UltimatiumNative && typeof window.UltimatiumNative.openAni === 'function') {
+            window.UltimatiumNative.openAni();
+            return;
+        }
+
+        window.location.assign('/aniultimatium/index.html');
+    },
+
     SHOW_TOAST: (parameters) => showToast(APP_NAME, parameters),
 
     ADD_TO_QUEUE: (parameters) => {

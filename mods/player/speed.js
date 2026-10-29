@@ -3,7 +3,10 @@ import { currentChannel, normal } from '../channels/index.js';
 
 const SPEED_KEYS = [406, 191];
 
-const MAX_SPEED = 5;
+const MAX_SPEED = 15;
+// The step setting decides the rungs up to here; beyond it each whole speed is one rung, so the
+// menu reaches 15x without being a hundred rows long.
+const FINE_UNTIL = 4;
 const DEFAULT_INCREMENT = 0.25;
 const STUTTER_FIX = 1.0001;
 
@@ -28,9 +31,10 @@ const speedButton = (speed, title = `${speed}x`) => buttonItem({ title }, null, 
 
 const speedLadder = () => {
     const increment = configRead('speedSettingsIncrement') || DEFAULT_INCREMENT;
-    const rungs = Math.floor(MAX_SPEED / increment);
+    const fine = Array.from({ length: Math.floor(FINE_UNTIL / increment) }, (_, step) => round((step + 1) * increment));
+    const whole = Array.from({ length: MAX_SPEED - FINE_UNTIL }, (_, step) => FINE_UNTIL + 1 + step);
 
-    return Array.from({ length: rungs }, (_, step) => round((step + 1) * increment));
+    return fine.concat(whole);
 };
 
 function openSpeedOptions() {
@@ -68,6 +72,14 @@ const rememberSpeedForChannel = (speed) => {
 };
 
 const rememberSpeed = (video) => {
+    // The default speed is set once for each video, so a speed chosen while it plays is not undone
+    // by the next time the player is ready after buffering.
+    const held = { defaulted: false };
+
+    video.addEventListener('loadstart', () => {
+        held.defaulted = false;
+    });
+
     video.addEventListener('canplay', () => {
         const forChannel = configRead('rememberChannelSpeed') ? channelSpeed() : undefined;
 
@@ -76,8 +88,16 @@ const rememberSpeed = (video) => {
             return;
         }
 
-        if (!configRead('rememberPlaybackSpeed')) return;
-        video.playbackRate = configRead('videoSpeed');
+        if (configRead('rememberPlaybackSpeed')) {
+            video.playbackRate = configRead('videoSpeed');
+            return;
+        }
+
+        const wanted = configRead('defaultPlaybackSpeed');
+        if (held.defaulted || !wanted || wanted === 1) return;
+
+        held.defaulted = true;
+        video.playbackRate = wanted;
     });
 };
 
@@ -92,4 +112,4 @@ const start = () => {
     whenVideo('playback speed', rememberSpeed);
 };
 
-export { openSpeedOptions, rememberSpeedForChannel, start };
+export { openSpeedOptions, rememberSpeedForChannel, speedLadder, start };

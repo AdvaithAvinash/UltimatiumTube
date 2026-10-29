@@ -1,7 +1,8 @@
-import { configRead } from '../../framework/index.js';
+import { VERSION, COMMIT, configDefaults, configRead } from '../../framework/index.js';
 import { SPEEDS } from '../scroller/index.js';
 import { phoneAddress } from '../phone/index.js';
 import { savedTimeSummary } from '../sponsorblock/index.js';
+import { ACCENTS, BACKGROUNDS, FONTS, WALLPAPERS } from '../theme/index.js';
 
 const ART = 'https://www.gstatic.com/ytlr/img/';
 
@@ -34,12 +35,36 @@ const Set_ = (key, title, summary, image, options, invert = false, phone) => {
   return item;
 };
 
-// A row that shows a value and offers actions: each action writes some settings, or none.
-const Panel = (key, title, summary, image, value, actions, phone) =>
-  ({ kind: 'panel', key, title, summary, image, value, options: actions, phone });
+// A row that shows a value and offers actions: each action writes some settings, or none. The
+// actions may be a function, for ones that depend on what is set when the row is opened.
+const Panel = (key, title, summary, image, value, actions, phone) => {
+  const item = { kind: 'panel', key, title, summary, image, value, phone };
+  Object.defineProperty(item, 'options', {
+    enumerable: true,
+    get: () => (typeof actions === 'function' ? actions() : actions)
+  });
+
+  return item;
+};
+
+// A row that does something when pressed, rather than opening a list.
+const Action = (key, title, summary, image, action) =>
+  ({ kind: 'action', key, title, summary, image, action });
 
 const Flags = (id, title, summary, image, options) =>
   ({ kind: 'flags', id, title, summary, image, options });
+
+const preview = (text) => {
+  const line = String(text || '').replace(/\s+/g, ' ').trim();
+  if (!line) return 'Not set';
+
+  return line.length > 40 ? `${line.slice(0, 37)}...` : line;
+};
+
+// A setting that is text. It is typed on the phone page; the TV shows it and can clear it.
+const Text = (key, title, summary, image, multiline = false) => Panel(key, title, summary, image,
+  () => preview(configRead(key)), [{ label: 'Clear it', writes: [{ key, value: '' }] }],
+  multiline ? 'textarea' : 'text');
 
 const QUALITIES = ['highest', 'auto', '2160p', '1440p', '1080p', '720p', '480p', '360p', '240p', '144p']
   .map((quality) => ({
@@ -108,6 +133,10 @@ const SEGMENT_VALUES = SEGMENTS.filter((segment) => segment.key !== 'enableSpons
     .replace('ExclusiveAccess', 'exclusive_access')
     .toLowerCase()
 }));
+
+// Up to 15x, the same top as the player's own speed menu.
+const SPEED_CHOICES = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+  .map((speed) => ({ label: `${speed}x`, value: speed }));
 
 const SIDEBAR = [
   { label: 'Search', value: 'SEARCH' },
@@ -299,6 +328,9 @@ const GROUPS = [
       Choice('videoPreferredCodec', 'Preferred codec',
         'Some sets decode one codec in hardware and the rest in software',
         SCREEN, CODECS, 'Codec'),
+      Choice('defaultPlaybackSpeed', 'Speed',
+        'The speed every video starts at, up to 15x. Pick another while one plays, from the speed button',
+        SKIPPING, SPEED_CHOICES, 'Speed'),
       Switch('rememberPlaybackSpeed', 'Remember playback speed',
         'The speed you chose carries into the next video, which YouTube otherwise starts '
         + 'at normal', SKIPPING),
@@ -353,7 +385,122 @@ const GROUPS = [
   }
 ];
 
+
+const WALLPAPER_NAMES = {
+  flames: 'Blue flames', ultimatium: 'Ultimatium blue', aurora: 'Aurora', sunset: 'Sunset', ocean: 'Ocean', forest: 'Forest',
+  ember: 'Ember', violet: 'Violet', steel: 'Steel', midnight: 'Midnight'
+};
+
+const capital = (word) => word.charAt(0).toUpperCase() + word.slice(1);
+
+const named = (table) => Object.keys(table).map((id) => ({ label: capital(id), value: id }));
+
+const WALLPAPER_OPTIONS = [{ label: 'None', value: 'none' }]
+  .concat(Object.keys(WALLPAPERS).map((id) => ({ label: WALLPAPER_NAMES[id] || capital(id), value: id })))
+  .concat([{ label: 'Your own picture (address set on the phone)', value: 'custom' }]);
+
+const DIMS = [0, 20, 40, 60, 80].map((percent) => ({ label: percent ? `${percent}%` : 'None', value: percent }));
+
+const SYNC_SECONDS = [2, 4, 10, 30].map((seconds) => ({ label: `${seconds} s`, value: seconds }));
+
+const THEME_KEYS = ['themeWallpaper', 'themeWallpaperUrl', 'themeDim', 'themeBackground', 'themeAccent', 'themeFont'];
+
+// Everything back to how it ships, at the moment the list is opened, so a setting added later is included.
+const resetEverything = () => {
+  const defaults = configDefaults();
+  return [{ label: 'Reset every setting to how it came', writes: Object.keys(defaults).map((key) => ({ key, value: defaults[key] })) }];
+};
+
+const resetTheme = () => {
+  const defaults = configDefaults();
+  return [{ label: 'Back to the stock look', writes: THEME_KEYS.map((key) => ({ key, value: defaults[key] })) }];
+};
+
+const aniGroup = () => {
+  const group = /** @type {any} */ ({
+    id: 'tube_aniultimatium',
+    ultimate: true,
+    title: 'AniUltimatium',
+    summary: 'Anime, movies and live TV, inside UltimatiumTube'
+  });
+
+  // The way in is listed only while the switch is on.
+  Object.defineProperty(group, 'items', {
+    enumerable: true,
+    get: () => {
+      const items = /** @type {any[]} */ ([
+        Switch('enableAniUltimatium', 'AniUltimatium',
+          'Offers AniUltimatium, the anime, movie and live TV app that comes with UltimatiumTube', SKIPPING)
+      ]);
+
+      if (configRead('enableAniUltimatium')) {
+        items.push(Action('openAniUltimatium', 'Open AniUltimatium', 'Back returns to YouTube', SKIPPING, 'OPEN_ANIULTIMATIUM'));
+      }
+
+      return items;
+    }
+  });
+
+  return group;
+};
+
+// The three sections behind "UltimatiumTube Ultimate Settings". They are groups like the others,
+// but are reached through that row, not listed with the rest.
+const ULTIMATE = [
+  {
+    id: 'tube_customization',
+    ultimate: true,
+    title: 'Customization',
+    summary: 'Wallpaper, colours and font',
+    items: [
+      Choice('themeWallpaper', 'Wallpaper', 'A picture behind YouTube\u2019s screens', SCREEN, WALLPAPER_OPTIONS, 'Wallpaper'),
+      Text('themeWallpaperUrl', 'Your own wallpaper', 'The web address of a picture, used when Wallpaper is "Your own picture". Typed on the phone', SCREEN),
+      Choice('themeDim', 'Wallpaper dimming', 'Darkens the wallpaper so text stays readable', SCREEN, DIMS, 'Dimming'),
+      Choice('themeBackground', 'Background colour', 'Behind everything when there is no wallpaper', SCREEN,
+        [{ label: 'YouTube\u2019s own', value: 'default' }].concat(named(BACKGROUNDS)), 'Background'),
+      Choice('themeAccent', 'Accent colour', 'The colour of the UltimatiumTube rows', SCREEN, named(ACCENTS), 'Accent'),
+      Choice('themeFont', 'Font', 'As far as the TV has the font',
+        SCREEN, [{ label: 'YouTube\u2019s own', value: 'default' }].concat(named(FONTS)), 'Font'),
+      Panel('themeReset', 'Reset the look', 'Wallpaper, colours and font', SCREEN, () => 'Customization', resetTheme)
+    ]
+  },
+  {
+    id: 'tube_dev',
+    ultimate: true,
+    title: 'Ultimate Dev Options',
+    summary: 'Advanced settings',
+    items: [
+      Switch('enablePhoneSync', 'Phone settings page',
+        'Lets the page on your phone read and change these settings. Off also stops the page working', CONTROLS),
+      Choice('phoneSyncSeconds', 'Phone page refresh', 'How often the TV asks whether the phone changed something',
+        CONTROLS, SYNC_SECONDS, 'Every'),
+      Text('sponsorBlockServer', 'SponsorBlock server',
+        'An address (https://...) of a server that answers like sponsor.ajay.app. Empty uses the official one. Typed on the phone', MONEY),
+      Text('customCss', 'Custom style rules',
+        'CSS added to YouTube\u2019s page, after everything else. Typed on the phone', SCREEN, true),
+      Panel('tubeVersion', 'Version', 'What this build is', MESSAGE, () => `${VERSION} (${COMMIT})`,
+        [{ label: 'Close', writes: [] }]),
+      Panel('tubeReset', 'Reset everything', 'Puts every UltimatiumTube setting back to how it came',
+        RESTART, () => 'All settings', resetEverything)
+    ]
+  },
+  aniGroup()
+];
+
+ULTIMATE.forEach((group) => GROUPS.push(group));
+
+// The first step of the way in: a list of the three sections.
+const ULTIMATE_MENU = {
+  title: 'UltimatiumTube Ultimate Settings',
+  summary: 'Customization, developer options and AniUltimatium',
+  image: SCREEN
+};
+
+const ultimateGroups = () => GROUPS.map((group, index) => ({ group, index })).filter((entry) => entry.group.ultimate);
+
 function at(path) {
+  if (path[0] === 'ultimate') return ULTIMATE_MENU;
+
   const group = GROUPS[path[0]];
   if (!group) return null;
   return path.length > 1 ? group.items[path[1]] : group;
@@ -388,4 +535,4 @@ function chosenSummary(item) {
   return listOf(chosen.map((option) => option.label), item.options.length);
 }
 
-export { GROUPS, at, isChosen, chosenLabel, chosenSummary };
+export { GROUPS, ULTIMATE_MENU, at, isChosen, chosenLabel, chosenSummary, ultimateGroups, preview };

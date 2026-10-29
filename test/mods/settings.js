@@ -84,14 +84,16 @@ check('UltimatiumTube is one category, at the very bottom', () => {
     assert.strictEqual(title, 'UltimatiumTube');
 });
 
-check('it carries every row of every group, SponsorBlock first', () => {
+check('it lists the Ultimate Settings first, then every row of every other group', () => {
     const r = response();
     PatchSettings(r);
 
     const rows = rowsIn(r.items, 'ultimatiumtube');
-    const total = GROUPS.reduce((count, group) => count + group.items.length, 0);
-    assert.strictEqual(rows.length, total, `${rows.length} rows for ${total} items`);
-    assert.strictEqual(rows[0], 'SponsorBlock');
+    // The Ultimate sections sit behind the first row, not among the rest.
+    const listed = GROUPS.filter((group) => !group.ultimate).reduce((count, group) => count + group.items.length, 0);
+    assert.strictEqual(rows.length, listed + 1, `${rows.length} rows for ${listed} items and the way in`);
+    assert.strictEqual(rows[0], 'UltimatiumTube Ultimate Settings');
+    assert.strictEqual(rows[1], 'SponsorBlock');
 });
 
 check('YouTube’s own rows are left exactly as sent', () => {

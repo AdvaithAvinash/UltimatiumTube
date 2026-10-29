@@ -289,6 +289,16 @@ public class MainActivity extends Activity {
             });
         }
 
+        // The settings' "Open AniUltimatium": its own screen on top of this one; Back returns here.
+        @JavascriptInterface
+        public void openAni() {
+            runOnUiThread(new Runnable() {
+                @Override public void run() {
+                    startActivity(new Intent(MainActivity.this, AniultimatiumActivity.class));
+                }
+            });
+        }
+
         @JavascriptInterface
         public String phoneSync(String body) {
             return phoneSettings.sync(body, PhoneServer.address());
@@ -316,6 +326,13 @@ public class MainActivity extends Activity {
     }
 
     private final class TubeClient extends WebViewClient {
+        // The web view process died (low memory): start the screen again rather than close the app.
+        // Android 8 and later call this; the class it names is a stand-in at compile time only.
+        public boolean onRenderProcessGone(WebView view, android.webkit.RenderProcessGoneDetail detail) {
+            recreate();
+            return true;
+        }
+
         // Navigation stays on YouTube and Google; a link anywhere else is dropped.
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
@@ -344,6 +361,12 @@ public class MainActivity extends Activity {
         public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
             Uri uri = request.getUrl();
 
+            // A wallpaper of the Customization settings, from the app's own files.
+            if ("www.youtube.com".equals(uri.getHost()) && uri.getPath() != null
+                    && uri.getPath().startsWith("/__tube/wallpapers/")) {
+                return wallpaper(uri.getPath().substring("/__tube/wallpapers/".length()));
+            }
+
             // The userscript asks its Samsung service a few things; here nothing answers them, and
             // an unanswered request would show up as a failed one.
             if ("www.youtube.com".equals(uri.getHost()) && uri.getPath() != null
@@ -357,6 +380,26 @@ public class MainActivity extends Activity {
 
             return tvPage ? pageWithScript(request) : null;
         }
+    }
+
+    private WebResourceResponse wallpaper(String name) {
+        // Only a plain file name: nothing outside assets/wallpapers/ can be asked for.
+        if (!name.matches("[A-Za-z0-9._-]+") || name.startsWith(".")) return notFound();
+
+        try {
+            Map<String, String> headers = new HashMap<String, String>();
+            headers.put("Cache-Control", "max-age=86400");
+
+            String type = name.endsWith(".png") ? "image/png" : name.endsWith(".webp") ? "image/webp" : "image/jpeg";
+            return new WebResourceResponse(type, null, 200, "OK", headers, getAssets().open("wallpapers/" + name));
+        } catch (IOException e) {
+            return notFound();
+        }
+    }
+
+    private WebResourceResponse notFound() {
+        return new WebResourceResponse("text/plain", "utf-8", 404, "Not Found", new HashMap<String, String>(),
+                new ByteArrayInputStream(new byte[0]));
     }
 
     private WebResourceResponse quiet(String path) {

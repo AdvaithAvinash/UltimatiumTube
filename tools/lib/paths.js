@@ -20,7 +20,11 @@ const WIDGET = [
     { from: 'app/config.xml', to: 'config.xml' },
     { from: 'app/icon.png', to: 'icon.png' },
     { from: 'app/index.html', to: 'index.html' },
-    { from: 'service/dist', to: 'service/dist' }
+    { from: 'service/dist', to: 'service/dist' },
+    // Aniultimatium, served by the service as a page of its own (see service/lib/aniultimatium.js).
+    { from: 'aniultimatium', to: 'aniultimatium' },
+    // The wallpapers of the Customization settings (see service/lib/wallpapers.js).
+    { from: 'wallpapers', to: 'wallpapers' }
 ];
 
 // Staged at service/dist, where config.xml points for both widgets.

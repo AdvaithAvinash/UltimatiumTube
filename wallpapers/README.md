@@ -4,7 +4,9 @@ Pictures offered under **Settings > UltimatiumTube > UltimatiumTube Ultimate Set
 > Wallpaper**. They are packed into the Samsung widgets and the Android app and shown at
 `/__tube/wallpapers/<file>` (the TV's service serves them on a Samsung TV; the app does on Android).
 
-`blue-flames.jpg` is a stand-in, drawn for this project (`tools/draw_wallpaper.py`), not a photograph.
-To use a picture of your own as "Blue flames", replace `blue-flames.jpg` with it (a 1920x1080 JPEG of
-a few hundred KB is right) and run `npm run package` and `npm run package:android`. To offer another
-one, add the file here and list it in `WALLPAPER_FILES` in `mods/theme/index.js`.
+`blue-flames.jpg` is the blue flames picture supplied for this project (597 x 335, so it is enlarged
+to fill the screen). A larger version of the same picture, such as 1920 x 1080, can replace it
+without any other change.
+
+To offer another picture, add the file here and list it in `WALLPAPER_FILES` in `mods/theme/index.js`,
+then run `npm run package` and `npm run package:android`.

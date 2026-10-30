@@ -44,7 +44,7 @@ const server = app.listen(0, '127.0.0.1', () => {
             check('the entry page is served', res.status === 200 && res.text.indexOf('<title>ani</title>') !== -1);
             check('as html, and never cached', /html/.test(res.headers['content-type']) && res.headers['cache-control'] === 'no-store');
             check('the bridge comes right after the head tag, before the app\'s own scripts',
-                res.text.indexOf('<head><script>window.AniNative=') === 0 + res.text.indexOf('<head>'));
+                res.text.indexOf('<head><script>') === res.text.indexOf('<head>') && res.text.indexOf('window.AniNative=') < res.text.indexOf('<title>'));
             check('it names the commit it was bundled from', res.text.indexOf('return "51c9588"') !== -1);
             check('and exit() goes home to YouTube', res.text.indexOf('window.location.replace("/tv")') !== -1);
             check('the rest of the page is as bundled', res.text.indexOf('</head><body>home</body>') !== -1);
@@ -76,7 +76,10 @@ const server = app.listen(0, '127.0.0.1', () => {
         })
         .then((res) => {
             check('YouTube\'s own page is not touched', res.status === 200 && res.text === 'youtube');
-            check('a page without a head still gets the bridge', withBridge('<body>x</body>').indexOf('<script>window.AniNative=') === 0);
+            check('a page without a head still gets the bridge', withBridge('<body>x</body>').indexOf('<script>') === 0 && withBridge('<body>x</body>').indexOf('window.AniNative=') !== -1);
+            check('Aniultimatium starts in its Classic look the first time, and only then',
+                withBridge('<head></head>').indexOf('if(s.getItem("ea_ui")===null)s.setItem("ea_ui"') !== -1
+                && withBridge('<head></head>').indexOf('if(s.getItem("ea_lite")===null)') !== -1);
         })
         .catch((error) => check('the run finished', false, error.message))
         .then(() => {

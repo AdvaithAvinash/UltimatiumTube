@@ -395,7 +395,8 @@ const capital = (word) => word.charAt(0).toUpperCase() + word.slice(1);
 
 const named = (table) => Object.keys(table).map((id) => ({ label: capital(id), value: id }));
 
-const WALLPAPER_OPTIONS = [{ label: 'None', value: 'none' }]
+// Whether there is a wallpaper at all is its own switch, so it can always be turned off.
+const WALLPAPER_OPTIONS = []
   .concat(Object.keys(WALLPAPERS).map((id) => ({ label: WALLPAPER_NAMES[id] || capital(id), value: id })))
   .concat([{ label: 'Your own picture (address set on the phone)', value: 'custom' }]);
 
@@ -403,7 +404,7 @@ const DIMS = [0, 20, 40, 60, 80].map((percent) => ({ label: percent ? `${percent
 
 const SYNC_SECONDS = [2, 4, 10, 30].map((seconds) => ({ label: `${seconds} s`, value: seconds }));
 
-const THEME_KEYS = ['themeWallpaper', 'themeWallpaperUrl', 'themeDim', 'themeBackground', 'themeAccent', 'themeFont'];
+const THEME_KEYS = ['themeWallpaperOn', 'themeWallpaper', 'themeWallpaperUrl', 'themeDim', 'themeBackground', 'themeAccent', 'themeFont'];
 
 // Everything back to how it ships, at the moment the list is opened, so a setting added later is included.
 const resetEverything = () => {
@@ -453,8 +454,10 @@ const ULTIMATE = [
     title: 'Customization',
     summary: 'Wallpaper, colours and font',
     items: [
-      Choice('themeWallpaper', 'Wallpaper', 'A picture behind YouTube\u2019s screens', SCREEN, WALLPAPER_OPTIONS, 'Wallpaper'),
-      Text('themeWallpaperUrl', 'Your own wallpaper', 'The web address of a picture, used when Wallpaper is "Your own picture". Typed on the phone', SCREEN),
+      Switch('themeWallpaperOn', 'Wallpaper',
+        'A picture behind YouTube\u2019s home screens. Off puts YouTube\u2019s own background back', SCREEN),
+      Choice('themeWallpaper', 'Wallpaper picture', 'Which picture, when Wallpaper is on', SCREEN, WALLPAPER_OPTIONS, 'Picture'),
+      Text('themeWallpaperUrl', 'Your own wallpaper', 'The web address of a picture, used when the picture is "Your own picture". Typed on the phone', SCREEN),
       Choice('themeDim', 'Wallpaper dimming', 'Darkens the wallpaper so text stays readable', SCREEN, DIMS, 'Dimming'),
       Choice('themeBackground', 'Background colour', 'Behind everything when there is no wallpaper', SCREEN,
         [{ label: 'YouTube\u2019s own', value: 'default' }].concat(named(BACKGROUNDS)), 'Background'),
@@ -476,6 +479,8 @@ const ULTIMATE = [
         CONTROLS, SYNC_SECONDS, 'Every'),
       Text('sponsorBlockServer', 'SponsorBlock server',
         'An address (https://...) of a server that answers like sponsor.ajay.app. Empty uses the official one. Typed on the phone', MONEY),
+      Text('aniUltimatiumAppId', 'AniUltimatium app on this TV',
+        'The id Aniultimatium\u2019s own Samsung app installs under. It is started when it is there. Typed on the phone', SKIPPING),
       Text('customCss', 'Custom style rules',
         'CSS added to YouTube\u2019s page, after everything else. Typed on the phone', SCREEN, true),
       Panel('tubeVersion', 'Version', 'What this build is', MESSAGE, () => `${VERSION} (${COMMIT})`,

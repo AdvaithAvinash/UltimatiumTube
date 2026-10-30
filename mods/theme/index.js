@@ -43,8 +43,11 @@ const FONTS = {
 
 const rgb = (hex) => [1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16)).join(', ');
 
+// The wallpaper, as a CSS background, or null while it is off or its picture is not a usable one.
 // An address the viewer typed is used only as an image, and only if it is a plain http(s) one.
 const wallpaperOf = (read) => {
+    if (!read('themeWallpaperOn')) return null;
+
     const chosen = read('themeWallpaper');
 
     if (chosen === 'custom') {
@@ -65,6 +68,11 @@ const glow = (accent) => {
         + `@keyframes tubeGlow { 0% { text-shadow: ${rest}; } 50% { text-shadow: ${peak}; } 100% { text-shadow: ${rest}; } }\n`;
 };
 
+// The class on <html> that turns the wallpaper on. Drawn only while it is wanted and nothing is
+// playing, and as one background on the page, with nothing fixed or laid over it: those made the
+// screens slow on a TV.
+const WALL = 'tube-wall';
+
 const themeCss = (read) => {
     const accent = ACCENTS[read('themeAccent')] || ACCENTS.blue;
     const wallpaper = wallpaperOf(read);
@@ -75,14 +83,14 @@ const themeCss = (read) => {
     const parts = [glow(accent)];
 
     if (wallpaper) {
-        parts.push(`html, body { background: ${wallpaper} !important; background-attachment: fixed !important; }`);
-        // The app's own backdrop is opaque; without this the wallpaper is behind it.
-        parts.push('#container, ytlr-app { background: transparent !important; }');
+        const shade = dim ? `linear-gradient(rgba(0, 0, 0, ${dim / 100}), rgba(0, 0, 0, ${dim / 100})), ` : '';
 
-        if (dim) {
-            parts.push('body::before { content: ""; position: fixed; left: 0; top: 0; right: 0; bottom: 0; '
-                + `background-color: rgba(0, 0, 0, ${dim / 100}); pointer-events: none; z-index: -1; }`);
-        }
+        // The page is made at least as tall as the screen, so the picture covers all of it, and black
+        // sits under it for any part it does not.
+        parts.push(`html.${WALL}, html.${WALL} body { min-height: 100vh; background: ${shade}${wallpaper} !important; `
+            + 'background-color: #000000 !important; }');
+        // The app's own backdrop is opaque; without this the wallpaper is behind it.
+        parts.push(`html.${WALL} #container { background: transparent !important; }`);
     } else if (colour) {
         parts.push(`html, body { background-color: ${colour} !important; } #container { background-color: ${colour} !important; }`);
     }
@@ -95,7 +103,17 @@ const themeCss = (read) => {
     return parts.join('\n');
 };
 
+const watching = () => /^#?\/watch/.test(String(window.location.hash || ''));
+
 const STYLE_ID = 'ultimatiumtube-theme';
+
+const refreshClass = () => {
+    const root = document.documentElement;
+    if (!root || !root.classList) return;
+
+    if (wallpaperOf(configRead) && !watching()) root.classList.add(WALL);
+    else root.classList.remove(WALL);
+};
 
 const apply = () => {
     const parent = document.head || document.documentElement;
@@ -109,9 +127,11 @@ const apply = () => {
 
     // Last in the head, so what it says wins over what the page said.
     if (!existing || existing !== parent.lastChild) parent.appendChild(style);
+
+    refreshClass();
 };
 
-const THEME_KEYS = ['themeWallpaper', 'themeWallpaperUrl', 'themeDim', 'themeBackground', 'themeAccent',
+const THEME_KEYS = ['themeWallpaperOn', 'themeWallpaper', 'themeWallpaperUrl', 'themeDim', 'themeBackground', 'themeAccent',
     'themeFont', 'customCss'];
 
 const start = () => {
@@ -121,8 +141,11 @@ const start = () => {
         if (THEME_KEYS.indexOf(event.detail.key) !== -1) apply();
     });
 
+    // The wallpaper steps aside while a video plays, and comes back after.
+    window.addEventListener('hashchange', refreshClass);
+
     // The page adds its own styles as it loads; ours goes back to the end once it has settled.
     window.addEventListener('load', apply);
 };
 
-export { themeCss, WALLPAPER_FILES, WALLPAPERS, BACKGROUNDS, ACCENTS, FONTS, start };
+export { themeCss, wallpaperOf, WALL, WALLPAPER_FILES, WALLPAPERS, BACKGROUNDS, ACCENTS, FONTS, start };

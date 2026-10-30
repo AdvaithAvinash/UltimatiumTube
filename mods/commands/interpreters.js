@@ -4,6 +4,7 @@ import { openOptions, OPTIONS_ACTION } from '../settings/settingsOptions.js';
 import { openSpeedOptions } from '../player/speed.js';
 import { enterMiniPlayer } from '../player/pictureInPicture.js';
 import { recordSkip } from '../sponsorblock/index.js';
+import { openAniUltimatium } from '../aniultimatium/index.js';
 import { rememberSpeedForChannel } from '../player/speed.js';
 
 
@@ -38,15 +39,7 @@ const ACTIONS = {
 
     ENTER_MP: () => enterMiniPlayer(),
 
-    // The Android app opens it in its own screen; on a Samsung TV it is a page of the service.
-    OPEN_ANIULTIMATIUM: () => {
-        if (window.UltimatiumNative && typeof window.UltimatiumNative.openAni === 'function') {
-            window.UltimatiumNative.openAni();
-            return;
-        }
-
-        window.location.assign('/aniultimatium/index.html');
-    },
+    OPEN_ANIULTIMATIUM: () => openAniUltimatium(),
 
     SHOW_TOAST: (parameters) => showToast(APP_NAME, parameters),
 

@@ -123,11 +123,16 @@ wallpaper, colours, font and the custom rules. All of it is rebuilt when a setti
 
 AniUltimatium is the unmodified `public/` of its repository, copied by
 `tools/update_aniultimatium.js` into `aniultimatium/` (minus the website-only files, listed there).
-On a Samsung TV a widget's own pages are never shown, so `service/lib/aniultimatium.js` serves the
-folder at `/aniultimatium/` and adds one small `window.AniNative` before the page's own scripts;
-its `exit()` returns to `/tv`, which is what the page's own Back handling calls at its home screen.
-On Android, `AniultimatiumActivity` loads the same files from the app's assets as Aniultimatium's
-own app does, and `exit()` closes it, which returns to YouTube.
+`mods/aniultimatium/` decides how it is opened. On Android, `AniultimatiumActivity` loads the files
+from the app's assets as Aniultimatium's own app does, and `exit()` closes it, which returns to
+YouTube. On a Samsung TV a widget's own pages are never shown, and the TV's YouTube engine supports
+less CSS than Aniultimatium uses (custom properties, grid), so the page asks the service
+(`service/lib/launchApp.js`) to start Aniultimatium's own app by its id; only if that is not installed
+does it open the bundled copy, which `service/lib/aniultimatium.js` serves at `/aniultimatium/`, adding
+a `window.AniNative` whose `exit()` returns to `/tv` and setting its Classic look the first time.
+
+The wallpaper is a switch, a picture and a dimming. It is drawn as one background on the page, only
+while no video plays (`mods/theme/`), because a fixed or overlaid layer made the screens slow.
 
 ## Dev and ship
 

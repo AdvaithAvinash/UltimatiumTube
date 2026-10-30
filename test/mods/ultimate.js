@@ -21,7 +21,7 @@ const { GROUPS, at } = await import('../../mods/settings/settingsModel.js');
 const { sectionFor } = await import('../../mods/settings/settingRows.js');
 const { openOptions } = await import('../../mods/settings/settingsOptions.js');
 const { phoneSchema } = await import('../../mods/settings/phoneSchema.js');
-const { themeCss, WALLPAPER_FILES, WALLPAPERS } = await import('../../mods/theme/index.js');
+const { themeCss, wallpaperOf, WALLPAPER_FILES, WALLPAPERS, start: startTheme } = await import('../../mods/theme/index.js');
 const { speedLadder } = await import('../../mods/player/speed.js');
 const { apiBase } = await import('../../mods/sponsorblock/segmentApi.js');
 const { styled } = await import('../../mods/settings/settingComponents.js');
@@ -106,20 +106,41 @@ check('a row with no style, or a tree that is not one, is left alone', () => {
 
 // --- Customization
 
-check('Customization offers wallpaper, your own wallpaper, dimming, colours and font', () => {
+check('Customization offers a wallpaper switch, its picture, your own, dimming, colours and font', () => {
     const titles = itemsOf(open([indexOfGroup('tube_customization')])).map(titleOf);
 
-    ['Wallpaper', 'Your own wallpaper', 'Wallpaper dimming', 'Background colour', 'Accent colour', 'Font']
+    ['Wallpaper', 'Wallpaper picture', 'Your own wallpaper', 'Wallpaper dimming', 'Background colour', 'Accent colour', 'Font']
         .forEach((name) => assert.ok(titles.indexOf(name) !== -1, `${name} is missing from ${titles.join(', ')}`));
 });
 
-check('the wallpaper list holds the built-in ones and "your own picture"', () => {
+check('the wallpaper is a switch of its own, the first of Customization, and off', () => {
     const index = indexOfGroup('tube_customization');
-    const labels = itemsOf(open([index, 0])).map(titleOf);
+    const [first] = itemsOf(open([index]));
 
-    assert.deepStrictEqual(labels.slice(0, 2), ['None', 'Blue flames']);
+    assert.strictEqual(titleOf(first), 'Wallpaper');
+    assert.strictEqual(first.secondaryIcon.iconType, 'CHECK_BOX_OUTLINE_BLANK');
+    assert.strictEqual(commandsOf(first)[0].setClientSettingEndpoint.settingDatas[0].boolValue, true);
+});
 
-    assert.ok(labels.indexOf('None') !== -1 && labels.indexOf('Aurora') !== -1);
+check('turning it on and off again is one press each, and the switch shows which it is', () => {
+    const index = indexOfGroup('tube_customization');
+
+    withConfig({ themeWallpaperOn: true }, () => {
+        const [first] = itemsOf(open([index]));
+
+        assert.strictEqual(first.secondaryIcon.iconType, 'CHECK_BOX');
+        assert.strictEqual(commandsOf(first)[0].setClientSettingEndpoint.settingDatas[0].boolValue, false);
+    });
+});
+
+check('the wallpaper picture list holds the built-in ones and "your own picture", and no "None"', () => {
+    const index = indexOfGroup('tube_customization');
+    const labels = itemsOf(open([index, 1])).map(titleOf);
+
+    assert.strictEqual(labels[0], 'Blue flames');
+    assert.ok(labels.indexOf('None') === -1, 'the list still has None: that is the switch now');
+
+    assert.ok(labels.indexOf('Aurora') !== -1);
     assert.ok(labels.some((label) => label.indexOf('Your own picture') === 0));
 });
 
@@ -146,17 +167,48 @@ check('another accent recolours them', () => {
 });
 
 check('a wallpaper is drawn behind the app, and the app\'s own backdrop is let go', () => {
-    const css = themeCss(reading({ themeWallpaper: 'ocean' }));
+    const css = themeCss(reading({ themeWallpaperOn: true, themeWallpaper: 'ocean' }));
 
     assert.ok(css.indexOf('linear-gradient(180deg, #02111f') !== -1);
-    assert.ok(css.indexOf('#container, ytlr-app { background: transparent !important; }') !== -1);
+    assert.ok(css.indexOf('html.tube-wall #container { background: transparent !important; }') !== -1);
+});
+
+check('with the switch off there is no wallpaper, whichever picture is chosen', () => {
+    ['flames', 'ocean', 'custom', 'none', 'nonsense'].forEach((picture) => {
+        const css = themeCss(reading({ themeWallpaperOn: false, themeWallpaper: picture, themeWallpaperUrl: 'https://x.com/a.jpg' }));
+        assert.ok(css.indexOf('url(') === -1 && css.indexOf('gradient') === -1 && css.indexOf('tube-wall') === -1, picture);
+    });
+});
+
+check('a picture left as "none" by an earlier version is no wallpaper even with the switch on', () => {
+    assert.strictEqual(wallpaperOf(reading({ themeWallpaperOn: true, themeWallpaper: 'none' })), null);
+});
+
+check('the wallpaper is one background, with nothing fixed and nothing laid over the page', () => {
+    const css = themeCss(reading({ themeWallpaperOn: true, themeWallpaper: 'flames', themeDim: 60 }));
+
+    assert.ok(css.indexOf('fixed') === -1, 'a fixed background repaints on every move');
+    assert.ok(css.indexOf('::before') === -1 && css.indexOf('position') === -1, 'an overlay layer made the screens slow');
+    assert.ok(css.indexOf('transparent') !== -1);
 });
 
 check('the blue flames wallpaper is the bundled picture, covering the screen', () => {
-    const css = themeCss(reading({ themeWallpaper: 'flames' }));
+    const css = themeCss(reading({ themeWallpaperOn: true, themeWallpaper: 'flames' }));
 
     assert.ok(css.indexOf('url("/__tube/wallpapers/blue-flames.jpg") center / cover no-repeat') !== -1, css);
-    assert.ok(css.indexOf('#container, ytlr-app { background: transparent !important; }') !== -1);
+    assert.ok(css.indexOf('html.tube-wall #container { background: transparent !important; }') !== -1);
+});
+
+check('the wallpaper covers the whole screen, with black under any part the picture does not', () => {
+    const css = themeCss(reading({ themeWallpaperOn: true }));
+
+    assert.ok(css.indexOf('min-height: 100vh') !== -1);
+    assert.ok(css.indexOf('background-color: #000000 !important') !== -1);
+});
+
+check('it is dimmed by default, so white text stays readable on it', () => {
+    assert.strictEqual(configDefaults().themeDim, 40);
+    assert.ok(themeCss(reading({ themeWallpaperOn: true })).indexOf('rgba(0, 0, 0, 0.4)') !== -1);
 });
 
 check('every picture the preset list names is a file in wallpapers/', () => {
@@ -167,12 +219,12 @@ check('every picture the preset list names is a file in wallpapers/', () => {
 });
 
 check('dimming darkens it by the chosen amount', () => {
-    assert.ok(themeCss(reading({ themeWallpaper: 'ocean', themeDim: 40 })).indexOf('rgba(0, 0, 0, 0.4)') !== -1);
-    assert.ok(themeCss(reading({ themeWallpaper: 'ocean', themeDim: 0 })).indexOf('body::before') === -1);
+    assert.ok(themeCss(reading({ themeWallpaperOn: true, themeWallpaper: 'ocean', themeDim: 60 })).indexOf('rgba(0, 0, 0, 0.6)') !== -1);
+    assert.ok(themeCss(reading({ themeWallpaperOn: true, themeWallpaper: 'ocean', themeDim: 0 })).indexOf('linear-gradient(rgba(') === -1);
 });
 
 check('your own picture is used only as a plain web address', () => {
-    const own = (url) => themeCss(reading({ themeWallpaper: 'custom', themeWallpaperUrl: url }));
+    const own = (url) => themeCss(reading({ themeWallpaperOn: true, themeWallpaper: 'custom', themeWallpaperUrl: url }));
 
     assert.ok(own('https://example.com/a.jpg').indexOf('url("https://example.com/a.jpg")') !== -1);
     assert.ok(own('javascript:alert(1)').indexOf('url(') === -1);
@@ -183,7 +235,7 @@ check('your own picture is used only as a plain web address', () => {
 check('a colour alone sets the background when there is no wallpaper', () => {
     const css = themeCss(reading({ themeBackground: 'navy' }));
     assert.ok(css.indexOf('#0a1128') !== -1);
-    assert.ok(themeCss(reading({ themeBackground: 'navy', themeWallpaper: 'ocean' })).indexOf('#0a1128') === -1);
+    assert.ok(themeCss(reading({ themeBackground: 'navy', themeWallpaperOn: true, themeWallpaper: 'ocean' })).indexOf('#0a1128') === -1);
 });
 
 check('a font is applied, an unknown one is not', () => {
@@ -197,12 +249,42 @@ check('custom rules come last, so they win', () => {
     assert.ok(css.trim().endsWith('body { zoom: 1.1 }'));
 });
 
+// --- the wallpaper class on <html>, put on and taken off as the screen changes
+
+check('the wallpaper class follows the switch, and steps aside while a video plays', () => {
+    const classes = new Set();
+    const listeners = {};
+
+    global.document.documentElement = { classList: { add: (name) => classes.add(name), remove: (name) => classes.delete(name) } };
+    global.document.head = { appendChild: () => undefined, lastChild: null };
+    global.document.createElement = () => ({});
+    global.window.location = { hash: '#/' };
+    global.window.addEventListener = (type, handler) => { listeners[type] = handler; };
+
+    startTheme();
+    assert.strictEqual(classes.has('tube-wall'), false, 'on before it was asked for');
+
+    configWrite('themeWallpaperOn', true);
+    assert.strictEqual(classes.has('tube-wall'), true);
+
+    global.window.location.hash = '#/watch?v=abc';
+    listeners.hashchange();
+    assert.strictEqual(classes.has('tube-wall'), false, 'still drawn while a video plays');
+
+    global.window.location.hash = '#/';
+    listeners.hashchange();
+    assert.strictEqual(classes.has('tube-wall'), true, 'not back after the video');
+
+    configWrite('themeWallpaperOn', false);
+    assert.strictEqual(classes.has('tube-wall'), false, 'switching it off did not take it off');
+});
+
 // --- Ultimate Dev Options
 
 check('the developer options hold the advanced settings', () => {
     const titles = itemsOf(open([indexOfGroup('tube_dev')])).map(titleOf);
 
-    ['Phone settings page', 'Phone page refresh', 'SponsorBlock server', 'Custom style rules', 'Version', 'Reset everything']
+    ['Phone settings page', 'Phone page refresh', 'SponsorBlock server', 'AniUltimatium app on this TV', 'Custom style rules', 'Version', 'Reset everything']
         .forEach((name) => assert.ok(titles.indexOf(name) !== -1, `${name} is missing from ${titles.join(', ')}`));
 });
 
@@ -330,7 +412,7 @@ check('every setting these sections name is one the config knows', () => {
 });
 
 check('defaults leave YouTube as it is', () => {
-    assert.strictEqual(configRead('themeWallpaper'), 'none');
+    assert.strictEqual(configRead('themeWallpaperOn'), false);
     assert.strictEqual(configRead('enableAniUltimatium'), false);
     assert.strictEqual(configRead('defaultPlaybackSpeed'), 1);
     assert.strictEqual(configRead('customCss'), '');

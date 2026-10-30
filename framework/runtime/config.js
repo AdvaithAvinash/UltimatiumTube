@@ -54,11 +54,15 @@ const defaultConfig = {
 
   // AniUltimatium, bundled in this app: the switch only decides whether it is offered.
   enableAniUltimatium: false,
+  // The id Aniultimatium's own Samsung app installs under; started first when it is there.
+  aniUltimatiumAppId: 'oXabc12345.EnglishAnime',
 
   // Customization: the look of YouTube's own screens. The defaults change nothing.
-  themeWallpaper: 'none',
+  themeWallpaperOn: false,
+  themeWallpaper: 'flames',
   themeWallpaperUrl: '',
-  themeDim: 0,
+  // Percent. A picture behind white text needs some of this to stay readable.
+  themeDim: 40,
   themeBackground: 'default',
   themeAccent: 'blue',
   themeFont: 'default',

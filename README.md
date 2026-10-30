@@ -26,9 +26,10 @@ with YouTube's own TV interface left as it is.
   **Customization** (wallpaper, colours, font), **Ultimate Dev Options** (advanced settings) and
   **AniUltimatium**.
 - **Speed up to 15x**, from the speed button in the player and as a default speed in the settings.
-- **AniUltimatium inside the app.** Turn it on and an extra blue row opens
-  [AniUltimatium](https://github.com/AdvaithAvinash/AniUltimatium), the anime, movie and live TV app,
-  bundled in the app. Back returns to YouTube.
+- **AniUltimatium from the app.** Turn it on and an extra blue row opens
+  [AniUltimatium](https://github.com/AdvaithAvinash/AniUltimatium), the anime, movie and live TV app.
+  On Android it opens in a screen of the app, bundled in it. On a Samsung TV it starts AniUltimatium's
+  own app, if installed (see below).
 - **The mods ship inside the app.** Nothing is downloaded at launch, so there is no "failed to load
   script" network error.
 
@@ -91,11 +92,16 @@ Text such as a server address or style rules is typed on the phone page.
 ### AniUltimatium
 
 [AniUltimatium](https://github.com/AdvaithAvinash/AniUltimatium) is bundled in the app, as its own
-files, in `aniultimatium/`. On a Samsung TV the service serves it as a page, and on Android it opens
-in a screen of its own. It talks to its own online service, so it needs the internet.
-`node tools/update_aniultimatium.js` brings the bundled copy up to date; `aniultimatium/VERSION.txt`
-says which commit it is. On a Samsung TV its profiles are kept for the address the TV has on your
-network, so a changed address starts it afresh.
+files, in `aniultimatium/`. `node tools/update_aniultimatium.js` brings the bundled copy up to date;
+`aniultimatium/VERSION.txt` says which commit it is. It talks to its own online service, so it needs
+the internet.
+
+- **Android and Fire TV:** it opens in a screen of the app and Back returns to YouTube.
+- **Samsung TV:** AniUltimatium's styles need more of the web than the TV's YouTube engine has, so the
+  reliable way is AniUltimatium's own Samsung app, installed on the TV like this one (its `.wgt` is on
+  its releases page). The blue row starts that app. Without it, the row opens the copy bundled here,
+  which that engine may not draw properly. If it was installed under another id, set it under
+  Ultimate Dev Options.
 
 ### From your phone
 

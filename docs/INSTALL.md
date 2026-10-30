@@ -67,6 +67,14 @@ TV and is what serves YouTube to it. In order of how often it is the cause:
 If it still fails, the boot screen shows an address to open on a phone, and that page says what
 failed.
 
+### AniUltimatium on a Samsung TV
+
+The blue AniUltimatium row (Settings > UltimatiumTube > UltimatiumTube Ultimate Settings >
+AniUltimatium, switched on) starts AniUltimatium's own app, so install that too: its `.wgt` is on
+[its releases page](https://github.com/AdvaithAvinash/AniUltimatium/releases), installed the same way
+as this one. Back in AniUltimatium returns to YouTube. Without it, the row opens a copy bundled in
+this app, which the TV's YouTube engine may not draw properly.
+
 ### Other YouTube apps on the same TV
 
 UltimatiumTube does not clash with YouTube for Tizen or TizenTube over ports, folders or package ids.

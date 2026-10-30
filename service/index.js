@@ -22,6 +22,7 @@ const diagRoutes = require('./lib/diagRoutes.js');
 const phoneSettings = require('./lib/phoneSettings.js');
 const aniultimatium = require('./lib/aniultimatium.js');
 const wallpapers = require('./lib/wallpapers.js');
+const launchApp = require('./lib/launchApp.js');
 const routeErrors = require('./lib/routeErrors.js');
 const dev = require('./dev/index.js');
 const upgrade = require('./lib/upgrade.js');
@@ -55,10 +56,13 @@ const POLICIES = {
         "script-src * data: blob: 'unsafe-inline' 'unsafe-eval'",
         "style-src * data: blob: 'unsafe-inline'",
         'connect-src *',
-        'font-src * data:'
+        'font-src * data:',
+        // Cobalt refuses a navigation its policy does not name, and the settings open Aniultimatium,
+        // a page of this service, by navigating to it.
+        'h5vcc-location-src *'
     ].join('; '),
 
-    plain: "default-src *; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'",
+    plain: "default-src *; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; h5vcc-location-src *",
 
     none: null
 };
@@ -88,6 +92,7 @@ diagRoutes.attach(app);
 phoneSettings.attach(app);
 aniultimatium.attach(app);
 wallpapers.attach(app);
+launchApp.attach(app);
 
 // dev/ may not know about the container route, and on a set without one it is absent.
 dev.routes(app, {

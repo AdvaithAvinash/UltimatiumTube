@@ -26,7 +26,14 @@ const versionOf = () => {
     }
 };
 
-const bridge = () => `<script>window.AniNative={version:function(){return ${JSON.stringify(versionOf())};},`
+// The first time, Aniultimatium is set to its Classic, low-end look, which its own start-up offers
+// for devices like this one; the viewer can change it in its settings. Its own keys, written in the
+// form its own code writes them, and only where it has not been set.
+const SEED = 'try{var s=window.localStorage;'
+    + 'if(s.getItem("ea_ui")===null)s.setItem("ea_ui",\'"classic"\');'
+    + 'if(s.getItem("ea_lite")===null)s.setItem("ea_lite","true");}catch(e){}';
+
+const bridge = () => `<script>${SEED}window.AniNative={version:function(){return ${JSON.stringify(versionOf())};},`
     + 'sdk:function(){return 0;},exit:function(){window.location.replace("/tv");}};</script>';
 
 const withBridge = (html) => (HEAD.test(html)

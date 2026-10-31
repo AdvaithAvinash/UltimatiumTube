@@ -131,8 +131,22 @@ less CSS than Aniultimatium uses (custom properties, grid), so the page asks the
 does it open the bundled copy, which `service/lib/aniultimatium.js` serves at `/aniultimatium/`, adding
 a `window.AniNative` whose `exit()` returns to `/tv` and setting its Classic look the first time.
 
-The wallpaper is a switch, a picture and a dimming. It is drawn as one background on the page, only
-while no video plays (`mods/theme/`), because a fixed or overlaid layer made the screens slow.
+A page of the service opened in the TV's YouTube engine (Cobalt) meets what that engine lacks. Its CSS
+code has no custom properties, grid, `gap` or `aspect-ratio`; Aniultimatium's stylesheet has 150
+`var()`s. `service/lib/flattenCss.js` reads the variables where the stylesheet sets them (on `:root`,
+for the Modern look on `body.ui-modern`, and the one a small-screen query changes) and writes them in,
+so `/aniultimatium/styles.css` has none; drawn in a browser it is pixel for pixel the same as the
+original. The page also expects a widget's freedom to call any address, so a small script
+(`SHIM` in `service/lib/aniultimatium.js`) sends its requests to other sites through the service's
+`/cors-bypass/`, and asks for the stylesheet again with the accent colour the page chooses.
+
+The wallpaper and the background colour are styles set on the page's own elements, not rules in a
+stylesheet: they are put back to exactly what each element held, and the engine is asked afterwards
+whether the picture is gone (`mods/theme/`). A TV's engine may not read a stylesheet again after it
+changes, and a wallpaper that goes on but never off is what that looks like.
+
+Back at the start of the app: YouTube leaves by the command `EXIT_APP`. `mods/exitConfirm/` holds that
+command back and asks; Exit sends it again, marked as answered.
 
 ## Dev and ship
 

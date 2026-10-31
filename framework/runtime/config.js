@@ -75,6 +75,9 @@ const defaultConfig = {
   // Rules added to the page last, so they win. Typed on the phone page.
   customCss: '',
 
+  // Back at the start of the app asks before leaving.
+  confirmExit: true,
+
   enableShorts: true,
   disabledSidebarContents: [],
 

@@ -5,6 +5,8 @@ import { openSpeedOptions } from '../player/speed.js';
 import { enterMiniPlayer } from '../player/pictureInPicture.js';
 import { recordSkip } from '../sponsorblock/index.js';
 import { openAniUltimatium } from '../aniultimatium/index.js';
+import { EXIT_CONFIRMED, interpretExit, leaveConfirmed, leaveOrAsk } from '../exitConfirm/index.js';
+import { wallpaperOffNow } from '../theme/index.js';
 import { rememberSpeedForChannel } from '../player/speed.js';
 
 
@@ -40,6 +42,14 @@ const ACTIONS = {
     ENTER_MP: () => enterMiniPlayer(),
 
     OPEN_ANIULTIMATIUM: () => openAniUltimatium(),
+
+    [EXIT_CONFIRMED]: () => leaveConfirmed(),
+
+    // "Turn the wallpaper off now": the setting, the picture, and a fresh load of the page.
+    WALLPAPER_OFF: () => {
+        configWrite('themeWallpaperOn', false);
+        wallpaperOffNow();
+    },
 
     SHOW_TOAST: (parameters) => showToast(APP_NAME, parameters),
 
@@ -186,7 +196,7 @@ const skipWhosWatchingOnExit = (command, original, self, context) => {
 
     if (!onExit || configRead('enableWhosWatchingMenuOnAppExit')) return PASS;
 
-    original.call(self, { signalAction: { signal: 'EXIT_APP' } }, context);
+    leaveOrAsk(original, self, context);
     return false;
 };
 
@@ -213,6 +223,7 @@ const skipWhosWatchingOnArrival = (command) => {
 
 // Named here because terser mangles our own names and an error would otherwise be reported as coming from `t`.
 const INTERPRETERS = [
+    { name: 'confirm exit', interpret: interpretExit },
     { name: 'our settings', interpret: applyOurSettings },
     { name: 'custom actions', interpret: runCustomActions },
     { name: 'playback settings', interpret: dressPlaybackSettings },

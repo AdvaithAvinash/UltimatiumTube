@@ -1,12 +1,12 @@
 {
   "name": "tube-service",
-  "version": "1.2.2",
+  "version": "1.3.0",
   "description": "Injection and proxy for the tube app.",
   "main": "index.js",
   "license": "GPL-3.0-only",
   "scripts": {
     "build": "node ../tools/build-service.js",
-    "test": "node test/injection.js && node test/upgrade.js && node test/chii.js && node test/cobalt.js && node test/routing.js && node test/rewrites.js && node test/proxying.js && node test/bigheaders.js && node test/shipped.js && node test/legacy.js && node test/serviceAddress.js && node test/wake.js && node test/evergreen.js && node test/claims.js && node test/protection.js && node test/bootScreen.js && node test/boot.js && node test/journal.js && node test/diagnosis.js && node test/diag.js && node test/phone.js && node test/aniultimatium.js && node test/wallpapers.js && node test/launchApp.js"
+    "test": "node test/injection.js && node test/upgrade.js && node test/chii.js && node test/cobalt.js && node test/routing.js && node test/rewrites.js && node test/proxying.js && node test/bigheaders.js && node test/shipped.js && node test/legacy.js && node test/serviceAddress.js && node test/wake.js && node test/evergreen.js && node test/claims.js && node test/protection.js && node test/bootScreen.js && node test/boot.js && node test/journal.js && node test/diagnosis.js && node test/diag.js && node test/phone.js && node test/aniultimatium.js && node test/wallpapers.js && node test/launchApp.js && node test/flattenCss.js"
   },
   "dependencies": {
     "express": "^4.22.3",

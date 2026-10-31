@@ -224,7 +224,7 @@ check('every setting the model names is one the config knows', () => {
     const keys = GROUPS.reduce((all, group) => group.items.reduce((inner, item) => inner.concat(named(item)), all), []);
 
     // Rows that are buttons, not settings: they hold nothing in the config.
-    const buttons = ['phoneSettings', 'themeReset', 'tubeVersion', 'tubeReset', 'openAniUltimatium'];
+    const buttons = ['phoneSettings', 'themeReset', 'tubeVersion', 'tubeReset', 'openAniUltimatium', 'wallpaperOffNow'];
 
     keys.filter((key) => buttons.indexOf(key) === -1).forEach((key) => {
         assert.ok(key in known, `${key} is shown in the settings but not in the config`);

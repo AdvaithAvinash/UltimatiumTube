@@ -245,6 +245,9 @@ const GROUPS = [
     id: 'tube_startup',
     title: 'Startup',
     items: [
+      Switch('confirmExit', 'Ask before leaving',
+        'Back at the start of the app asks "Exit UltimatiumTube?" with Stay and Exit, so a press too many does not close it',
+        RESTART),
       Choice('startupPage', 'Startup page',
         'Opened at launch, so the home feed is never drawn first',
         RESTART, START_PAGES, 'Startup'),
@@ -456,6 +459,8 @@ const ULTIMATE = [
     items: [
       Switch('themeWallpaperOn', 'Wallpaper',
         'A picture behind YouTube\u2019s home screens. Off puts YouTube\u2019s own background back', SCREEN),
+      Action('wallpaperOffNow', 'Turn the wallpaper off now',
+        'Switches it off and loads the page again, so it is certain. Use this if it will not go', SCREEN, 'WALLPAPER_OFF'),
       Choice('themeWallpaper', 'Wallpaper picture', 'Which picture, when Wallpaper is on', SCREEN, WALLPAPER_OPTIONS, 'Picture'),
       Text('themeWallpaperUrl', 'Your own wallpaper', 'The web address of a picture, used when the picture is "Your own picture". Typed on the phone', SCREEN),
       Choice('themeDim', 'Wallpaper dimming', 'Darkens the wallpaper so text stays readable', SCREEN, DIMS, 'Dimming'),

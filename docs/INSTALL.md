@@ -73,7 +73,9 @@ The blue AniUltimatium row (Settings > UltimatiumTube > UltimatiumTube Ultimate 
 AniUltimatium, switched on) starts AniUltimatium's own app, so install that too: its `.wgt` is on
 [its releases page](https://github.com/AdvaithAvinash/AniUltimatium/releases), installed the same way
 as this one. Back in AniUltimatium returns to YouTube. Without it, the row opens a copy bundled in
-this app, which the TV's YouTube engine may not draw properly.
+this app. That copy is adapted for the TV's YouTube engine (its stylesheet is sent with the variables
+that engine lacks filled in, and its requests go through this app), but it has not been seen running on
+a TV, and its embedded movie players need frames, which that engine does not have.
 
 ### Other YouTube apps on the same TV
 

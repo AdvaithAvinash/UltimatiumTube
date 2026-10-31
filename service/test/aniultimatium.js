@@ -10,6 +10,7 @@ const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tube-ani-'));
 fs.mkdirSync(path.join(root, 'sub'));
 fs.writeFileSync(path.join(root, 'index.html'), '<!DOCTYPE html><html><head><title>ani</title></head><body>home</body></html>');
 fs.writeFileSync(path.join(root, 'main.js'), 'var x = 1;');
+fs.writeFileSync(path.join(root, 'styles.css'), ':root{--a:#111;--accent-rgb:255,61,127;--accent:rgb(255,61,127)}.x{color:var(--a);background:rgba(var(--accent-rgb),.5);border-color:var(--accent)}');
 fs.writeFileSync(path.join(root, 'sub', 'a.css'), 'body{}');
 fs.writeFileSync(path.join(root, 'VERSION.txt'), 'commit 51c9588dc35289c6da0f85f9672fa03e15fd5bec\n');
 process.env.TUBE_ANI_DIR = root;
@@ -72,6 +73,31 @@ const server = app.listen(0, '127.0.0.1', () => {
         })
         .then((res) => {
             check('a path out of the folder is refused', res.status !== 200 || res.text.indexOf('fallback') === -1);
+            return get('/tv');
+        })
+        .then((res) => get('/aniultimatium/styles.css').then((css) => ({ res, css })))
+        .then(({ res, css }) => {
+            check('the stylesheet is served with its variables filled in', css.status === 200 && css.text.indexOf('var(') === -1
+                && css.text.indexOf('color:#111') !== -1 && css.text.indexOf('rgba(255,61,127,.5)') !== -1, css.text);
+            check('as css', /css/.test(css.headers['content-type']));
+            return get('/aniultimatium/styles.css?accent=10,200,30').then((accent) => ({ res, accent }));
+        })
+        .then(({ res, accent }) => {
+            check('a colour the page chose is in it', accent.text.indexOf('rgba(10,200,30,.5)') !== -1 && accent.text.indexOf('border-color:rgb(10,200,30)') !== -1, accent.text);
+            return get('/aniultimatium/styles.css?accent=999,1,1').then((bad) => ({ res, bad }));
+        })
+        .then(({ res, bad }) => {
+            check('one that is not a colour, or is out of range, is ignored', bad.text.indexOf('rgba(255,61,127,.5)') !== -1, bad.text);
+            return get('/aniultimatium/styles.css?accent=1,2,3);x{').then((worse) => ({ res, worse }));
+        })
+        .then(({ res, worse }) => {
+            check('so is anything that is trying to get into the style', worse.text.indexOf('rgb(1,2,3)') === -1 && worse.text.indexOf('rgba(255,61,127,.5)') !== -1);
+            return get('/aniultimatium/index.html').then((page) => ({ res: page }));
+        })
+        .then(({ res }) => {
+            check('the page gets what it needs to reach other sites, and to change its colour',
+                res.text.indexOf('/cors-bypass/') !== -1 && res.text.indexOf('--accent-rgb') !== -1 && res.text.indexOf('styles.css?accent=') !== -1);
+            check('and it leaves Aniultimatium\'s own server direct', res.text.indexOf('aniultimatium') !== -1 && res.text.indexOf('workers') !== -1);
             return get('/tv');
         })
         .then((res) => {

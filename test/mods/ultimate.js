@@ -21,7 +21,7 @@ const { GROUPS, at } = await import('../../mods/settings/settingsModel.js');
 const { sectionFor } = await import('../../mods/settings/settingRows.js');
 const { openOptions } = await import('../../mods/settings/settingsOptions.js');
 const { phoneSchema } = await import('../../mods/settings/phoneSchema.js');
-const { themeCss, wallpaperOf, WALLPAPER_FILES, WALLPAPERS, start: startTheme } = await import('../../mods/theme/index.js');
+const { themeCss, wallpaperOf, backdropOf, wallpaperOffNow, WALLPAPER_FILES, WALLPAPERS, start: startTheme } = await import('../../mods/theme/index.js');
 const { speedLadder } = await import('../../mods/player/speed.js');
 const { apiBase } = await import('../../mods/sponsorblock/segmentApi.js');
 const { styled } = await import('../../mods/settings/settingComponents.js');
@@ -40,6 +40,7 @@ const itemsOf = (modal) => modal.content.overlayPanelItemListRenderer.items.map(
 const titleOf = (link) => link.title.simpleText;
 
 const indexOfGroup = (id) => GROUPS.findIndex((group) => group.id === id);
+const indexOf_ = () => indexOfGroup('tube_customization');
 
 const rowsOf = () => sectionFor().settingCategoryCollectionRenderer.items;
 
@@ -109,8 +110,18 @@ check('a row with no style, or a tree that is not one, is left alone', () => {
 check('Customization offers a wallpaper switch, its picture, your own, dimming, colours and font', () => {
     const titles = itemsOf(open([indexOfGroup('tube_customization')])).map(titleOf);
 
-    ['Wallpaper', 'Wallpaper picture', 'Your own wallpaper', 'Wallpaper dimming', 'Background colour', 'Accent colour', 'Font']
+    ['Wallpaper', 'Turn the wallpaper off now', 'Wallpaper picture', 'Your own wallpaper', 'Wallpaper dimming', 'Background colour', 'Accent colour', 'Font']
         .forEach((name) => assert.ok(titles.indexOf(name) !== -1, `${name} is missing from ${titles.join(', ')}`));
+});
+
+check('"Turn the wallpaper off now" is a button that does it, and needs nothing else to work', () => {
+    const index = indexOf_();
+    const links = itemsOf(open([index]));
+    const off = links.find((link) => titleOf(link) === 'Turn the wallpaper off now');
+
+    assert.ok(off, 'the button is missing');
+    assert.strictEqual(commandsOf(off).length, 1);
+    assert.strictEqual(commandsOf(off)[0].customAction.action, 'WALLPAPER_OFF');
 });
 
 check('the wallpaper is a switch of its own, the first of Customization, and off', () => {
@@ -135,7 +146,8 @@ check('turning it on and off again is one press each, and the switch shows which
 
 check('the wallpaper picture list holds the built-in ones and "your own picture", and no "None"', () => {
     const index = indexOfGroup('tube_customization');
-    const labels = itemsOf(open([index, 1])).map(titleOf);
+    const picture = GROUPS[index].items.findIndex((item) => item.key === 'themeWallpaper');
+    const labels = itemsOf(open([index, picture])).map(titleOf);
 
     assert.strictEqual(labels[0], 'Blue flames');
     assert.ok(labels.indexOf('None') === -1, 'the list still has None: that is the switch now');
@@ -148,11 +160,17 @@ check('the wallpaper picture list holds the built-in ones and "your own picture"
 
 const reading = (settings) => (key) => (key in settings ? settings[key] : configDefaults()[key]);
 
-check('the stock look changes nothing but the glow of the Ultimate rows', () => {
+check('the stylesheet of the stock look holds the glow of the Ultimate rows, and nothing else', () => {
     const css = themeCss(reading({}));
 
     assert.ok(css.indexOf('.tube-ultimate') !== -1);
     assert.ok(css.indexOf('background') === -1 && css.indexOf('font-family') === -1, css);
+});
+
+check('the wallpaper is never in the stylesheet, which a TV may not read again once it changes', () => {
+    const css = themeCss(reading({ themeWallpaperOn: true, themeWallpaper: 'flames', themeBackground: 'navy' }));
+
+    assert.ok(css.indexOf('url(') === -1 && css.indexOf('gradient') === -1 && css.indexOf('#0a1128') === -1, css);
 });
 
 check('the Ultimate rows are blue, and glow', () => {
@@ -166,17 +184,24 @@ check('another accent recolours them', () => {
     assert.ok(themeCss(reading({ themeAccent: 'pink' })).indexOf('color: #f472b6 !important') !== -1);
 });
 
-check('a wallpaper is drawn behind the app, and the app\'s own backdrop is let go', () => {
-    const css = themeCss(reading({ themeWallpaperOn: true, themeWallpaper: 'ocean' }));
-
-    assert.ok(css.indexOf('linear-gradient(180deg, #02111f') !== -1);
-    assert.ok(css.indexOf('html.tube-wall #container { background: transparent !important; }') !== -1);
+check('a font is applied, an unknown one is not', () => {
+    assert.ok(themeCss(reading({ themeFont: 'serif' })).indexOf('font-family: Georgia') !== -1);
+    assert.ok(themeCss(reading({ themeFont: 'nonsense' })).indexOf('font-family') === -1);
 });
+
+check('custom rules come last, so they win', () => {
+    const css = themeCss(reading({ themeAccent: 'red', customCss: 'body { zoom: 1.1 }' }));
+    assert.ok(css.trim().endsWith('body { zoom: 1.1 }'));
+});
+
+// --- what the backdrop should be
 
 check('with the switch off there is no wallpaper, whichever picture is chosen', () => {
     ['flames', 'ocean', 'custom', 'none', 'nonsense'].forEach((picture) => {
-        const css = themeCss(reading({ themeWallpaperOn: false, themeWallpaper: picture, themeWallpaperUrl: 'https://x.com/a.jpg' }));
-        assert.ok(css.indexOf('url(') === -1 && css.indexOf('gradient') === -1 && css.indexOf('tube-wall') === -1, picture);
+        const read = reading({ themeWallpaperOn: false, themeWallpaper: picture, themeWallpaperUrl: 'https://x.com/a.jpg' });
+
+        assert.strictEqual(wallpaperOf(read), null, picture);
+        assert.strictEqual(backdropOf(read), null, picture);
     });
 });
 
@@ -184,31 +209,9 @@ check('a picture left as "none" by an earlier version is no wallpaper even with 
     assert.strictEqual(wallpaperOf(reading({ themeWallpaperOn: true, themeWallpaper: 'none' })), null);
 });
 
-check('the wallpaper is one background, with nothing fixed and nothing laid over the page', () => {
-    const css = themeCss(reading({ themeWallpaperOn: true, themeWallpaper: 'flames', themeDim: 60 }));
-
-    assert.ok(css.indexOf('fixed') === -1, 'a fixed background repaints on every move');
-    assert.ok(css.indexOf('::before') === -1 && css.indexOf('position') === -1, 'an overlay layer made the screens slow');
-    assert.ok(css.indexOf('transparent') !== -1);
-});
-
-check('the blue flames wallpaper is the bundled picture, covering the screen', () => {
-    const css = themeCss(reading({ themeWallpaperOn: true, themeWallpaper: 'flames' }));
-
-    assert.ok(css.indexOf('url("/__tube/wallpapers/blue-flames.jpg") center / cover no-repeat') !== -1, css);
-    assert.ok(css.indexOf('html.tube-wall #container { background: transparent !important; }') !== -1);
-});
-
-check('the wallpaper covers the whole screen, with black under any part the picture does not', () => {
-    const css = themeCss(reading({ themeWallpaperOn: true }));
-
-    assert.ok(css.indexOf('min-height: 100vh') !== -1);
-    assert.ok(css.indexOf('background-color: #000000 !important') !== -1);
-});
-
-check('it is dimmed by default, so white text stays readable on it', () => {
-    assert.strictEqual(configDefaults().themeDim, 40);
-    assert.ok(themeCss(reading({ themeWallpaperOn: true })).indexOf('rgba(0, 0, 0, 0.4)') !== -1);
+check('the blue flames wallpaper is the bundled picture', () => {
+    assert.strictEqual(wallpaperOf(reading({ themeWallpaperOn: true, themeWallpaper: 'flames' })),
+        'url("/__tube/wallpapers/blue-flames.jpg")');
 });
 
 check('every picture the preset list names is a file in wallpapers/', () => {
@@ -218,65 +221,269 @@ check('every picture the preset list names is a file in wallpapers/', () => {
     });
 });
 
-check('dimming darkens it by the chosen amount', () => {
-    assert.ok(themeCss(reading({ themeWallpaperOn: true, themeWallpaper: 'ocean', themeDim: 60 })).indexOf('rgba(0, 0, 0, 0.6)') !== -1);
-    assert.ok(themeCss(reading({ themeWallpaperOn: true, themeWallpaper: 'ocean', themeDim: 0 })).indexOf('linear-gradient(rgba(') === -1);
+check('every preset is one image, with no colour or position among the layers', () => {
+    Object.keys(WALLPAPERS).forEach((id) => {
+        assert.ok(/^(url|linear-gradient|radial-gradient)\(/.test(WALLPAPERS[id]), id);
+        assert.ok(WALLPAPERS[id].indexOf('no-repeat') === -1 && !/,\s*#[0-9a-f]{3,6}\s*$/i.test(WALLPAPERS[id]), id);
+    });
+});
+
+check('it is dimmed by default, so white text stays readable on it', () => {
+    assert.strictEqual(configDefaults().themeDim, 40);
+    assert.strictEqual(backdropOf(reading({ themeWallpaperOn: true })).dim, 40);
 });
 
 check('your own picture is used only as a plain web address', () => {
-    const own = (url) => themeCss(reading({ themeWallpaperOn: true, themeWallpaper: 'custom', themeWallpaperUrl: url }));
+    const own = (url) => wallpaperOf(reading({ themeWallpaperOn: true, themeWallpaper: 'custom', themeWallpaperUrl: url }));
 
-    assert.ok(own('https://example.com/a.jpg').indexOf('url("https://example.com/a.jpg")') !== -1);
-    assert.ok(own('javascript:alert(1)').indexOf('url(') === -1);
-    assert.ok(own('https://x.com/a.jpg"); } body { display: none').indexOf('url(') === -1);
-    assert.ok(own('').indexOf('url(') === -1);
+    assert.strictEqual(own('https://example.com/a.jpg'), 'url("https://example.com/a.jpg")');
+    assert.strictEqual(own('javascript:alert(1)'), null);
+    assert.strictEqual(own('https://x.com/a.jpg"); } body { display: none'), null);
+    assert.strictEqual(own(''), null);
 });
 
-check('a colour alone sets the background when there is no wallpaper', () => {
-    const css = themeCss(reading({ themeBackground: 'navy' }));
-    assert.ok(css.indexOf('#0a1128') !== -1);
-    assert.ok(themeCss(reading({ themeBackground: 'navy', themeWallpaperOn: true, themeWallpaper: 'ocean' })).indexOf('#0a1128') === -1);
+check('a colour alone is the backdrop when there is no wallpaper, and the wallpaper wins over it', () => {
+    assert.deepStrictEqual(backdropOf(reading({ themeBackground: 'navy' })), { kind: 'colour', colour: '#0a1128' });
+    assert.strictEqual(backdropOf(reading({ themeBackground: 'navy', themeWallpaperOn: true, themeWallpaper: 'ocean' })).kind, 'wallpaper');
 });
 
-check('a font is applied, an unknown one is not', () => {
-    assert.ok(themeCss(reading({ themeFont: 'serif' })).indexOf('font-family: Georgia') !== -1);
-    assert.ok(themeCss(reading({ themeFont: 'nonsense' })).indexOf('font-family') === -1);
-});
+// --- painting it, and taking it off again
 
-check('custom rules come last, so they win', () => {
-    const css = themeCss(reading({ themeAccent: 'red', customCss: 'body { zoom: 1.1 }' }));
-    assert.ok(css.lastIndexOf('body { zoom: 1.1 }') > css.indexOf('.tube-ultimate'));
-    assert.ok(css.trim().endsWith('body { zoom: 1.1 }'));
-});
-
-// --- the wallpaper class on <html>, put on and taken off as the screen changes
-
-check('the wallpaper class follows the switch, and steps aside while a video plays', () => {
-    const classes = new Set();
+const stand = (own) => {
+    const make = (name, style) => ({ name, style: Object.assign({}, style), parentNode: null });
+    const html = make('html', { minHeight: '' });
+    const body = make('body', { backgroundColor: 'rgb(15, 15, 15)' });
+    const container = make('container', { backgroundColor: 'rgb(15, 15, 15)', color: 'white' });
+    const sheets = [];
     const listeners = {};
+    const reloads = [];
 
-    global.document.documentElement = { classList: { add: (name) => classes.add(name), remove: (name) => classes.delete(name) } };
-    global.document.head = { appendChild: () => undefined, lastChild: null };
-    global.document.createElement = () => ({});
-    global.window.location = { hash: '#/' };
+    const head = {
+        appendChild: (element) => {
+            element.parentNode = { removeChild: (gone) => sheets.splice(sheets.indexOf(gone), 1) };
+            sheets.push(element);
+        }
+    };
+
+    const behaviour = Object.assign({ redraws: true, layers: true }, own);
+
+    global.document = {
+        documentElement: html,
+        body,
+        head,
+        getElementById: (id) => (id === 'container' ? container : sheets.find((element) => element.id === id) || null),
+        querySelector: () => null,
+        createElement: () => make('style', {})
+    };
+
+    global.window.location = { hash: '#/', reload: () => reloads.push(1) };
     global.window.addEventListener = (type, handler) => { listeners[type] = handler; };
 
+    // What the engine says the page's background-image is: what was set, unless it does not redraw
+    // or does not take two layers.
+    const frozen = { value: 'none' };
+    global.window.getComputedStyle = () => {
+        const set = body.style.backgroundImage;
+
+        // An engine that never redraws keeps reporting the first thing it was given.
+        if (!behaviour.redraws) {
+            if (!frozen.taken && set) {
+                frozen.value = set;
+                frozen.taken = true;
+            }
+
+            return { backgroundImage: frozen.value };
+        }
+        if (!set) return { backgroundImage: 'none' };
+        if (!behaviour.layers && set.indexOf('),') !== -1 && set.indexOf('linear-gradient(rgba(') === 0) return { backgroundImage: 'none' };
+
+        frozen.value = set;
+        return { backgroundImage: set };
+    };
+
+    // The scheduler's interval, and the pause before a reload, are not waited for.
+    global.setTimeout = (run) => { run(); return 0; };
+
+    return { html, body, container, sheets, listeners, reloads, // What each element's style says, leaving out what is set to nothing, which is the same as not set.
+        snapshot: () => JSON.stringify([html.style, body.style, container.style].map((style) => Object.keys(style)
+            .filter((name) => style[name] !== '').sort().map((name) => [name, style[name]]))) };
+};
+
+const settle = (settings, run) => withConfig(settings, run);
+
+check('turning the wallpaper on paints the page, and lets the app\'s own backdrop go', () => {
+    const page = stand();
     startTheme();
-    assert.strictEqual(classes.has('tube-wall'), false, 'on before it was asked for');
 
+    settle({ themeWallpaperOn: true, themeWallpaper: 'ocean', themeDim: 40 }, () => {});
     configWrite('themeWallpaperOn', true);
-    assert.strictEqual(classes.has('tube-wall'), true);
+    configWrite('themeWallpaper', 'ocean');
 
-    global.window.location.hash = '#/watch?v=abc';
-    listeners.hashchange();
-    assert.strictEqual(classes.has('tube-wall'), false, 'still drawn while a video plays');
-
-    global.window.location.hash = '#/';
-    listeners.hashchange();
-    assert.strictEqual(classes.has('tube-wall'), true, 'not back after the video');
+    assert.ok(page.body.style.backgroundImage.indexOf('linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), linear-gradient(180deg, #02111f') === 0, page.body.style.backgroundImage);
+    assert.strictEqual(page.html.style.backgroundImage, page.body.style.backgroundImage);
+    assert.strictEqual(page.body.style.backgroundSize, 'cover');
+    assert.strictEqual(page.body.style.backgroundColor, '#000000');
+    assert.strictEqual(page.html.style.minHeight, '100vh');
+    assert.strictEqual(page.container.style.backgroundColor, 'transparent');
 
     configWrite('themeWallpaperOn', false);
-    assert.strictEqual(classes.has('tube-wall'), false, 'switching it off did not take it off');
+    configWrite('themeWallpaper', 'flames');
+});
+
+check('turning it off puts every style back exactly as the page had it', () => {
+    const page = stand();
+    const before = page.snapshot();
+    startTheme();
+
+    configWrite('themeWallpaperOn', true);
+    assert.notStrictEqual(page.snapshot(), before, 'nothing was painted');
+
+    configWrite('themeWallpaperOn', false);
+    assert.strictEqual(page.snapshot(), before, 'what was painted is still there');
+    assert.strictEqual(page.reloads.length, 0, 'the page was reloaded though it redrew');
+});
+
+check('on and off again, three times, leaves nothing behind', () => {
+    const page = stand();
+    const before = page.snapshot();
+    startTheme();
+
+    [1, 2, 3].forEach(() => {
+        configWrite('themeWallpaperOn', true);
+        configWrite('themeWallpaperOn', false);
+    });
+
+    assert.strictEqual(page.snapshot(), before);
+});
+
+check('another picture takes the place of the first, with no trace of it', () => {
+    const page = stand();
+    startTheme();
+
+    configWrite('themeWallpaperOn', true);
+    configWrite('themeWallpaper', 'ocean');
+    configWrite('themeWallpaper', 'violet');
+
+    assert.ok(page.body.style.backgroundImage.indexOf('#02111f') === -1 && page.body.style.backgroundImage.indexOf('#12002b') !== -1);
+
+    configWrite('themeWallpaperOn', false);
+    configWrite('themeWallpaper', 'flames');
+});
+
+check('a changed dimming is applied at once', () => {
+    const page = stand();
+    startTheme();
+
+    configWrite('themeWallpaperOn', true);
+    configWrite('themeDim', 80);
+    assert.ok(page.body.style.backgroundImage.indexOf('rgba(0, 0, 0, 0.8)') !== -1);
+
+    configWrite('themeDim', 0);
+    assert.ok(page.body.style.backgroundImage.indexOf('rgba(') === -1, 'dimming 0 still has the shade');
+
+    configWrite('themeWallpaperOn', false);
+    configWrite('themeDim', 40);
+});
+
+check('an engine that takes one layer only gets the wallpaper without the dimming, not none', () => {
+    const page = stand({ layers: false });
+    startTheme();
+
+    configWrite('themeWallpaperOn', true);
+    assert.strictEqual(page.body.style.backgroundImage.indexOf('linear-gradient(rgba('), -1);
+    assert.ok(page.body.style.backgroundImage.indexOf('url("/__tube/wallpapers/blue-flames.jpg")') === 0);
+
+    configWrite('themeWallpaperOn', false);
+});
+
+check('if the engine still shows the wallpaper after it was switched off, the page is loaded again', () => {
+    const page = stand({ redraws: false });
+    startTheme();
+
+    configWrite('themeWallpaperOn', true);
+    assert.strictEqual(page.reloads.length, 0);
+
+    // The engine keeps drawing what it drew: it never redraws.
+    configWrite('themeWallpaperOn', false);
+    assert.strictEqual(page.reloads.length, 1, 'the wallpaper was left on the screen');
+});
+
+check('a video clears the wallpaper, and the home page brings it back', () => {
+    const page = stand();
+    const before = page.snapshot();
+    startTheme();
+
+    configWrite('themeWallpaperOn', true);
+    const painted = page.snapshot();
+
+    global.window.location.hash = '#/watch?v=abc';
+    page.listeners.hashchange();
+    assert.strictEqual(page.snapshot(), before, 'still painted while a video plays');
+
+    global.window.location.hash = '#/';
+    page.listeners.hashchange();
+    assert.strictEqual(page.snapshot(), painted, 'not painted again after the video');
+
+    configWrite('themeWallpaperOn', false);
+});
+
+check('a plain background colour is painted the same way, and taken off the same way', () => {
+    const page = stand();
+    const before = page.snapshot();
+    startTheme();
+
+    configWrite('themeBackground', 'navy');
+    assert.strictEqual(page.body.style.backgroundColor, '#0a1128');
+    assert.strictEqual(page.container.style.backgroundColor, '#0a1128');
+
+    configWrite('themeBackground', 'default');
+    assert.strictEqual(page.snapshot(), before);
+});
+
+check('the stylesheet is a new element each time, the old one gone', () => {
+    const page = stand();
+    startTheme();
+
+    configWrite('themeAccent', 'pink');
+    configWrite('themeAccent', 'green');
+
+    assert.strictEqual(page.sheets.length, 1);
+    assert.ok(page.sheets[0].textContent.indexOf('#4ade80') !== -1);
+
+    configWrite('themeAccent', 'blue');
+});
+
+check('"turn it off now" switches it off, paints it away and loads the page again', () => {
+    const page = stand();
+    const before = page.snapshot();
+    startTheme();
+
+    configWrite('themeWallpaperOn', true);
+
+    // What the button does: the setting, then this.
+    configWrite('themeWallpaperOn', false);
+    wallpaperOffNow();
+
+    assert.strictEqual(page.snapshot(), before);
+    assert.strictEqual(page.reloads.length, 1);
+});
+
+check('starting with the wallpaper off leaves the page exactly as it was', () => {
+    const page = stand();
+    const before = page.snapshot();
+    startTheme();
+
+    assert.strictEqual(page.snapshot(), before);
+});
+
+check('starting with the wallpaper on paints it', () => {
+    withConfig({ themeWallpaperOn: true }, () => {
+        const page = stand();
+        startTheme();
+
+        assert.ok(page.body.style.backgroundImage.indexOf('blue-flames.jpg') !== -1);
+        configWrite('themeWallpaperOn', false);
+    });
 });
 
 // --- Ultimate Dev Options
@@ -404,7 +611,7 @@ check('a default speed can be set to 15x in the settings, and is a choice of the
 
 check('every setting these sections name is one the config knows', () => {
     const known = configDefaults();
-    const buttons = ['themeReset', 'tubeVersion', 'tubeReset', 'openAniUltimatium'];
+    const buttons = ['themeReset', 'tubeVersion', 'tubeReset', 'openAniUltimatium', 'wallpaperOffNow'];
 
     GROUPS.filter((group) => group.ultimate).forEach((group) => group.items.forEach((item) => {
         if (buttons.indexOf(item.key) === -1) assert.ok(item.key in known, `${item.key} is not in the config`);

@@ -25,6 +25,8 @@ with YouTube's own TV interface left as it is.
 - **UltimatiumTube Ultimate Settings.** The first row of that section, in glowing blue. Behind it:
   **Customization** (wallpaper, colours, font), **Ultimate Dev Options** (advanced settings) and
   **AniUltimatium**.
+- **Back asks before leaving.** Back at the start of the app asks "Exit UltimatiumTube?" with Stay and
+  Exit. It can be turned off under Startup.
 - **Speed up to 15x**, from the speed button in the player and as a default speed in the settings.
 - **AniUltimatium from the app.** Turn it on and an extra blue row opens
   [AniUltimatium](https://github.com/AdvaithAvinash/AniUltimatium), the anime, movie and live TV app.
@@ -83,7 +85,7 @@ The first row of the UltimatiumTube section. It opens three sections.
 
 | Section | What is in it |
 | --- | --- |
-| Customization | Wallpaper (ten built-in, starting with Blue flames, or a picture from a web address), wallpaper dimming, background colour, accent colour of the UltimatiumTube rows, font, and a reset |
+| Customization | A wallpaper switch, a button that turns the wallpaper off and loads the page again, its picture (ten built-in, starting with Blue flames, or one from a web address), dimming, background colour, accent colour of the UltimatiumTube rows, font, and a reset |
 | Ultimate Dev Options | Phone page on or off and how often it refreshes, a SponsorBlock server of your own, custom style rules (CSS), the version, and reset everything |
 | AniUltimatium | A switch. While it is on, an **Open AniUltimatium** entry appears here, and one more blue row in the category |
 
@@ -97,11 +99,15 @@ files, in `aniultimatium/`. `node tools/update_aniultimatium.js` brings the bund
 the internet.
 
 - **Android and Fire TV:** it opens in a screen of the app and Back returns to YouTube.
-- **Samsung TV:** AniUltimatium's styles need more of the web than the TV's YouTube engine has, so the
-  reliable way is AniUltimatium's own Samsung app, installed on the TV like this one (its `.wgt` is on
-  its releases page). The blue row starts that app. Without it, the row opens the copy bundled here,
-  which that engine may not draw properly. If it was installed under another id, set it under
-  Ultimate Dev Options.
+- **Samsung TV:** AniUltimatium's own Samsung app, if installed (its `.wgt` is on its releases page),
+  is the best way: it runs in the TV's web engine, as AniUltimatium is written for. The blue row starts
+  it. Without it, the row opens the copy bundled here, which the service serves to the TV's YouTube
+  engine. That engine has no CSS variables, grid or `gap`, so the service sends AniUltimatium's
+  stylesheet with its variables filled in, routes its requests to other sites through the service (it
+  is written for a widget that may call any address), and starts it in its Classic, low-end look. It
+  has not been seen running on a TV, and AniUltimatium's embedded movie players need frames, which
+  that engine does not have. If the app was installed under another id, set it under Ultimate Dev
+  Options.
 
 ### From your phone
 

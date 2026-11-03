@@ -145,8 +145,17 @@ stylesheet: they are put back to exactly what each element held, and the engine 
 whether the picture is gone (`mods/theme/`). A TV's engine may not read a stylesheet again after it
 changes, and a wallpaper that goes on but never off is what that looks like.
 
+Keeping the service alive: an error nothing caught used to end it (`process.exit(1)`), and a TV does
+not start an ended service again, so it was reinstalled to. `service/lib/postmortem.js` now writes
+such an error down (`survived:`, the first five in a minute in full) and goes on. `service/lib/listener.js`
+listens again if the server closes or the address it chose is no longer the set's, and keeps trying
+while the port is busy; `service/lib/tend.js` runs that check every twenty seconds and on every
+platform wake, writes the container's boot page again if that failed, and again when the set's address
+changed.
+
 Back at the start of the app: YouTube leaves by the command `EXIT_APP`. `mods/exitConfirm/` holds that
-command back and asks; Exit sends it again, marked as answered.
+command back and asks; Exit sends it again, marked as answered. The page's own `window.close()` is
+held the same way, since an error handler may call it.
 
 ## Dev and ship
 

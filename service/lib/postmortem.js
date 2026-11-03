@@ -65,11 +65,30 @@ const readOr = (file) => {
 // The rotated file first, so the journal reads from the start.
 const read = () => readOr(`${LOG}.1`) + readOr(LOG);
 
+// An error nothing caught used to end the service on the spot. A service that has ended on a TV is
+// not started again until it is reinstalled, and one stray error (a socket the TV dropped, a request
+// that went wrong) is no reason for that: it is written down, and the service goes on. A storm of them
+// is counted rather than copied a thousand times into a log that holds 64KB.
+const SURVIVE_WINDOW = 60000;
+const WRITTEN_IN_FULL = 5;
+
+const survived = { at: [], total: 0 };
+
+const survive = (error) => {
+    const now = Date.now();
+
+    survived.total += 1;
+    survived.at = survived.at.filter((when) => now - when < SURVIVE_WINDOW).concat(now);
+
+    if (survived.at.length <= WRITTEN_IN_FULL) {
+        note('survived', `${describe(error)}\n(kept running; ${survived.total} so far)`);
+    } else if (survived.at.length === WRITTEN_IN_FULL + 1) {
+        note('survived', 'more than 5 errors in a minute: counting them, not writing them, until it calms');
+    }
+};
+
 const watch = () => {
-    process.on('uncaughtException', (error) => {
-        note('uncaught', error);
-        process.exit(1);
-    });
+    process.on('uncaughtException', survive);
 
     process.on('unhandledRejection', (error) => note('unhandled rejection', error));
     process.on('exit', (code) => { if (code) note('exit', `code ${code}`); });
@@ -77,4 +96,4 @@ const watch = () => {
     note('started', `pid ${process.pid}, node ${process.version}`);
 };
 
-module.exports = { describe, note, read, remember, since, watch };
+module.exports = { describe, note, read, remember, since, watch, survive, survivedCount: () => survived.total };

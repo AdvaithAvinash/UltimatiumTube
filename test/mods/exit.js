@@ -11,10 +11,13 @@ global.window._yttv = { router: { instance: { resolveCommand: (command) => {
     else resolved.push(command);
 } } } };
 
-global.setTimeout = () => 0;
+// The time an answer of Exit is good for runs out when the test says so.
+const timers = [];
+global.setTimeout = (run) => { timers.push(run); return 0; };
+const expire = () => timers.splice(0).forEach((run) => run());
 
 const { PASS } = await import('../../framework/index.js');
-const { askToExit, interpretExit, leaveConfirmed, leaveOrAsk, EXIT_CONFIRMED } = await import('../../mods/exitConfirm/index.js');
+const { askToExit, holdClose, interpretExit, leaveConfirmed, leaveOrAsk, EXIT_CONFIRMED } = await import('../../mods/exitConfirm/index.js');
 const { GROUPS } = await import('../../mods/settings/settingsModel.js');
 
 const EXIT = { signalAction: { signal: 'EXIT_APP' } };
@@ -25,6 +28,7 @@ const modalOf = (command) => command.openPopupAction.popup.overlaySectionRendere
 const buttons = (command) => modalOf(command).content.overlayPanelItemListRenderer.items.map((item) => item.compactLinkRenderer);
 
 const reset = () => {
+    expire();
     shown.length = 0;
     resolved.length = 0;
 };
@@ -130,6 +134,62 @@ check('and leaves at once when asking is off', () => {
     withConfig({ confirmExit: false }, () => leaveOrAsk(function (command) { direct.push(command); }, {}, {}));
     assert.deepStrictEqual(direct, [EXIT]);
     assert.strictEqual(shown.length, 0);
+});
+
+// --- a window closed by the page's own code
+
+const closed = [];
+global.window.close = function () { closed.push(1); };
+holdClose();
+
+check('a window the page closes itself is asked about, and not closed', () => {
+    reset();
+    closed.length = 0;
+
+    global.window.close();
+
+    assert.strictEqual(closed.length, 0, 'it closed without asking');
+    assert.strictEqual(shown.length, 1);
+});
+
+check('holding it twice does not ask twice, nor wrap it twice', () => {
+    reset();
+    closed.length = 0;
+    assert.strictEqual(holdClose(), false);
+
+    global.window.close();
+    assert.strictEqual(shown.length, 1);
+});
+
+check('after Exit, the window it closes is let close, once the viewer has said so', () => {
+    reset();
+    closed.length = 0;
+
+    leaveConfirmed();
+    global.window.close();
+
+    assert.strictEqual(closed.length, 1, 'the close after Exit was asked about again');
+    assert.strictEqual(shown.length, 0);
+});
+
+check('with the setting off, it closes at once', () => {
+    reset();
+    closed.length = 0;
+
+    withConfig({ confirmExit: false }, () => global.window.close());
+    assert.strictEqual(closed.length, 1);
+});
+
+check('with nothing to ask with, it closes rather than strand the viewer', () => {
+    reset();
+    closed.length = 0;
+    const kept = global.window._yttv;
+    global.window._yttv = {};
+
+    global.window.close();
+    global.window._yttv = kept;
+
+    assert.strictEqual(closed.length, 1);
 });
 
 check('it is on by default, and a switch in Startup turns it off', () => {

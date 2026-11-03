@@ -55,7 +55,11 @@ TV and is what serves YouTube to it. In order of how often it is the cause:
 
 1. **The service is not running.** The TV starts it at boot and after an install, not when you press
    the icon. Switch the TV off at the remote and on again (not standby), wait a minute, then open the
-   app. This is the usual fix after installing or updating.
+   app. This is the usual fix after installing or updating. (Before version 1.3.1 the service ended
+   itself on any error it did not expect, and a TV does not start an ended service again, which is why
+   only a reinstall brought it back. It now notes the error and carries on, and looks every twenty
+   seconds that it is still listening and that the boot page has this TV's current address. What it
+   survived is in the log at `/__tube/log`, as `survived:` lines.)
 2. **The app was not signed as a service.** The service needs a Samsung certificate with the
    partner level. In Apps2Samsung turn on both **Force Samsung Certificate** and **Partner Signing**,
    then install again. A widget signed without them installs but its service never starts.

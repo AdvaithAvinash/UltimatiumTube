@@ -12,6 +12,7 @@ import { start as startSmoothNavigation } from './scroller/smoothNavigation.js';
 import { start as startSpeed } from './player/speed.js';
 import { start as startPhone } from './phone/index.js';
 import { start as startTheme } from './theme/index.js';
+import { start as startExitConfirm } from './exitConfirm/index.js';
 
 import './feed/index.js';
 import './adblock/index.js';
@@ -51,6 +52,7 @@ register('playback speed', 'ui', startSpeed);
 register('voice capability', 'ui', startVoiceCapability);
 register('phone settings', 'ui', startPhone);
 register('theme', 'ui', startTheme);
+register('exit confirm', 'ui', startExitConfirm);
 
 // Taking over JSON.parse seals registration.
 register('json', 'intercept', interceptJson);

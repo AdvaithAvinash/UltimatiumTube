@@ -26,6 +26,8 @@ const launchApp = require('./lib/launchApp.js');
 const routeErrors = require('./lib/routeErrors.js');
 const dev = require('./dev/index.js');
 const upgrade = require('./lib/upgrade.js');
+const { serviceAddress } = require('./lib/serviceAddress.js');
+const tender = require('./lib/tend.js');
 const knobs = require('./lib/knobs.js');
 
 // A cobalt.js that will not load must not stop the proxy starting.
@@ -109,6 +111,7 @@ routeErrors.attach(app);
 // Every interface: the container reaches us on this set's own address, never loopback.
 const BIND = '0.0.0.0';
 const RETRY_LISTEN_AFTER = 5000;
+const CHECK_LISTENING_EVERY = 20000;
 const REPEAT_AFTER = 60000;
 
 const repeated = { text: '', at: 0 };
@@ -132,51 +135,43 @@ const candidates = () => {
     ), [BIND]);
 };
 
-const listen = (addresses, index) => {
-    const address = addresses[index];
-    const serving = { yes: false };
-
-    const server = app.listen(ports.PROXY, address, () => {
-        serving.yes = true;
-
-        postmortem.note('listening', `${address}:${ports.PROXY}`);
+const listener = require('./lib/listener.js').create({
+    app,
+    port: ports.PROXY,
+    bind: BIND,
+    addresses: candidates,
+    note: postmortem.note,
+    noteRarely,
+    retryAfter: RETRY_LISTEN_AFTER,
+    // An upgrade is not a request express ever sees, and an unanswered one hangs rather than fails.
+    setup: (server) => upgrade.attach(server, { rewrite: dev.upgradeRewrite }),
+    listening: (address) => {
         console.log(`tube service on ${address}:${ports.PROXY}`);
         if (!isTV) console.log('Running off-TV: proxy and userscript are live.');
-    });
+    }
+});
 
-    // An upgrade is not a request express ever sees, and an unanswered one hangs rather than fails.
-    upgrade.attach(server, { rewrite: dev.upgradeRewrite });
-
-    // A later error once the port is ours would otherwise start a second server beside the one
-    // already answering.
-    server.on('error', (error) => {
-        // Both widgets carry a service and install side by side.
-        const why = error.code === 'EADDRINUSE'
-            ? 'something already holds that port — the other Tube widget, or an older build of this '
-                + 'one, is the usual cause; only one of the two can serve the container'
-            : postmortem.describe(error);
-
-        noteRarely('listen', `${address}:${ports.PROXY} — ${why}`);
-        if (serving.yes) return undefined;
-
-        const next = index + 1;
-        if (next < addresses.length) return listen(addresses, next);
-
-        // Exiting would only be restarted into the same failure.
-        return setTimeout(() => listen(candidates(), 0), RETRY_LISTEN_AFTER);
-    });
-};
+const tending = tender.create({ listener, cobalt, serviceAddress, note: postmortem.note });
 
 const holdFor = dev.startDelay();
 if (holdFor) postmortem.note('listen', `held shut for ${holdFor / 1000}s by TUBE_START_DELAY`);
 
-setTimeout(() => listen(candidates(), 0), holdFor);
+setTimeout(() => {
+    listener.start();
+
+    const timer = setInterval(tending.tend, CHECK_LISTENING_EVERY);
+    // Never what keeps the process alive.
+    if (timer && timer.unref) timer.unref();
+}, holdFor);
 
 // Tizen's service runner calls these on every wake message, and a missing one kills the service.
 module.exports = {
     onStart: () => {},
 
     onRequest: () => {
+        // A wake (boot, standby, an install) is the moment an address or a socket may have changed.
+        tending.tend();
+
         if (!cobalt) return;
         try { cobalt.wake(); } catch (e) { postmortem.note('cobalt', e); }
     },

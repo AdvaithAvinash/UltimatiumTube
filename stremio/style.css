@@ -1,0 +1,167 @@
+/* Drawn for a 1920 x 1080 page, which the script scales to the screen. Written for an engine with
+   no custom properties, no grid and no gap: flexbox, transforms and opacity only. */
+html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #07090f; overflow: hidden; }
+body { font-family: Roboto, Arial, Helvetica, sans-serif; color: #f1f3f8; }
+#app { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden; background: #07090f; }
+.screen { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden; }
+.hidden { display: none; }
+
+/* focus */
+.f { outline: none; }
+.f.on { box-shadow: 0 0 0 4px #ffffff, 0 0 30px rgba(62, 166, 255, 0.9); }
+
+/* the bar of tabs */
+#tabs { position: absolute; left: 0; top: 0; width: 1920px; height: 110px; z-index: 20; display: flex; flex-direction: row; align-items: center; padding-left: 80px; background: linear-gradient(rgba(7, 9, 15, 0.95), rgba(7, 9, 15, 0)); }
+#tabs.off { display: none; }
+.brand { font-size: 34px; font-weight: bold; color: #3ea6ff; margin-right: 56px; text-shadow: 0 0 14px rgba(62, 166, 255, 0.8); }
+.tab { font-size: 28px; padding: 10px 26px; margin-right: 10px; border-radius: 30px; color: #b8bfd0; }
+.tab.cur { color: #ffffff; background: rgba(62, 166, 255, 0.28); }
+.tab.on { background: #3ea6ff; color: #04101d; box-shadow: 0 0 24px rgba(62, 166, 255, 0.9); }
+
+/* the picture behind a screen */
+.bg { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden; }
+.bg img { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover; opacity: 0; transition: opacity 0.6s; }
+.bg img.show { opacity: 1; }
+.shade { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; background: linear-gradient(to right, rgba(7, 9, 15, 0.97) 0%, rgba(7, 9, 15, 0.8) 38%, rgba(7, 9, 15, 0.15) 75%), linear-gradient(rgba(7, 9, 15, 0) 40%, #07090f 100%); }
+.shade.flat { background: rgba(7, 9, 15, 0.9); }
+
+/* the hero of the home screens */
+.hero { position: absolute; left: 80px; top: 150px; width: 1000px; }
+.hero h1 { font-size: 72px; line-height: 80px; margin: 0 0 14px 0; max-height: 160px; overflow: hidden; text-shadow: 0 2px 16px rgba(0, 0, 0, 0.8); }
+.meta { font-size: 26px; color: #c9d0e0; margin-bottom: 16px; }
+.meta b { color: #ffc83d; font-weight: bold; }
+.meta .chip { display: inline-block; border: 2px solid #8993ab; border-radius: 6px; padding: 0 10px; margin-right: 14px; font-size: 22px; }
+.desc { font-size: 28px; line-height: 40px; max-height: 120px; overflow: hidden; color: #dfe4f0; margin-bottom: 26px; }
+.buttons { display: flex; flex-direction: row; }
+.btn { font-size: 28px; font-weight: bold; padding: 16px 40px; margin-right: 18px; border-radius: 10px; background: rgba(255, 255, 255, 0.16); color: #ffffff; }
+.btn.main { background: #3ea6ff; color: #04101d; }
+.btn.on { background: #ffffff; color: #04101d; }
+
+/* the rows */
+.rowswrap { position: absolute; left: 0; top: 560px; width: 1920px; height: 520px; overflow: hidden; }
+.rows { position: absolute; left: 0; top: 0; width: 1920px; transition: transform 0.28s; }
+.row { position: relative; width: 1920px; height: 420px; }
+.rowtitle { font-size: 32px; font-weight: bold; padding-left: 80px; height: 52px; color: #e8ecf6; }
+.rowview { position: absolute; left: 0; top: 46px; width: 1920px; height: 372px; overflow: hidden; }
+.track { position: absolute; left: 0; top: 24px; height: 340px; display: flex; flex-direction: row; transition: transform 0.25s; padding-left: 80px; }
+.card { position: relative; width: 200px; margin-right: 22px; flex-shrink: 0; }
+.card .cimg { position: relative; width: 200px; height: 300px; border-radius: 10px; overflow: hidden; background: #1a2030; }
+.card .cimg img { position: absolute; left: 0; top: 0; width: 200px; height: 300px; object-fit: cover; opacity: 0; transition: opacity 0.3s; }
+.card .cimg img.show { opacity: 1; }
+.card .noimg { position: absolute; left: 0; top: 0; width: 180px; padding: 110px 10px 0 10px; text-align: center; font-size: 24px; color: #8993ab; }
+.card .ctitle { font-size: 22px; margin-top: 8px; color: #c9d0e0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card.on { transform: scale(1.08); z-index: 3; box-shadow: none; }
+.card.on .cimg { box-shadow: 0 0 0 4px #ffffff, 0 0 30px rgba(62, 166, 255, 0.9); }
+.card .bar { position: absolute; left: 0; bottom: 0; width: 200px; height: 8px; background: rgba(0, 0, 0, 0.6); }
+.card .bar i { display: block; height: 8px; background: #3ea6ff; }
+.card .tag { position: absolute; right: 8px; top: 8px; background: rgba(0, 0, 0, 0.75); font-size: 18px; padding: 2px 8px; border-radius: 6px; color: #ffc83d; }
+.empty { font-size: 30px; color: #8993ab; padding: 14px 80px; }
+
+/* detail */
+.dposter { position: absolute; left: 80px; top: 160px; width: 360px; height: 540px; border-radius: 14px; overflow: hidden; background: #1a2030; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7); }
+.dposter img { width: 360px; height: 540px; object-fit: cover; }
+.dinfo { position: absolute; left: 500px; top: 150px; width: 1300px; }
+.dinfo h1 { font-size: 64px; line-height: 72px; margin: 0 0 12px 0; max-height: 150px; overflow: hidden; }
+.dinfo .desc { max-height: 160px; }
+.people { font-size: 24px; color: #aeb6c9; margin-bottom: 8px; max-height: 34px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.people b { color: #e8ecf6; }
+.seasons { position: absolute; left: 500px; top: 640px; width: 1300px; height: 70px; overflow: hidden; }
+.seasons .strack { display: flex; flex-direction: row; transition: transform 0.2s; }
+.chip2 { font-size: 26px; padding: 8px 24px; margin-right: 12px; border-radius: 24px; background: rgba(255, 255, 255, 0.12); white-space: nowrap; flex-shrink: 0; }
+.chip2.cur { background: rgba(62, 166, 255, 0.4); }
+.chip2.on { background: #ffffff; color: #04101d; }
+.eplist { position: absolute; left: 500px; top: 730px; width: 1340px; height: 330px; overflow: hidden; }
+.eps { position: absolute; left: 0; top: 0; width: 1340px; transition: transform 0.2s; }
+.ep { position: relative; width: 1320px; height: 100px; margin-bottom: 10px; border-radius: 10px; background: rgba(255, 255, 255, 0.08); display: flex; flex-direction: row; }
+.ep .th { width: 178px; height: 100px; background: #1a2030; overflow: hidden; border-radius: 10px 0 0 10px; flex-shrink: 0; }
+.ep .th img { width: 178px; height: 100px; object-fit: cover; }
+.ep .tx { padding: 10px 20px; width: 1000px; }
+.ep .t1 { font-size: 28px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ep .t2 { font-size: 22px; color: #aeb6c9; max-height: 56px; line-height: 28px; overflow: hidden; }
+.ep .seen { position: absolute; right: 20px; top: 30px; font-size: 24px; color: #4ade80; }
+.ep .bar { position: absolute; left: 178px; bottom: 0; width: 1142px; height: 6px; background: rgba(0, 0, 0, 0.5); }
+.ep .bar i { display: block; height: 6px; background: #3ea6ff; }
+
+/* streams */
+.head { position: absolute; left: 80px; top: 130px; width: 1760px; }
+.head h1 { font-size: 52px; margin: 0 0 6px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.head .sub { font-size: 26px; color: #aeb6c9; }
+.slist { position: absolute; left: 80px; top: 270px; width: 1760px; height: 780px; overflow: hidden; }
+.sinner { position: absolute; left: 0; top: 0; padding-top: 8px; width: 1760px; transition: transform 0.2s; }
+.s { position: relative; width: 1740px; height: 128px; margin-bottom: 14px; border-radius: 12px; background: rgba(255, 255, 255, 0.09); display: flex; flex-direction: row; overflow: hidden; }
+.s .addon { width: 250px; padding: 22px 20px; font-size: 24px; color: #3ea6ff; font-weight: bold; flex-shrink: 0; }
+.s .addon i { display: block; font-style: normal; font-weight: normal; color: #aeb6c9; font-size: 22px; margin-top: 6px; }
+.s .body { width: 1050px; padding: 14px 10px; }
+.s .n { font-size: 28px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.s .d { font-size: 22px; color: #b9c0d2; line-height: 28px; max-height: 84px; overflow: hidden; }
+.s .kind { width: 330px; text-align: right; padding: 38px 24px 0 0; font-size: 26px; font-weight: bold; color: #4ade80; flex-shrink: 0; }
+.s.no { opacity: 0.55; }
+.s.no .kind { color: #ffb347; font-size: 22px; padding-top: 30px; }
+.note { font-size: 28px; color: #8993ab; padding: 26px 8px; }
+
+/* search */
+.skeys { position: absolute; left: 80px; top: 130px; width: 660px; }
+.query { font-size: 40px; height: 58px; line-height: 58px; padding: 6px 20px; margin-bottom: 20px; margin-right: 10px; border-radius: 10px; background: rgba(255, 255, 255, 0.12); white-space: nowrap; overflow: hidden; }
+.query.ph { color: #8993ab; }
+.krow { display: flex; flex-direction: row; margin-bottom: 10px; }
+.key { width: 72px; height: 72px; margin-right: 10px; border-radius: 10px; background: rgba(255, 255, 255, 0.12); font-size: 32px; text-align: center; line-height: 72px; flex-shrink: 0; }
+.key.wide { width: 190px; font-size: 26px; }
+.key.on { background: #ffffff; color: #04101d; }
+.results { position: absolute; left: 780px; top: 130px; width: 1140px; height: 950px; overflow: hidden; }
+.results .rows { width: 1140px; }
+.results .row { width: 1140px; }
+.results .rowview { width: 1140px; }
+.results .rowtitle { padding-left: 20px; }
+.results .track { padding-left: 20px; }
+
+/* addons */
+.alist { position: absolute; left: 80px; top: 200px; width: 1760px; height: 860px; overflow: hidden; }
+.ainner { position: absolute; left: 0; top: 0; padding-top: 6px; width: 1760px; transition: transform 0.2s; }
+.a { position: relative; width: 1740px; height: 124px; margin-bottom: 14px; border-radius: 12px; background: rgba(255, 255, 255, 0.09); }
+.a .an { position: absolute; left: 28px; top: 16px; font-size: 32px; font-weight: bold; width: 1200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.a .ad { position: absolute; left: 28px; top: 62px; font-size: 22px; color: #aeb6c9; width: 1500px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.a .au { position: absolute; left: 28px; top: 92px; font-size: 20px; color: #6f7a93; width: 1500px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.a .ast { position: absolute; right: 28px; top: 20px; font-size: 24px; color: #4ade80; }
+.a.bad .ast { color: #ff7b7b; }
+.a.add { background: rgba(62, 166, 255, 0.22); height: 90px; }
+.a.add .an { top: 24px; color: #3ea6ff; }
+.hint { font-size: 24px; color: #8993ab; position: absolute; left: 80px; top: 140px; width: 1760px; }
+
+/* a spinner and messages */
+.msg { position: absolute; left: 0; top: 460px; width: 1920px; text-align: center; font-size: 34px; color: #aeb6c9; }
+.spin { display: inline-block; width: 36px; height: 36px; border: 5px solid rgba(255, 255, 255, 0.25); border-top-color: #3ea6ff; border-radius: 50%; margin-right: 18px; vertical-align: middle; animation: sxspin 0.9s linear infinite; }
+@keyframes sxspin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+#toast { position: absolute; left: 0; bottom: 70px; width: 1920px; text-align: center; z-index: 60; opacity: 0; transition: opacity 0.25s; pointer-events: none; }
+#toast.show { opacity: 1; }
+#toast span { display: inline-block; background: rgba(20, 26, 40, 0.96); border: 2px solid #3ea6ff; border-radius: 12px; font-size: 28px; padding: 14px 34px; }
+
+#dialog { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; z-index: 50; background: rgba(0, 0, 0, 0.78); display: none; }
+#dialog.open { display: block; }
+.box { position: absolute; left: 560px; top: 300px; width: 800px; padding: 40px; border-radius: 18px; background: #10151f; border: 2px solid #26324a; }
+.box h2 { font-size: 38px; margin: 0 0 14px 0; }
+.box p { font-size: 26px; color: #b9c0d2; line-height: 36px; margin: 0 0 24px 0; }
+.box .buttons { margin-top: 10px; }
+.box input { width: 780px; font-size: 28px; padding: 14px; border-radius: 8px; border: 2px solid #3ea6ff; background: #0a0d14; color: #fff; margin-bottom: 24px; }
+
+/* the player */
+#player { position: fixed; left: 0; top: 0; width: 100%; height: 100%; background: #000; z-index: 100; display: none; }
+#player.open { display: block; }
+#player video { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: #000; }
+.pui { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transition: opacity 0.3s; }
+.pui.off { opacity: 0; }
+.ptop { position: absolute; left: 0; top: 0; width: 1920px; height: 200px; background: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0)); }
+.ptop .pt { position: absolute; left: 80px; top: 50px; font-size: 44px; font-weight: bold; width: 1600px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ptop .ps { position: absolute; left: 80px; top: 110px; font-size: 26px; color: #c9d0e0; width: 1600px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pbot { position: absolute; left: 0; top: 820px; width: 1920px; height: 260px; background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.9)); }
+.pbar { position: absolute; left: 80px; top: 150px; width: 1760px; height: 10px; border-radius: 5px; background: rgba(255, 255, 255, 0.3); }
+.pbuf { position: absolute; left: 0; top: 0; height: 10px; border-radius: 5px; background: rgba(255, 255, 255, 0.35); width: 0; }
+.pcur { position: absolute; left: 0; top: 0; height: 10px; border-radius: 5px; background: #3ea6ff; width: 0; }
+.pdot { position: absolute; top: -9px; width: 28px; height: 28px; margin-left: -14px; border-radius: 14px; background: #fff; box-shadow: 0 0 14px rgba(62, 166, 255, 1); left: 0; }
+.ptime { position: absolute; left: 80px; top: 185px; font-size: 28px; }
+.pdur { position: absolute; right: 80px; top: 185px; font-size: 28px; color: #c9d0e0; }
+.pstate { position: absolute; left: 0; top: 480px; width: 1920px; text-align: center; font-size: 120px; opacity: 0.9; }
+.pwait { position: absolute; left: 0; top: 500px; width: 1920px; text-align: center; font-size: 34px; display: none; }
+.pwait.on { display: block; }
+.perr { position: absolute; left: 360px; top: 380px; width: 1200px; padding: 40px; background: rgba(16, 21, 31, 0.97); border: 2px solid #ff7b7b; border-radius: 16px; font-size: 30px; line-height: 42px; display: none; }
+.perr.on { display: block; }

@@ -58,9 +58,9 @@ check('the first row of the category is the Ultimate Settings, in the Ultimate s
     assert.strictEqual(first.serviceEndpoint.customAction.parameters.path[0], 'ultimate');
 });
 
-check('it opens a list of the three sections', () => {
+check('it opens a list of the four sections', () => {
     const modal = open(['ultimate']);
-    assert.deepStrictEqual(itemsOf(modal).map(titleOf), ['Customization', 'Ultimate Dev Options', 'AniUltimatium']);
+    assert.deepStrictEqual(itemsOf(modal).map(titleOf), ['Customization', 'Ultimate Dev Options', 'AniUltimatium', 'Stremio addons']);
     assert.strictEqual(modal.header.overlayPanelHeaderRenderer.title.simpleText, 'UltimatiumTube Ultimate Settings');
 });
 
@@ -528,7 +528,7 @@ check('text settings are typed on the phone and shown to it as text', () => {
 check('the phone page carries the new sections, and none of the buttons', () => {
     const titles = phoneSchema().map((group) => group.title);
 
-    ['Customization', 'Ultimate Dev Options', 'AniUltimatium'].forEach((name) => assert.ok(titles.indexOf(name) !== -1, name));
+    ['Customization', 'Ultimate Dev Options', 'AniUltimatium', 'Stremio addons'].forEach((name) => assert.ok(titles.indexOf(name) !== -1, name));
 
     const keys = phoneSchema().reduce((all, group) => all.concat(group.items.map((item) => item.key)), []);
     assert.ok(keys.indexOf('openAniUltimatium') === -1);
@@ -611,7 +611,7 @@ check('a default speed can be set to 15x in the settings, and is a choice of the
 
 check('every setting these sections name is one the config knows', () => {
     const known = configDefaults();
-    const buttons = ['themeReset', 'tubeVersion', 'tubeReset', 'openAniUltimatium', 'wallpaperOffNow'];
+    const buttons = ['themeReset', 'tubeVersion', 'tubeReset', 'openAniUltimatium', 'openStremio', 'wallpaperOffNow'];
 
     GROUPS.filter((group) => group.ultimate).forEach((group) => group.items.forEach((item) => {
         if (buttons.indexOf(item.key) === -1) assert.ok(item.key in known, `${item.key} is not in the config`);

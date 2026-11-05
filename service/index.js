@@ -21,6 +21,7 @@ const journalRoutes = require('./lib/journalRoutes.js');
 const diagRoutes = require('./lib/diagRoutes.js');
 const phoneSettings = require('./lib/phoneSettings.js');
 const aniultimatium = require('./lib/aniultimatium.js');
+const stremio = require('./lib/stremio.js');
 const wallpapers = require('./lib/wallpapers.js');
 const aniApi = require('./lib/aniApi.js');
 const launchApp = require('./lib/launchApp.js');
@@ -60,8 +61,8 @@ const POLICIES = {
         "style-src * data: blob: 'unsafe-inline'",
         'connect-src *',
         'font-src * data:',
-        // Cobalt refuses a navigation its policy does not name, and the settings open Aniultimatium,
-        // a page of this service, by navigating to it.
+        // Cobalt refuses a navigation its policy does not name, and the settings open Aniultimatium and
+        // Stremio, pages of this service, by navigating to it.
         'h5vcc-location-src *'
     ].join('; '),
 
@@ -94,6 +95,7 @@ bootRoutes.attach(app, { cobalt, script: userScript });
 diagRoutes.attach(app);
 phoneSettings.attach(app);
 aniultimatium.attach(app);
+stremio.attach(app);
 aniApi.attach(app);
 wallpapers.attach(app);
 launchApp.attach(app);

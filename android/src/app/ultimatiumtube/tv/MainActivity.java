@@ -299,6 +299,30 @@ public class MainActivity extends Activity {
             });
         }
 
+        // The addons listed in the settings, as the phone page last left them: one address to a line.
+        private String stremioAddons() {
+            try {
+                org.json.JSONObject all = new org.json.JSONObject(phoneSettings.read(PhoneServer.address()));
+                org.json.JSONObject config = all.optJSONObject("config");
+                return config == null ? "" : config.optString("stremioAddons", "");
+            } catch (Exception e) {
+                return "";
+            }
+        }
+
+        // The settings' "Open Stremio addons": the bundled Stremio page, in the same kind of screen.
+        @JavascriptInterface
+        public void openStremio() {
+            runOnUiThread(new Runnable() {
+                @Override public void run() {
+                    Intent i = new Intent(MainActivity.this, AniultimatiumActivity.class);
+                    i.putExtra("page", "stremio");
+                    i.putExtra("addons", stremioAddons());
+                    startActivity(i);
+                }
+            });
+        }
+
         @JavascriptInterface
         public String phoneSync(String body) {
             return phoneSettings.sync(body, PhoneServer.address());

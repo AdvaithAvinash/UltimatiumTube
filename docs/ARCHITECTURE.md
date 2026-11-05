@@ -258,3 +258,12 @@ Two build-time gates, one per side.
   whole screen (fixed, 100vw by 100vh) with `object-fit` `cover` or `fill`, written again every half
   second because the player rewrites its style; Original puts back what the player wrote. Yellow
   cycles it; a button in the player's row opens a menu.
+- **Stremio page** (`stremio/`): `core.js` is the protocol (manifests, catalogs, meta, streams, built
+  as the addon spec says; it is what `test/stremio-core.js` runs) and `ui.js` the screens, remote
+  navigation (the nearest focusable in the direction pressed) and the player. The page is drawn for
+  1920x1080 and scaled to the screen; it uses flexbox, transforms and opacity only, as the TV's
+  engine has no grid, gap or custom properties. Requests and pictures to other sites go by the
+  service's `/cors-bypass/` on a TV (`SX.route`); the video itself is loaded directly. On a Samsung
+  TV `service/lib/stremio.js` serves it; on Android `AniultimatiumActivity` shows it
+  (`page=stremio`) and hands over the addon list from the settings. The list lives in the
+  `stremioAddons` setting, so the phone page edits it; the page reads it from `/api/settings`.

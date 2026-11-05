@@ -240,3 +240,18 @@ Two build-time gates, one per side.
   to fishfood builds, `web-release-qa` and `expflag`, none of which apply.
 - Three files are excluded from `tsc`, and two of them from the style rules, because live sibling
   branches own them. They come back under both when those branches land.
+
+## Later fixes worth knowing
+
+- **Response mods going quiet.** YouTube's later-loaded modules (player, sign-in) carry their own
+  `JSON`; the framework replaces `JSON.parse` in each one it finds. It looked only for a window after
+  start and after a screen change, so a module that arrived later kept the native parser and every
+  response mod (ads, SponsorBlock segments, filters) stopped. It now looks every two seconds as well
+  (`json adoption (ongoing)`). `mods/adblock` also sweeps advert items out of shelf and continuation
+  responses as a second line.
+- **AniUltimatium on a TV.** On a private address AniUltimatium calls its own `/api` on the page's
+  origin, which on a TV is the service, not its server. `service/lib/aniApi.js` forwards those calls
+  to AniUltimatium's server, and `service/lib/aniShim.js` sends pictures and AniList calls through
+  `/cors-bypass/`, which the engine allows.
+- **Video fit** (`mods/player/zoom.js`): sets `object-fit` on the video (`cover` for Zoom to fill,
+  `fill` for Stretch) and sets it again when a video loads. Yellow cycles it.

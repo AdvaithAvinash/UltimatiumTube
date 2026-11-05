@@ -22,6 +22,7 @@ const diagRoutes = require('./lib/diagRoutes.js');
 const phoneSettings = require('./lib/phoneSettings.js');
 const aniultimatium = require('./lib/aniultimatium.js');
 const wallpapers = require('./lib/wallpapers.js');
+const aniApi = require('./lib/aniApi.js');
 const launchApp = require('./lib/launchApp.js');
 const routeErrors = require('./lib/routeErrors.js');
 const dev = require('./dev/index.js');
@@ -93,6 +94,7 @@ bootRoutes.attach(app, { cobalt, script: userScript });
 diagRoutes.attach(app);
 phoneSettings.attach(app);
 aniultimatium.attach(app);
+aniApi.attach(app);
 wallpapers.attach(app);
 launchApp.attach(app);
 

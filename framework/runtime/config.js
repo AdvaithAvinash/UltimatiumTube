@@ -45,6 +45,8 @@ const defaultConfig = {
   // Channel name -> the speed it was last watched at.
   channelSpeeds: {},
   speedSettingsIncrement: 0.25,
+  // How a video is fitted to the screen: original, fill (zoom to fill) or stretch.
+  videoFit: 'original',
 
   // Channel names and words dropped from every shelf; managed from the phone page.
   blockedChannels: [],

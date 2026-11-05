@@ -6,6 +6,7 @@ global.window = { localStorage: { 'tube.settings': '{}' }, addEventListener: () 
 global.window.JSON = JSON;
 
 const { onResponse, onRequest, interceptJson, clone } = await import('../../framework/registries/json.js');
+const { running, stop } = await import('../../framework/registries/schedule.js');
 
 const seen = [];
 
@@ -100,6 +101,25 @@ check('clone still copies deeply', () => {
     assert.deepStrictEqual(copy, source);
     copy.clonable.deep.list.push(4);
     assert.strictEqual(source.clonable.deep.list.length, 3, 'clone shares structure with its source');
+});
+
+check('modules are still looked for after the quick windows, for as long as the app runs', () => {
+    assert.ok(running('json adoption (ongoing)'), 'nothing looks for modules that arrive late');
+    assert.ok(running('json adoption'), 'the quick walk at the start is not running');
+});
+
+// The quick walk is over, as it is a minute into the session; a module arrives after that.
+stop('json adoption');
+global.window._yttv = {};
+
+const nativeParse = (text) => ({ native: text });
+global.window._yttv.arrivesLate = { JSON: { parse: nativeParse, stringify: () => '' } };
+
+await new Promise((resolve) => setTimeout(resolve, 2600));
+
+check('a module that arrives after the quick walk is still taken', () => {
+    assert.strictEqual(global.window._yttv.arrivesLate.JSON.parse, JSON.parse,
+        'the late module still has its own parse, so nothing it parses reaches a mod');
 });
 
 const failed = results.filter((ok) => !ok).length;

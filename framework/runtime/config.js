@@ -61,6 +61,8 @@ const defaultConfig = {
   noticeSeen: '',
   enableStremio: true,
   stremioAddons: '',
+  // Grayjay plugins, by the address of their configuration, one to a line.
+  grayjayPlugins: '',
   // The id Aniultimatium's own Samsung app installs under; started first when it is there.
   aniUltimatiumAppId: 'oXabc12345.EnglishAnime',
 

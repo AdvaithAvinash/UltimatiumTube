@@ -3,6 +3,7 @@
   'use strict';
 
   var SX = window.SX;
+  var GJ = window.GJ;
   var D = document;
   var $ = function (id) { return D.getElementById(id); };
   var esc = function (s) {
@@ -20,12 +21,12 @@
   var now = function () { return new Date().getTime(); };
 
   var TABS = [['home', 'Home'], ['movies', 'Movies'], ['series', 'Series'], ['search', 'Search'], ['library', 'Library'], ['addons', 'Addons']];
-  var TYPE_NAMES = { movie: 'Movies', series: 'Series', tv: 'TV', channel: 'Channels', anime: 'Anime' };
+  var TYPE_NAMES = { gjvideo: 'Videos', movie: 'Movies', series: 'Series', tv: 'TV', channel: 'Channels', anime: 'Anime' };
 
-  var SINGULAR = { movie: 'Movie', series: 'Series', tv: 'TV', channel: 'Channel', anime: 'Anime' };
+  var SINGULAR = { gjvideo: 'Video', movie: 'Movie', series: 'Series', tv: 'TV', channel: 'Channel', anime: 'Anime' };
 
   var S = {
-    addons: [], phone: [], stack: [], focus: null, tab: 'home', loaded: false, heroTimer: 0,
+    addons: [], plugins: [], pluginList: [], phone: [], phonePlugins: [], stack: [], focus: null, tab: 'home', loaded: false, heroTimer: 0,
     last: {}
   };
 
@@ -211,7 +212,7 @@
 
   var buildTabs = function () {
     var bar = $('tabs');
-    bar.innerHTML = '<div class="brand">Stremio</div>';
+    bar.innerHTML = '<div class="brand">Watch</div>';
     TABS.forEach(function (t) {
       var b = el('div', 'tab f', t[1]);
       b.setAttribute('data-tab', t[0]);
@@ -264,7 +265,7 @@
     var list = library();
     var has = inLibrary(item);
     list = list.filter(function (l) { return !(l.id === item.id && l.type === item.type); });
-    if (!has) list.unshift({ id: item.id, type: item.type, name: item.name, poster: item.poster, background: item.background, description: item.description, year: item.year, rating: item.rating, genres: item.genres, addon: item.addon });
+    if (!has) list.unshift({ id: item.id, type: item.type, name: item.name, poster: item.poster, background: item.background, description: item.description, year: item.year, rating: item.rating, genres: item.genres, addon: item.addon, plugin: item.plugin, url: item.url, author: item.author, views: item.views, runtime: item.runtime });
     SX.store.set('lib', list);
     return !has;
   };
@@ -278,18 +279,20 @@
       .filter(function (p) { var k = p.type + p.id; if (seen[k]) return false; seen[k] = 1; return true; })
       .slice(0, 20)
       .map(function (p) {
-        return { id: p.id, type: p.type, name: p.name, poster: p.poster, background: p.background, description: p.description || '', year: p.year || '', rating: p.rating || '', genres: p.genres || [], addon: p.addon || '', fraction: p.t / p.d, label: p.label || '' };
+        return { id: p.id, type: p.type, name: p.name, poster: p.poster, background: p.background, description: p.description || '', year: p.year || '', rating: p.rating || '', genres: p.genres || [], addon: p.addon || '', plugin: p.plugin, url: p.url, author: p.author, views: p.views, runtime: p.runtime, fraction: p.t / p.d, label: p.label || '' };
       });
   };
 
   // --- cards and rows
 
   var makeCard = function (item) {
-    var card = el('div', 'card f');
+    var card = el('div', 'card f' + (item.type === 'gjvideo' ? ' wide' : ''));
     var frac = item.fraction ? '<div class="bar"><i style="width:' + Math.round(item.fraction * 100) + '%"></i></div>' : '';
-    var tag = item.rating && !item.fraction ? '<div class="tag">★ ' + esc(item.rating) + '</div>' : '';
+    var tag = item.type === 'gjvideo' ? (item.runtime ? '<div class="tag">' + esc(item.runtime) + '</div>' : '')
+      : item.rating && !item.fraction ? '<div class="tag">★ ' + esc(item.rating) + '</div>' : '';
     card.innerHTML = '<div class="cimg"><div class="noimg">' + esc(cut(item.name, 40)) + '</div>' + tag + frac + '</div>'
-      + '<div class="ctitle">' + esc(item.name) + '</div>';
+      + '<div class="ctitle">' + esc(item.name) + '</div>'
+      + (item.type === 'gjvideo' ? '<div class="csub">' + esc([item.author, item.views ? item.views + ' views' : ''].filter(Boolean).join('  \u00b7  ')) + '</div>' : '');
     card.__item = item;
     card.__ok = function () { openDetail(item); };
     return card;
@@ -350,7 +353,22 @@
         specs.push({ addon: a, catalog: c, title: name + ' · ' + (TYPE_NAMES[c.type] || c.type) + (many ? ' · ' + a.manifest.name : '') });
       });
     });
+    // Grayjay plugins show their home feed in the rows of Home, and under Series, which is where videos go.
+    if (kind === 'home') {
+      S.plugins.forEach(function (p) {
+        if (p.source.getHome) specs.push({ plugin: p, title: 'Home \u00b7 ' + p.config.name });
+      });
+    }
     return specs;
+  };
+
+  // The next page of a row, from whichever source it came from, one after another.
+  var pagerFor = function (first) {
+    var cur = { more: first };
+    return function () {
+      if (!cur.more) return Promise.resolve([]);
+      return cur.more().then(function (page) { cur.more = page.more || (page.repeat && page.items.length ? cur.more : null); return page.items; });
+    };
   };
 
   var homeTab = function (kind) {
@@ -420,7 +438,7 @@
       var specs = rowSpecs(kind);
 
       if (!specs.length && !recent.length) {
-        rows.appendChild(el('div', 'empty', S.addons.length ? 'None of your addons has a catalog to show here.' : 'No addons yet. Open Addons to add one.'));
+        rows.appendChild(el('div', 'empty', S.addons.length ? 'None of your addons or plugins has anything to show here.' : 'No addons or plugins yet. Open Addons to add one.'));
       }
 
       // A placeholder for each row, so they keep their order, and each is replaced as its catalog answers.
@@ -430,27 +448,38 @@
         rows.appendChild(placeholder);
       });
 
+      // What a row needs: its first items, and a way to get more.
+      var load = function (s) {
+        if (s.plugin) return GJ.home(s.plugin);
+
+        return SX.catalog(s.addon, s.catalog, {}).then(function (items) {
+          var skip = { n: items.length };
+          return {
+            items: items,
+            more: SX.pages(s.catalog) ? function () {
+              return SX.catalog(s.addon, s.catalog, { skip: skip.n }).then(function (more) { skip.n += more.length; return { items: more, more: null, repeat: true }; });
+            } : null
+          };
+        });
+      };
+
       specs.forEach(function (s, i) {
         var placeholder = rows.children[(recent.length ? 1 : 0) + i];
-        SX.catalog(s.addon, s.catalog, {}).then(function (items) {
+        load(s).then(function (page) {
           if (!placeholder.parentNode) return;
-          if (!items.length) { placeholder.parentNode.removeChild(placeholder); return; }
+          if (!page.items.length) { placeholder.parentNode.removeChild(placeholder); return; }
 
-          var paged = SX.pages(s.catalog);
-          var skip = { n: items.length };
-          var row = makeRow(s.title, items, {
+          var row = makeRow(s.title, page.items, {
             onFocus: showHero,
             onReveal: function (r) { alignRow(r, rows); },
-            more: paged ? function () {
-              return SX.catalog(s.addon, s.catalog, { skip: skip.n }).then(function (more) { skip.n += more.length; return more; });
-            } : null
+            more: page.more ? pagerFor(page.more) : null
           });
           rows.replaceChild(row, placeholder);
 
           var first = row.querySelector('.card');
           if (first && !hero.item) { showHero(first.__item); if (!S.moved && S.stack[S.stack.length - 1] === spec) setFocus(first); }
-        }, function () {
-          if (placeholder.parentNode) placeholder.querySelector('.empty').innerHTML = 'Could not load this catalog.';
+        }, function (error) {
+          if (placeholder.parentNode) placeholder.querySelector('.empty').innerHTML = 'Could not load this: ' + esc(error && error.message ? error.message : 'error');
         });
       });
 
@@ -471,6 +500,21 @@
     root.innerHTML = '<div class="bg"><img></div><div class="shade"></div><div class="msg"><span class="spin"></span>Loading</div>';
     setImg(root.querySelector('.bg'), item.background || item.poster);
     setFocus(null);
+
+    var fail = function (error) {
+      if (S.stack.indexOf(spec) === -1) return;
+      root.querySelector('.msg').innerHTML = 'Could not load this: ' + esc(error && error.message ? error.message : 'error') + '<br>Press Back.';
+    };
+
+    if (item.plugin) {
+      var plugin = S.plugins.filter(function (p) { return p.url === item.plugin; })[0];
+      if (!plugin) { fail(new Error('The plugin is not loaded')); return; }
+      GJ.details(plugin, item).then(function (full) {
+        if (S.stack.indexOf(spec) === -1) return;
+        renderDetail(spec, full, autoPlay);
+      }, fail);
+      return;
+    }
 
     SX.meta(S.addons, item).then(function (full) {
       if (S.stack.indexOf(spec) === -1) return;
@@ -515,8 +559,8 @@
     if (full.cast && full.cast.length) people += '<div class="people"><b>Cast</b>&nbsp; ' + esc(full.cast.slice(0, 6).join(', ')) + '</div>';
 
     root.innerHTML = '<div class="bg"><img></div><div class="shade"></div>'
-      + '<div class="dposter"></div>'
-      + '<div class="dinfo"><h1>' + esc(full.name) + '</h1><div class="meta">' + bits.join('&nbsp;&nbsp;') + '</div>'
+      + '<div class="dposter' + (full.type === 'gjvideo' ? ' wide' : '') + '"></div>'
+      + '<div class="dinfo' + (full.type === 'gjvideo' ? ' wideinfo' : '') + '"><h1>' + esc(full.name) + '</h1><div class="meta">' + bits.join('&nbsp;&nbsp;') + '</div>'
       + '<div class="desc">' + esc(cut(full.description, 400)) + '</div>' + people + '<div class="buttons"></div></div>'
       + (isSeries ? '<div class="seasons"><div class="strack"></div></div><div class="eplist"><div class="eps"></div></div>' : '');
 
@@ -639,6 +683,7 @@
       if (!sorted.length) {
         inner.appendChild(el('div', 'note', answered.n < asked
           ? '<span class="spin"></span>Asking your addons'
+          : full.plugin ? 'This video has nothing this TV can play.'
           : asked === 0 ? 'None of your addons has streams for this. Add one in Addons (for example one that gives direct links through a debrid service).' : 'No streams found.'));
       }
 
@@ -651,13 +696,21 @@
     };
 
     var asked = 0;
+    setFocus(null);
+
+    // A video from a plugin has its sources already, from when its details were read.
+    if (full.plugin) {
+      all = full.sources || [];
+      draw();
+      return spec;
+    }
+
     var request = SX.streams(S.addons, type, id, function (addon, list) {
       answered.n += 1;
       all = all.concat(list);
       if (S.stack.indexOf(spec) !== -1) draw();
     });
     asked = request.asked;
-    setFocus(null);
     draw();
     spec.close = function () { /* answers that arrive late find the screen gone */ };
     return spec;
@@ -722,7 +775,22 @@
         });
       });
 
-      if (!asked) rows.appendChild(el('div', 'empty', 'None of your addons can search.'));
+      S.plugins.forEach(function (p) {
+        if (!p.source.search) return;
+        asked += 1;
+        GJ.search(p, st.q).then(function (page) {
+          got += 1;
+          if (mine !== st.token || !page.items.length) return;
+          rows.appendChild(makeRow('Videos \u00b7 ' + p.config.name, page.items, {
+            onReveal: function (r) { alignRow(r, rows); },
+            more: page.more ? pagerFor(page.more) : null
+          }));
+        }, function () { got += 1; }).then(function () {
+          if (mine === st.token && got === asked && !rows.children.length) rows.appendChild(el('div', 'empty', 'Nothing found for \u201c' + esc(st.q) + '\u201d'));
+        });
+      });
+
+      if (!asked) rows.appendChild(el('div', 'empty', 'None of your addons or plugins can search.'));
     };
 
     var update = function () {
@@ -835,7 +903,7 @@
     var spec = addScreen({ tabs: true, tab: 'addons' });
     var root = spec.root;
     root.innerHTML = '<div class="bg"><div class="shade flat" style="position:absolute"></div></div>'
-      + '<div class="hint">Addons give this page its catalogs and streams. More can be listed in UltimatiumTube settings: Ultimate Settings, then Stremio. Use addons that give direct links; a TV cannot play torrents.</div>'
+      + '<div class="hint">Stremio addons give this page catalogs and streams (use ones that give direct links: a TV cannot play torrents). Grayjay plugins give it videos. More can be listed in UltimatiumTube settings: Ultimate Settings, then Stremio and Grayjay. Add only plugins you trust: a plugin is a program.</div>'
       + '<div class="alist"><div class="ainner"></div></div>';
     var inner = root.querySelector('.ainner'), view = root.querySelector('.alist');
 
@@ -844,10 +912,10 @@
       inner.__y = 0;
       inner.style.transform = 'translateY(0)';
 
-      var add = el('div', 'a add f', '<div class="an">+  Add an addon</div>');
+      var add = el('div', 'a add f', '<div class="an">+  Add an addon or a Grayjay plugin</div>');
       add.__reveal = function () { shiftY(add, inner, view, 0); };
       add.__ok = function () {
-        openDialog('Add an addon', 'Paste the address of the addon (stremio:// or https://). Easier on a phone: put it in UltimatiumTube settings.',
+        openDialog('Add an addon or plugin', 'Paste the address of a Stremio addon (stremio:// or https://), or of a Grayjay plugin\'s configuration (ends in .json). Easier on a phone: put it in UltimatiumTube settings.',
           [['Add', function (text) { addAddon(text); }], ['Cancel', function () { /* closed */ }]], 'https://.../manifest.json');
       };
       inner.appendChild(add);
@@ -867,6 +935,23 @@
         };
         inner.appendChild(row);
       });
+
+      S.pluginList.forEach(function (e) {
+        var p = e.plugin;
+        var local = S.phonePlugins.indexOf(e.url) === -1;
+        var row = el('div', 'a f' + (p ? '' : ' bad'));
+        row.innerHTML = '<div class="an">' + esc(p ? p.config.name + '  (Grayjay plugin)' : 'Plugin not loaded') + '</div>'
+          + '<div class="ad">' + esc(p ? cut(p.config.description || '', 150) : (e.error || '')) + '</div>'
+          + '<div class="au">' + esc(cut(e.url, 160)) + '</div>'
+          + '<div class="ast">' + esc(p ? ['home', 'search'].filter(function (n) { return p.source[n === 'home' ? 'getHome' : 'search']; }).join(' \u00b7 ') : 'check the address') + '</div>';
+        row.__reveal = function () { shiftY(row, inner, view, 0); };
+        row.__ok = function () {
+          var title = p ? p.config.name : 'Plugin';
+          if (!local) { openDialog(title, 'This one is listed in UltimatiumTube settings. Change it there.', [['Close', function () { /* closed */ }]]); return; }
+          openDialog(title, 'Remove this plugin from the page?', [['Remove', function () { removeAddon(e.url); }], ['Keep it', function () { /* closed */ }]]);
+        };
+        inner.appendChild(row);
+      });
     };
 
     spec.redraw = draw;
@@ -878,19 +963,66 @@
   // --- the addons themselves
 
   var localList = function () { return SX.store.get('addons', null); };
+  var localPlugins = function () { return SX.store.get('plugins', []); };
+
+  var loadedPlugins = {};
+
+  // Each plugin is loaded once (its script run and enabled); a refresh keeps the ones already there.
+  var refreshPlugins = function () {
+    var urls = S.phonePlugins.concat(localPlugins().filter(function (u) { return S.phonePlugins.indexOf(u) === -1; }));
+
+    return Promise.all(urls.map(function (url) {
+      if (loadedPlugins[url]) return Promise.resolve({ url: url, plugin: loadedPlugins[url] });
+
+      return GJ.load(url).then(function (plugin) {
+        loadedPlugins[url] = plugin;
+        return { url: url, plugin: plugin };
+      }, function (error) {
+        return { url: url, plugin: null, error: error && error.message ? error.message : 'error' };
+      });
+    })).then(function (list) {
+      S.pluginList = list;
+      S.plugins = list.filter(function (e) { return e.plugin; }).map(function (e) { return e.plugin; });
+      return list;
+    });
+  };
 
   var refreshAddons = function () {
     var local = localList();
     if (local === null) { local = SX.DEFAULT_ADDONS.slice(); SX.store.set('addons', local); }
     var urls = S.phone.concat(local.filter(function (u) { return S.phone.indexOf(u) === -1; }));
 
-    return SX.loadAddons(urls).then(function (list) {
-      S.addons = list;
-      return list;
+    return Promise.all([SX.loadAddons(urls), refreshPlugins()]).then(function (all) {
+      S.addons = all[0];
+      return all[0];
     });
   };
 
+  var redrawAddons = function () {
+    if (S.tab === 'addons' && S.stack.length === 1) { S.stack[0].redraw(); setFocus(S.stack[0].root.querySelector('.f')); }
+  };
+
+  // A Grayjay plugin is given by the address of its configuration (it ends .json but not manifest.json,
+  // or is a grayjay:// link); anything else is read as a Stremio addon.
+  var isPluginText = function (text) {
+    var t = String(text || '').replace(/^\s+|\s+$/g, '');
+    return /^grayjay:\/\//i.test(t) || (/\.json(\?.*)?$/i.test(t) && !/manifest\.json(\?.*)?$/i.test(t));
+  };
+
   var addAddon = function (text) {
+    if (isPluginText(text)) {
+      var url = SX.pluginUrl(text);
+      if (!url) { toast('That is not an address'); return; }
+      SX.store.set('plugins', localPlugins().filter(function (u) { return u !== url; }).concat([url]));
+      toast('Loading the plugin…');
+      refreshAddons().then(function () {
+        var got = S.pluginList.filter(function (e) { return e.url === url; })[0];
+        toast(got && got.plugin ? 'Added ' + got.plugin.config.name : 'The plugin did not load: ' + (got && got.error));
+        redrawAddons();
+      });
+      return;
+    }
+
     var list = SX.parseList(text);
     if (!list.length) { toast('That is not an address'); return; }
     var local = (localList() || []).filter(function (u) { return list.indexOf(u) === -1; });
@@ -899,41 +1031,44 @@
     refreshAddons().then(function (all) {
       var got = all.filter(function (a) { return a.url === list[0]; })[0];
       toast(got && got.manifest ? 'Added ' + got.manifest.name : 'Added, but it did not answer');
-      if (S.tab === 'addons' && S.stack.length === 1) { S.stack[0].redraw(); setFocus(S.stack[0].root.querySelector('.f')); }
+      redrawAddons();
     });
   };
 
   var removeAddon = function (url) {
     SX.store.set('addons', (localList() || []).filter(function (u) { return u !== url; }));
-    refreshAddons().then(function () {
-      toast('Removed');
-      if (S.tab === 'addons' && S.stack.length === 1) { S.stack[0].redraw(); setFocus(S.stack[0].root.querySelector('.f')); }
-    });
+    SX.store.set('plugins', localPlugins().filter(function (u) { return u !== url; }));
+    delete loadedPlugins[url];
+    refreshAddons().then(function () { toast('Removed'); redrawAddons(); });
   };
 
-  // The addons listed in UltimatiumTube's settings. The service keeps them while the TV is running;
-  // the Android app passes them in when it opens this page.
-  var phoneAddons = function () {
-    // The Android app hands the list over itself.
+  // The addons and plugins listed in UltimatiumTube's settings. The service keeps them while the TV is
+  // running; the Android app passes them in when it opens this page.
+  var phoneLists = function () {
     try {
       if (window.AniNative && window.AniNative.addons) {
         var given = String(window.AniNative.addons() || '');
+        var plugins = window.AniNative.plugins ? String(window.AniNative.plugins() || '') : '';
         SX.store.set('phone', given);
-        return Promise.resolve(SX.parseList(given));
+        SX.store.set('phonePlugins', plugins);
+        return Promise.resolve({ addons: SX.parseList(given), plugins: SX.parsePlugins(plugins) });
       }
     } catch (e) { /* asked below */ }
 
-    var asks = [];
-    if (SX.origin) asks.push('/api/settings');
+    var read = function (answer) {
+      return { addons: SX.parseList(answer.addons), plugins: SX.parsePlugins(answer.plugins) };
+    };
+    var kept = function () { return { addons: SX.store.get('phone', ''), plugins: SX.store.get('phonePlugins', '') }; };
 
-    return Promise.all(asks.map(function (u) {
-      return SX.json(u, 4000).then(function (r) { return r && r.config ? String(r.config.stremioAddons || '') : ''; }, function () { return null; });
-    })).then(function (answers) {
-      var got = answers.filter(function (a) { return a !== null; })[0];
-      if (got !== undefined) { SX.store.set('phone', got); return SX.parseList(got); }
-      // Not reachable now: what was listed last time is still wanted.
-      return SX.parseList(SX.store.get('phone', ''));
-    });
+    if (!SX.origin) return Promise.resolve(read(kept()));
+
+    return SX.json('/api/settings', 4000).then(function (r) {
+      if (!r || !r.config) return read(kept());
+      var answer = { addons: String(r.config.stremioAddons || ''), plugins: String(r.config.grayjayPlugins || '') };
+      SX.store.set('phone', answer.addons);
+      SX.store.set('phonePlugins', answer.plugins);
+      return read(answer);
+    }, function () { return read(kept()); });
   };
 
   // --- the player
@@ -973,6 +1108,7 @@
       type: full.type, id: full.id, videoId: video ? video.id : full.id, t: t, d: v.duration, at: now(),
       name: full.name, poster: full.poster, background: full.background, description: full.description,
       year: full.year, rating: full.rating, genres: full.genres, addon: full.addon,
+      plugin: full.plugin, url: full.url, author: full.author, views: full.views, runtime: full.runtime,
       label: video ? 'S' + video.season + ' E' + video.episode : ''
     });
   };
@@ -1176,8 +1312,9 @@
     var msg = el('div', 'msg', '<span class="spin"></span>Loading your addons');
     $('screens').appendChild(msg);
 
-    phoneAddons().then(function (list) {
-      S.phone = list;
+    phoneLists().then(function (lists) {
+      S.phone = lists.addons;
+      S.phonePlugins = lists.plugins;
       return refreshAddons();
     }).then(function () {
       $('screens').removeChild(msg);

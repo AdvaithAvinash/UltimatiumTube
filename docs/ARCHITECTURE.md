@@ -267,3 +267,11 @@ Two build-time gates, one per side.
   TV `service/lib/stremio.js` serves it; on Android `AniultimatiumActivity` shows it
   (`page=stremio`) and hands over the addon list from the settings. The list lives in the
   `stremioAddons` setting, so the phone page edits it; the page reads it from `/api/settings`.
+- **Grayjay plugins** (`stremio/grayjay.js`): a plugin's script is run with the classes and packages
+  it expects (`PlatformVideo`, `http`, `Type`, ...) as parameters of the function it is built into,
+  with the page's own objects (`window`, `document`, `fetch`, ...) shadowed. Its `http` calls block in
+  a plugin, which a page cannot do, so a call that has no answer yet stops the run (a thrown marker),
+  is fetched, and the run starts again with all answers so far handed back in order; a run that
+  swallowed the marker is discarded too. Requests go to `/__tube/fetch` (`service/lib/pluginFetch.js`:
+  method, headers and body as sent, redirects followed, JSON back) or, on Android, to
+  `AniNative.fetch` (`PluginFetch.java`), because a page may not set User-Agent or Cookie.

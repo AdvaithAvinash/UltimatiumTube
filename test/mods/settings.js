@@ -94,7 +94,7 @@ check('it lists the Ultimate Settings first, then every row of every other group
     // The way in, and the Stremio row, which is on unless it is switched off.
     assert.strictEqual(rows.length, listed + 2, `${rows.length} rows for ${listed} items, the way in and Stremio`);
     assert.strictEqual(rows[0], 'UltimatiumTube Ultimate Settings');
-    assert.strictEqual(rows[1], 'Stremio addons');
+    assert.strictEqual(rows[1], 'Stremio and Grayjay');
     assert.strictEqual(rows[2], 'SponsorBlock');
 });
 

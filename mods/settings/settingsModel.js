@@ -463,22 +463,24 @@ const stremioGroup = () => {
   const group = /** @type {any} */ ({
     id: 'tube_stremio',
     ultimate: true,
-    title: 'Stremio addons',
-    summary: 'Movies and series from your Stremio addons'
+    title: 'Stremio and Grayjay',
+    summary: 'Movies, series and videos from Stremio addons and Grayjay plugins'
   });
 
   Object.defineProperty(group, 'items', {
     enumerable: true,
     get: () => {
       const items = /** @type {any[]} */ ([
-        Switch('enableStremio', 'Stremio addons',
-          'Offers movies and series from Stremio addons: catalogs, search, a library and a player', SKIPPING)
+        Switch('enableStremio', 'Stremio and Grayjay',
+          'Offers movies, series and videos from Stremio addons and Grayjay plugins: catalogs, search, a library and a player', SKIPPING)
       ]);
 
       if (configRead('enableStremio')) {
-        items.push(Action('openStremio', 'Open Stremio addons', 'Back returns to YouTube', SKIPPING, 'OPEN_STREMIO'));
+        items.push(Action('openStremio', 'Open Stremio and Grayjay', 'Back returns to YouTube', SKIPPING, 'OPEN_STREMIO'));
         items.push(Text('stremioAddons', 'Addons',
           'The addresses of the addons to use, one to a line (stremio:// or https://). Cinemeta, which gives the catalogs, is added by the page. Streams need an addon that gives direct links. Typed on the phone', SKIPPING, true));
+        items.push(Text('grayjayPlugins', 'Grayjay plugins',
+          'The addresses of the plugins to use (the .json configuration, or a grayjay:// link), one to a line. A plugin is a program that runs in the page, so add only ones you trust, such as those on plugins.grayjay.app. Typed on the phone', SKIPPING, true));
       }
 
       return items;
@@ -543,7 +545,7 @@ ULTIMATE.forEach((group) => GROUPS.push(group));
 // The first step of the way in: a list of the three sections.
 const ULTIMATE_MENU = {
   title: 'UltimatiumTube Ultimate Settings',
-  summary: 'Customization, developer options, AniUltimatium and Stremio addons',
+  summary: 'Customization, developer options, AniUltimatium, Stremio and Grayjay',
   image: SCREEN
 };
 

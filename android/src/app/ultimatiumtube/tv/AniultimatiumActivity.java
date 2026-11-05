@@ -337,6 +337,33 @@ public class AniultimatiumActivity extends Activity {
             return list == null ? "" : list;
         }
 
+        /** The Grayjay plugins listed in the settings when this screen was opened, one to a line. */
+        @JavascriptInterface
+        public String plugins() {
+            String list = getIntent().getStringExtra("plugins");
+            return list == null ? "" : list;
+        }
+
+        /**
+         * A request for a Grayjay plugin, which sets headers a page may not (User-Agent, Cookie). It is made
+         * here, off the page's thread, and the answer is handed back to window.__sxFetchDone(id, json).
+         */
+        @JavascriptInterface
+        public void fetch(final int id, final String request) {
+            new Thread(new Runnable() {
+                @Override public void run() {
+                    String answer;
+                    try {
+                        answer = PluginFetch.run(request);
+                    } catch (Exception e) {
+                        answer = "{\"status\":0,\"url\":\"\",\"headers\":{},\"body\":\"\",\"error\":"
+                                + org.json.JSONObject.quote(String.valueOf(e.getMessage())) + "}";
+                    }
+                    js("window.__sxFetchDone&&window.__sxFetchDone(" + id + "," + org.json.JSONObject.quote(answer) + ")");
+                }
+            }).start();
+        }
+
         @JavascriptInterface
         public int sdk() {
             return Build.VERSION.SDK_INT;

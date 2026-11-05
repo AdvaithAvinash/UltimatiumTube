@@ -98,9 +98,9 @@ const AFTER_NAVIGATION = 5000;
 
 // A module can arrive at any time: the player's, when the first video is played; the ones signing in
 // loads; one that a slow network brings late. After the quick windows above, the walk goes on for as
-// long as the app does, slowly, since a module nothing adopts is a screen no mod ever sees again. Only
+// long as the app does, rarely (a TV's processor is shared with the video), since a module nothing adopts is a screen no mod ever sees again. Only
 // those not already taken are looked at, so each pass is a few thousand cheap checks.
-const ONGOING_INTERVAL = 2000;
+const ONGOING_INTERVAL = 5000;
 
 const keepAdopting = (forMs) => {
     adopt();

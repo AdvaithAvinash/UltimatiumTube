@@ -115,7 +115,7 @@ global.window._yttv = {};
 const nativeParse = (text) => ({ native: text });
 global.window._yttv.arrivesLate = { JSON: { parse: nativeParse, stringify: () => '' } };
 
-await new Promise((resolve) => setTimeout(resolve, 2600));
+await new Promise((resolve) => setTimeout(resolve, 5600));
 
 check('a module that arrives after the quick walk is still taken', () => {
     assert.strictEqual(global.window._yttv.arrivesLate.JSON.parse, JSON.parse,

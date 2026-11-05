@@ -31,6 +31,12 @@ final class PluginFetch {
                 || n.equals("transfer-encoding") || n.startsWith("proxy-");
     }
 
+    /** UTF-8, or Windows-1252 when the bytes are not valid UTF-8 (older subtitle files often are). */
+    private static String text(byte[] raw) throws Exception {
+        String utf8 = new String(raw, "UTF-8");
+        return utf8.indexOf('\uFFFD') == -1 ? utf8 : new String(raw, "windows-1252");
+    }
+
     static String run(String request) throws Exception {
         JSONObject ask = new JSONObject(request);
         String url = ask.getString("url");
@@ -99,7 +105,7 @@ final class PluginFetch {
             answer.put("status", status);
             answer.put("url", url);
             answer.put("headers", answerHeaders);
-            answer.put("body", bytes.size() >= LIMIT ? "" : bytes.toString("UTF-8"));
+            answer.put("body", bytes.size() >= LIMIT ? "" : text(bytes.toByteArray()));
             c.disconnect();
             return answer.toString();
         }

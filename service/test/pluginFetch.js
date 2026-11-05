@@ -25,6 +25,7 @@ const site = http.createServer((req, res) => {
     req.on('data', (chunk) => parts.push(chunk));
     req.on('end', () => {
         if (req.url === '/old') { res.statusCode = 302; res.setHeader('Location', '/new'); return res.end(); }
+        if (req.url === '/latin') { res.setHeader('Content-Type', 'text/plain'); return res.end(Buffer.from([0x63, 0x61, 0x66, 0xe9])); }
         if (req.url === '/gone') { res.statusCode = 404; return res.end('nothing here'); }
         res.setHeader('Set-Cookie', ['a=1', 'b=2']);
         res.setHeader('Content-Type', 'application/json');
@@ -68,7 +69,10 @@ site.listen(0, '127.0.0.1', () => {
             return ask({ url: `${base}/old` }, ours);
         }).then((r) => {
             check('a redirect is followed and the final address told', r.json.status === 200 && /\/new$/.test(r.json.url), JSON.stringify(r.json).slice(0, 120));
-            return ask({ url: `${base}/gone` }, ours);
+            return ask({ url: `${base}/latin` }, ours).then((l) => {
+                check('text that is not UTF-8 is read as Windows-1252, not turned into replacement marks', l.json.body === 'caf\u00e9', JSON.stringify(l.json.body));
+                return ask({ url: `${base}/gone` }, ours);
+            });
         }).then((r) => {
             check('an error status is handed back, not hidden', r.status === 200 && r.json.status === 404 && r.json.body === 'nothing here');
             return ask({ url: `${base}/x` }, {});

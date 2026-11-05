@@ -20,14 +20,111 @@
   var cut = function (s, n) { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
   var now = function () { return new Date().getTime(); };
 
-  var TABS = [['home', 'Home'], ['movies', 'Movies'], ['series', 'Series'], ['search', 'Search'], ['library', 'Library'], ['addons', 'Addons']];
+  var TABS = [['home', 'Home'], ['movies', 'Movies'], ['series', 'Series'], ['search', 'Search'], ['library', 'Library'], ['addons', 'Addons'], ['settings', 'Settings']];
   var TYPE_NAMES = { gjvideo: 'Videos', movie: 'Movies', series: 'Series', tv: 'TV', channel: 'Channels', anime: 'Anime' };
 
   var SINGULAR = { gjvideo: 'Video', movie: 'Movie', series: 'Series', tv: 'TV', channel: 'Channel', anime: 'Anime' };
 
   var S = {
-    addons: [], plugins: [], pluginList: [], phone: [], phonePlugins: [], stack: [], focus: null, tab: 'home', loaded: false, heroTimer: 0,
+    keys: 0, addons: [], plugins: [], pluginList: [], phone: [], phonePlugins: [], stack: [], focus: null, tab: 'home', loaded: false, heroTimer: 0,
     last: {}
+  };
+
+  // --- the viewer's choices for this page
+
+  var DEFAULTS = {
+    accent: '#3ea6ff', cardSize: 'm', hero: 'on', dim: 'normal', corners: 'round', badges: 'on',
+    startTab: 'home', autoNext: 'on', autoPick: 'ask',
+    subLang: 'off', subSize: 'm', subColor: '#ffffff', subBg: 'shadow', subPos: 'low'
+  };
+
+  var cfg = function (k) {
+    var all = SX.store.get('cfg', {});
+    return all[k] !== undefined ? all[k] : DEFAULTS[k];
+  };
+
+  var setCfg = function (k, v) {
+    var all = SX.store.get('cfg', {});
+    all[k] = v;
+    SX.store.set('cfg', all);
+  };
+
+  var rgbOf = function (hex) {
+    return [1, 3, 5].map(function (at) { return parseInt(hex.slice(at, at + 2), 16); }).join(', ');
+  };
+
+  var CARD = { s: 170, m: 200, l: 240 };
+  var DIM = { light: [0.8, 0.5, 0.05], normal: [0.97, 0.8, 0.15], dark: [1, 0.95, 0.5] };
+
+  // The stylesheet with the viewer's choices in it. The engine has no custom properties, so the
+  // accent is written into the text of the stylesheet, and the rest is rules added after it.
+  var buildCss = function (base) {
+    var accent = cfg('accent');
+    var css = base.split('#3ea6ff').join(accent).split('62, 166, 255').join(rgbOf(accent));
+    var more = [];
+
+    var w = CARD[cfg('cardSize')] || 200, h = Math.round(w * 1.5), ww = Math.round(w * 1.7), wh = Math.round(ww * 9 / 16);
+    if (w !== 200) {
+      more.push('.card { width: ' + w + 'px; } .card .cimg { width: ' + w + 'px; height: ' + h + 'px; } .card .cimg img { width: ' + w + 'px; height: ' + h + 'px; }'
+        + ' .card .noimg { width: ' + (w - 20) + 'px; padding-top: ' + Math.round(h * 0.36) + 'px; } .card .bar { width: ' + w + 'px; }'
+        + ' .row { height: ' + (h + 120) + 'px; } .rowview { height: ' + (h + 72) + 'px; } .track { height: ' + (h + 40) + 'px; }'
+        + ' .card.wide { width: ' + ww + 'px; } .card.wide .cimg { width: ' + ww + 'px; height: ' + wh + 'px; } .card.wide .cimg img { width: ' + ww + 'px; height: ' + wh + 'px; } .card.wide .bar { width: ' + ww + 'px; }');
+    }
+
+    if (cfg('hero') === 'off') more.push('.hero { display: none; } .rowswrap { top: 130px; height: 950px; }');
+
+    var d = DIM[cfg('dim')] || DIM.normal;
+    if (cfg('dim') !== 'normal') {
+      more.push('.shade { background: linear-gradient(to right, rgba(7, 9, 15, ' + d[0] + ') 0%, rgba(7, 9, 15, ' + d[1] + ') 38%, rgba(7, 9, 15, ' + d[2] + ') 75%), linear-gradient(rgba(7, 9, 15, 0) 40%, #07090f 100%); }');
+    }
+
+    if (cfg('corners') === 'sharp') more.push('.card .cimg, .btn, .s, .a, .ep, .dposter, .key, .chip2, .tab, .query, .box { border-radius: 2px; } .ep .th { border-radius: 2px 0 0 2px; }');
+    if (cfg('badges') === 'off') more.push('.card .tag { display: none; }');
+
+    return css + '\n' + more.join('\n');
+  };
+
+  var themeBase = { text: null };
+
+  var applyTheme = function () {
+    var put = function (base) {
+      var style = D.getElementById('theme');
+      if (!style) {
+        style = D.createElement('style');
+        style.id = 'theme';
+        D.head.appendChild(style);
+        // Its rules replace the linked file's, which is then not needed.
+        var link = D.querySelector('link[rel=stylesheet]');
+        if (link) link.parentNode.removeChild(link);
+      }
+      style.textContent = buildCss(base);
+    };
+
+    if (themeBase.text !== null) { put(themeBase.text); return; }
+
+    var x = new XMLHttpRequest();
+    x.open('GET', 'style.css', true);
+    x.onreadystatechange = function () {
+      if (x.readyState !== 4) return;
+      if (!((x.status >= 200 && x.status < 300) || x.status === 0)) return;
+      if (!x.responseText) return;
+      themeBase.text = x.responseText;
+      put(themeBase.text);
+    };
+    try { x.send(); } catch (e) { /* the linked file stays */ }
+  };
+
+  // The style of a line of subtitles, for the player and for the preview in the settings.
+  var SUB_SIZE = { s: 34, m: 44, l: 56, xl: 68 };
+  var SUB_POS = { low: 70, mid: 170, high: 290 };
+
+  var styleSub = function (node) {
+    node.style.fontSize = (SUB_SIZE[cfg('subSize')] || 44) + 'px';
+    node.style.lineHeight = Math.round((SUB_SIZE[cfg('subSize')] || 44) * 1.25) + 'px';
+    node.style.color = cfg('subColor');
+    var bg = cfg('subBg');
+    node.style.textShadow = bg === 'box' ? 'none' : '0 0 6px #000, 0 0 6px #000, 2px 2px 3px #000, -2px -2px 3px #000';
+    node.style.backgroundColor = bg === 'box' ? 'rgba(0, 0, 0, 0.72)' : 'transparent';
   };
 
   // --- fitting the 1920 x 1080 page to the screen
@@ -201,7 +298,7 @@
 
   var back = function () {
     if ($('dialog').className.indexOf('open') !== -1) { closeDialog(); return; }
-    if (playing()) { stopPlayer(); return; }
+    if (playing()) { if (SUBS.menu) closeMenu(); else stopPlayer(); return; }
 
     if (S.stack.length > 1) { closeTop(); return; }
     if (S.tab !== 'home') { showTab('home'); return; }
@@ -240,7 +337,7 @@
     S.moved = false;
     markTabs(name);
 
-    var make = { home: homeTab, movies: homeTab, series: homeTab, search: searchTab, library: libraryTab, addons: addonsTab }[name];
+    var make = { home: homeTab, movies: homeTab, series: homeTab, search: searchTab, library: libraryTab, addons: addonsTab, settings: settingsTab }[name];
     var spec = make(name);
     var first = spec.start ? spec.start() : null;
     setFocus(first || focusables()[0]);
@@ -656,6 +753,8 @@
     var inner = root.querySelector('.sinner'), view = root.querySelector('.slist'), sub = root.querySelector('.sub');
     var all = [], answered = { n: 0 };
     var ctx = { full: full, video: video, label: label, type: type, id: id };
+    // With a stream chosen for the viewer, nothing is asked unless a key was pressed meanwhile.
+    var auto = { done: false, armed: false, keys: S.keys };
 
     var draw = function () {
       var keep = S.focus && inner.contains(S.focus) ? S.focus.__stream : null;
@@ -692,6 +791,12 @@
       var firstPlayable = [].filter.call(rows, function (r) { return r.className.indexOf(' no') === -1; })[0];
       var target = again || firstPlayable || rows[0] || null;
       if (target && (!S.focus || !visible(S.focus) || !spec.root.contains(S.focus) || !keep)) setFocus(target);
+      if (!auto.done && auto.armed && answered.n >= asked && cfg('autoPick') !== 'ask') {
+        auto.done = true;
+        var chosen = auto.keys === S.keys ? SX.pick(all, { best: 0, '1080': 1080, '720': 720 }[cfg('autoPick')]) : null;
+        if (chosen) { chooseStream(ctx, chosen, sorted); return; }
+      }
+
       sub.innerHTML = answered.n < asked ? 'Asking ' + (asked - answered.n) + ' of ' + asked + ' addons…' : (sorted.length + ' stream' + (sorted.length === 1 ? '' : 's'));
     };
 
@@ -701,6 +806,7 @@
     // A video from a plugin has its sources already, from when its details were read.
     if (full.plugin) {
       all = full.sources || [];
+      auto.armed = true;
       draw();
       return spec;
     }
@@ -711,6 +817,7 @@
       if (S.stack.indexOf(spec) !== -1) draw();
     });
     asked = request.asked;
+    auto.armed = true;
     draw();
     spec.close = function () { /* answers that arrive late find the screen gone */ };
     return spec;
@@ -960,6 +1067,99 @@
     return spec;
   };
 
+  // --- settings
+
+  var COLOURS = [['#3ea6ff', 'Blue'], ['#22d3ee', 'Cyan'], ['#a78bfa', 'Purple'], ['#f472b6', 'Pink'], ['#4ade80', 'Green'], ['#fb923c', 'Orange'], ['#f87171', 'Red'], ['#ffffff', 'White']];
+  var ONOFF = [['on', 'On'], ['off', 'Off']];
+
+  var langOptions = function () {
+    return [['off', 'Off']].concat(SX.LANGS.map(function (l) { return [l[0], l[l.length - 1]]; }));
+  };
+
+  var SETTINGS = [
+    { head: 'Look' },
+    { key: 'accent', label: 'Accent colour', options: COLOURS },
+    { key: 'cardSize', label: 'Poster size', options: [['s', 'Small'], ['m', 'Medium'], ['l', 'Large']] },
+    { key: 'hero', label: 'Banner on the home screens', options: ONOFF },
+    { key: 'dim', label: 'Picture behind the text', options: [['light', 'Bright'], ['normal', 'Normal'], ['dark', 'Dark']] },
+    { key: 'corners', label: 'Corners', options: [['round', 'Rounded'], ['sharp', 'Sharp']] },
+    { key: 'badges', label: 'Rating on posters', options: ONOFF },
+    { head: 'Playing' },
+    { key: 'startTab', label: 'Opens on', options: [['home', 'Home'], ['movies', 'Movies'], ['series', 'Series'], ['library', 'Library']] },
+    { key: 'autoNext', label: 'Start the next episode', options: ONOFF },
+    { key: 'autoPick', label: 'Choosing a stream', options: [['ask', 'Ask me'], ['best', 'Best quality'], ['1080', 'Best up to 1080p'], ['720', 'Best up to 720p']] },
+    { head: 'Subtitles' },
+    { key: 'subLang', label: 'Language', options: langOptions },
+    { key: 'subSize', label: 'Size', options: [['s', 'Small'], ['m', 'Medium'], ['l', 'Large'], ['xl', 'Very large']] },
+    { key: 'subColor', label: 'Colour', options: [['#ffffff', 'White'], ['#ffeb3b', 'Yellow'], ['#22d3ee', 'Cyan'], ['#4ade80', 'Green']] },
+    { key: 'subBg', label: 'Behind the text', options: [['shadow', 'Outline'], ['box', 'Dark box']] },
+    { key: 'subPos', label: 'Height', options: [['low', 'Low'], ['mid', 'Middle'], ['high', 'High']] },
+    { preview: true },
+    { head: 'Your data' },
+    { action: 'Clear continue watching', text: 'This forgets where you stopped in everything.', run: function () { SX.store.set('prog', {}); toast('Cleared'); } },
+    { action: 'Clear the library', text: 'This removes every saved title.', run: function () { SX.store.set('lib', []); toast('Cleared'); } },
+    { action: 'Reload addon information', text: 'The page asks every addon for its details again.', run: function () { SX.store.set('manifests', {}); refreshAddons().then(function () { toast('Reloaded'); }); } },
+    { action: 'Reset these settings', text: 'Every choice on this page goes back to how it came.', run: function () { SX.store.set('cfg', {}); applyTheme(); toast('Reset'); showTab('settings'); } }
+  ];
+
+  var settingsTab = function () {
+    var spec = addScreen({ tabs: true, tab: 'settings' });
+    var root = spec.root;
+    root.innerHTML = '<div class="bg"><div class="shade flat" style="position:absolute"></div></div>'
+      + '<div class="alist" style="top:130px;height:930px"><div class="ainner"></div></div>';
+    var inner = root.querySelector('.ainner'), view = root.querySelector('.alist');
+    var previews = [];
+
+    var fresh = function () {
+      previews.forEach(function (p) { styleSub(p.querySelector('span')); });
+    };
+
+    SETTINGS.forEach(function (item) {
+      if (item.head) { inner.appendChild(el('div', 'sethead', esc(item.head))); return; }
+
+      if (item.preview) {
+        var pv = el('div', 'setprev', '<span>Subtitles look like this</span>');
+        previews.push(pv);
+        inner.appendChild(pv);
+        return;
+      }
+
+      if (item.action) {
+        var act = el('div', 'set f', '<div class="sl">' + esc(item.action) + '</div>');
+        act.__reveal = function () { shiftY(act, inner, view, 0); };
+        act.__ok = function () {
+          openDialog(item.action, item.text, [['Do it', item.run], ['Cancel', function () { /* closed */ }]]);
+        };
+        inner.appendChild(act);
+        return;
+      }
+
+      var options = typeof item.options === 'function' ? item.options() : item.options;
+      var row = el('div', 'set f');
+      var show = function () {
+        var at = options.map(function (o) { return o[0]; }).indexOf(cfg(item.key));
+        row.innerHTML = '<div class="sl">' + esc(item.label) + '</div><div class="sv">‹&nbsp; ' + esc(options[at < 0 ? 0 : at][1]) + ' &nbsp;›</div>';
+      };
+      show();
+
+      row.__change = function (step) {
+        var at = options.map(function (o) { return o[0]; }).indexOf(cfg(item.key));
+        var next = options[(Math.max(at, 0) + step + options.length) % options.length][0];
+        setCfg(item.key, next);
+        show();
+        fresh();
+        if (['accent', 'cardSize', 'hero', 'dim', 'corners', 'badges'].indexOf(item.key) !== -1) applyTheme();
+      };
+      row.__ok = function () { row.__change(1); };
+      row.__reveal = function () { shiftY(row, inner, view, 0); };
+      inner.appendChild(row);
+    });
+
+    fresh();
+    spec.start = function () { return inner.querySelector('.f'); };
+    return spec;
+  };
+
   // --- the addons themselves
 
   var localList = function () { return SX.store.get('addons', null); };
@@ -1071,6 +1271,157 @@
     }, function () { return read(kept()); });
   };
 
+  // --- subtitles in the player
+
+  // Drawn by the page, from the text of the file: the engine's own subtitle tracks are not relied on.
+  var SUBS = { tracks: [], current: null, cues: [], at: -1, delay: 0, timer: 0, token: 0, menu: false, index: 0, loading: false };
+
+  var trackOrder = function (a, b) {
+    var pref = cfg('subLang');
+    var pa = pref !== 'off' && SX.sameLang(a.lang, pref) ? 0 : 1, pb = pref !== 'off' && SX.sameLang(b.lang, pref) ? 0 : 1;
+    if (pa !== pb) return pa - pb;
+    var na = SX.langName(a.lang), nb = SX.langName(b.lang);
+    return na < nb ? -1 : na > nb ? 1 : 0;
+  };
+
+  var hintText = function () {
+    var n = SUBS.tracks.length;
+    if (P.node.hint) P.node.hint.textContent = n ? '▲  Subtitles (' + n + ')' : '';
+  };
+
+  var drawSubs = function () {
+    var node = P.node.sub;
+    if (!node) return;
+    var v = P.video;
+    var i = v && SUBS.cues.length ? SX.cueAt(SUBS.cues, v.currentTime - SUBS.delay, SUBS.at) : -1;
+    SUBS.at = i;
+    if (i < 0) { node.innerHTML = ''; node.className = 'psub'; return; }
+
+    var html = esc(SUBS.cues[i].t).split('\n').join('<br>');
+    if (node.__html !== html) { node.__html = html; node.innerHTML = '<span>' + html + '</span>'; }
+    node.className = 'psub on';
+  };
+
+  var selectTrack = function (track) {
+    SUBS.token += 1;
+    var mine = SUBS.token;
+    SUBS.current = track;
+    SUBS.cues = [];
+    SUBS.at = -1;
+    drawSubs();
+    if (!track) return;
+
+    SUBS.loading = true;
+    SX.text(track.url).then(function (text) {
+      if (mine !== SUBS.token) return;
+      SUBS.loading = false;
+      SUBS.cues = SX.parseSubs(text);
+      if (!SUBS.cues.length) toast('That subtitle file has nothing in it');
+      else toast('Subtitles: ' + SX.langName(track.lang));
+    }, function () {
+      if (mine !== SUBS.token) return;
+      SUBS.loading = false;
+      toast('Could not load those subtitles');
+    });
+  };
+
+  var addTracks = function (list) {
+    list.forEach(function (t) {
+      if (SUBS.tracks.some(function (x) { return x.url === t.url; })) return;
+      SUBS.tracks.push(t);
+    });
+    SUBS.tracks.sort(trackOrder);
+    hintText();
+    if (SUBS.menu) drawMenu();
+
+    // The language chosen in the settings is turned on when its first track arrives.
+    var pref = cfg('subLang');
+    if (pref !== 'off' && !SUBS.current && !SUBS.picked) {
+      var match = SUBS.tracks.filter(function (t) { return SX.sameLang(t.lang, pref); })[0];
+      if (match) { SUBS.picked = true; selectTrack(match); }
+    }
+  };
+
+  var startSubs = function (ctx, st) {
+    endSubs();
+    SUBS.tracks = []; SUBS.current = null; SUBS.cues = []; SUBS.at = -1; SUBS.delay = 0; SUBS.picked = false; SUBS.menu = false; SUBS.index = 0;
+    styleSub(P.node.sub);
+    P.node.sub.style.bottom = (SUB_POS[cfg('subPos')] || 70) + 'px';
+    hintText();
+    SUBS.timer = setInterval(drawSubs, 150);
+
+    addTracks(st.subtitles || []);
+    // A video from a plugin has no addon to ask; a Stremio title asks every addon with subtitles.
+    if (!ctx.full.plugin) SX.subtitles(S.addons, ctx.type, ctx.video ? ctx.video.id : ctx.full.id, function (a, list) { if (P.open) addTracks(list); });
+  };
+
+  var endSubs = function () {
+    clearInterval(SUBS.timer);
+    SUBS.token += 1;
+    SUBS.menu = false;
+  };
+
+  // The menu: Off, each track, and the delay.
+  var menuItems = function () {
+    var items = [{ label: 'Off', track: null, mark: !SUBS.current }];
+    SUBS.tracks.forEach(function (t) {
+      items.push({ label: SX.langName(t.lang), sub: t.addon, track: t, mark: SUBS.current === t });
+    });
+    items.push({ delay: true });
+    return items;
+  };
+
+  var delayText = function () { return (SUBS.delay >= 0 ? '+' : '') + SUBS.delay.toFixed(1) + ' s'; };
+
+  var drawMenu = function () {
+    var items = menuItems();
+    SUBS.index = Math.max(0, Math.min(SUBS.index, items.length - 1));
+    var html = '<h3>Subtitles</h3>';
+    items.forEach(function (it, i) {
+      var cls = 'pm' + (i === SUBS.index ? ' on' : '');
+      if (it.delay) html += '<div class="' + cls + '"><span>Delay</span><b>‹&nbsp; ' + delayText() + ' &nbsp;›</b></div>';
+      else html += '<div class="' + cls + '"><span>' + (it.mark ? '✓&nbsp; ' : '') + esc(it.label) + '</span>' + (it.sub ? '<i>' + esc(it.sub) + '</i>' : '') + '</div>';
+    });
+    if (SUBS.loading) html += '<div class="pmnote"><span class="spin"></span>Loading</div>';
+    if (!SUBS.tracks.length) html += '<div class="pmnote">No subtitles from your addons for this</div>';
+    P.node.menu.innerHTML = html;
+    P.node.menu.className = 'pmenu open';
+
+    var on = P.node.menu.querySelector('.pm.on');
+    if (on) {
+      var top = on.offsetTop, h = P.node.menu.clientHeight;
+      P.node.menu.scrollTop = Math.max(0, top - h / 2);
+    }
+  };
+
+  var openMenu = function () {
+    SUBS.menu = true;
+    var items = menuItems();
+    SUBS.index = Math.max(0, items.map(function (i) { return i.track; }).indexOf(SUBS.current));
+    drawMenu();
+    showUi(true);
+  };
+
+  var closeMenu = function () {
+    SUBS.menu = false;
+    if (P.node.menu) P.node.menu.className = 'pmenu';
+    showUi();
+  };
+
+  var menuKey = function (code) {
+    var items = menuItems();
+    var it = items[SUBS.index];
+
+    if (code === 38) SUBS.index = Math.max(0, SUBS.index - 1);
+    else if (code === 40) SUBS.index = Math.min(items.length - 1, SUBS.index + 1);
+    else if ((code === 37 || code === 39) && it.delay) SUBS.delay = Math.round((SUBS.delay + (code === 37 ? -0.5 : 0.5)) * 10) / 10;
+    else if (code === 13 && !it.delay) { selectTrack(it.track); SUBS.picked = true; }
+    else if (code === 13) SUBS.delay = 0;
+    else return;
+
+    drawMenu();
+  };
+
   // --- the player
 
   var P = { open: false, video: null, hls: null, ctx: null, stream: null, siblings: null, hide: 0, save: 0, seek: null, seekTimer: 0, step: 0, lastSeek: 0, failed: false, ended: false, node: {} };
@@ -1144,8 +1495,9 @@
 
   var startPlayer = function (ctx, st, siblings) {
     var box = $('player');
-    box.innerHTML = '<video id="pv" autoplay></video>'
-      + '<div class="pui"><div class="ptop"><div class="pt"></div><div class="ps"></div></div>'
+    box.innerHTML = '<video id="pv" autoplay></video><div class="psub"></div>'
+      + '<div class="pmenu"></div>'
+      + '<div class="pui"><div class="phint"></div><div class="ptop"><div class="pt"></div><div class="ps"></div></div>'
       + '<div class="pstate"></div><div class="pwait on"><span class="spin"></span>Starting</div>'
       + '<div class="perr"></div>'
       + '<div class="pbot"><div class="pbar"><div class="pbuf"></div><div class="pcur"></div><div class="pdot"></div></div>'
@@ -1157,7 +1509,8 @@
     P.failed = false; P.ended = false; P.seek = null;
     P.node = { ui: box.querySelector('.pui'), wait: box.querySelector('.pwait'), err: box.querySelector('.perr'), state: box.querySelector('.pstate'),
       cur: box.querySelector('.pcur'), dot: box.querySelector('.pdot'), buf: box.querySelector('.pbuf'),
-      time: box.querySelector('.ptime'), dur: box.querySelector('.pdur') };
+      time: box.querySelector('.ptime'), dur: box.querySelector('.pdur'),
+      sub: box.querySelector('.psub'), menu: box.querySelector('.pmenu'), hint: box.querySelector('.phint') };
     box.querySelector('.pt').textContent = ctx.label;
     box.querySelector('.ps').textContent = st.addon + (st.name ? '  ·  ' + st.name : '');
 
@@ -1187,6 +1540,7 @@
     clearInterval(P.save);
     P.save = setInterval(saveNow, 10000);
     showUi();
+    startSubs(ctx, st);
   };
 
   var stopPlayer = function () {
@@ -1195,6 +1549,7 @@
     clearInterval(P.save);
     clearTimeout(P.hide);
     clearTimeout(P.seekTimer);
+    endSubs();
     try { if (P.hls) { P.hls.destroy(); P.hls = null; } } catch (e) { P.hls = null; }
     try { if (P.video) { P.video.pause(); P.video.removeAttribute('src'); P.video.load(); } } catch (e) { /* gone */ }
     var box = $('player');
@@ -1208,7 +1563,7 @@
   // At the end of an episode, the next one is started with the same kind of stream if there is one.
   var next = function () {
     var c = P.ctx, st = P.stream;
-    if (!c || !c.video) { stopPlayer(); return; }
+    if (!c || !c.video || cfg('autoNext') !== 'on') { stopPlayer(); return; }
 
     var same = c.full.videos.filter(function (v) { return v.season === c.video.season; }).sort(function (a, b) { return a.episode - b.episode; });
     var at = same.map(function (v) { return v.id; }).indexOf(c.video.id);
@@ -1265,6 +1620,7 @@
     if (!v) return;
 
     if (P.failed) return;
+    if (SUBS.menu) { menuKey(code); return; }
     if (code === 13 || code === 10252 || code === 415 || code === 19) {
       if (code === 19 || (code === 13 && !v.paused) || (code === 10252 && !v.paused)) v.pause(); else v.play();
       showUi(v.paused);
@@ -1272,7 +1628,8 @@
     }
     if (code === 37 || code === 412) { seekBy(-10); return; }
     if (code === 39 || code === 417) { seekBy(10); return; }
-    if (code === 38 || code === 40) { showUi(); return; }
+    if (code === 38) { openMenu(); return; }
+    if (code === 40) { showUi(); return; }
     if (code === 413) { stopPlayer(); }
   };
 
@@ -1281,6 +1638,7 @@
   var isBack = function (code) { return code === 8 || code === 27 || code === 10009 || code === 461 || code === 4; };
 
   var key = function (code) {
+    S.keys = (S.keys || 0) + 1;
     if (playing()) {
       if (isBack(code)) { back(); return true; }
       playerKey(code);
@@ -1288,6 +1646,11 @@
     }
 
     if (isBack(code)) { back(); return true; }
+
+    if ((code === 37 || code === 39) && S.focus && S.focus.__change && visible(S.focus)) {
+      S.focus.__change(code === 37 ? -1 : 1);
+      return true;
+    }
 
     var dir = { 37: 'left', 38: 'up', 39: 'right', 40: 'down' }[code];
     if (dir) { move(dir); return true; }
@@ -1308,6 +1671,7 @@
     started = true;
     fit();
     buildTabs();
+    applyTheme();
 
     var msg = el('div', 'msg', '<span class="spin"></span>Loading your addons');
     $('screens').appendChild(msg);
@@ -1319,7 +1683,7 @@
     }).then(function () {
       $('screens').removeChild(msg);
       S.loaded = true;
-      showTab('home');
+      showTab(cfg('startTab'));
     }, function () {
       msg.innerHTML = 'Could not load the addons';
     });

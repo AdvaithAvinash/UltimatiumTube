@@ -275,3 +275,9 @@ Two build-time gates, one per side.
   swallowed the marker is discarded too. Requests go to `/__tube/fetch` (`service/lib/pluginFetch.js`:
   method, headers and body as sent, redirects followed, JSON back) or, on Android, to
   `AniNative.fetch` (`PluginFetch.java`), because a page may not set User-Agent or Cookie.
+- **Subtitles and settings (Stremio page):** subtitle files are fetched through the same request path as
+  plugins (so a file's own encoding is handled by the service: UTF-8, or Windows-1252 when that is not
+  valid), parsed in `core.js` (`parseSubs`, `cueAt`) and drawn by `ui.js` into a line over the video, not
+  through the engine's text tracks. Settings are kept in `localStorage` (`sx_cfg`). With no custom
+  properties in the engine, the accent colour is written into the text of `style.css` (fetched, changed,
+  and put back as a `<style>`), and the other look settings are rules appended to it.

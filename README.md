@@ -128,7 +128,16 @@ screen of the app on Android. Back returns to YouTube.
   browser's page objects, such as an HTML parser. Plugins are written to block on their requests, which
   a page cannot do, so the page runs a plugin function again from the start with each answer it has
   fetched; a plugin that behaves differently when run twice will not work.
-- **Not there:** subtitles from addons, and addon settings pages (an addon is added by its address,
+- **Subtitles:** from the addons that give them (the `subtitles` resource, such as OpenSubtitles) and from
+  the stream itself. Press Up in the player for the list of languages and a delay (Left and Right,
+  half a second a step). A language chosen in the page's Settings is turned on by itself. The page draws
+  them (SRT and WebVTT, older Windows-1252 files too), in the size, colour, background and height you set.
+- **Settings** (the page's last tab): accent colour, poster size, the banner on or off, how dark the
+  picture behind the text is, rounded or sharp corners, ratings on posters; which tab opens first,
+  whether the next episode starts by itself, and **choosing a stream** by itself (best quality, or best
+  up to 1080p or 720p) so Play goes straight to the video; the subtitle language, size, colour,
+  background and height, with a preview; and clearing continue watching and the library.
+- **Not there:** subtitles from plugins, and addon settings pages (an addon is added by its address,
   with its own configuration in it). It has not been run on a real TV; it was run in a browser with
   addons stood in for.
 

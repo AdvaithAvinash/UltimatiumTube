@@ -177,3 +177,29 @@ body { font-family: Roboto, Arial, Helvetica, sans-serif; color: #f1f3f8; }
 .dposter.wide img { width: 640px; height: 360px; }
 .dinfo.wideinfo { left: 780px; width: 1040px; }
 .dinfo.wideinfo h1 { font-size: 52px; line-height: 60px; max-height: 124px; }
+
+/* settings */
+.sethead { font-size: 30px; font-weight: bold; color: #3ea6ff; padding: 26px 20px 8px 20px; }
+.set { position: relative; width: 1500px; height: 78px; margin-bottom: 8px; border-radius: 12px; background: rgba(255, 255, 255, 0.09); }
+.set .sl { position: absolute; left: 28px; top: 20px; font-size: 30px; }
+.set .sv { position: absolute; right: 28px; top: 20px; font-size: 30px; color: #c9d0e0; text-align: right; }
+.set.on .sv { color: #04101d; }
+.set.on { background: #ffffff; color: #04101d; }
+.setprev { width: 1500px; height: 110px; margin-bottom: 8px; border-radius: 12px; background: #20242e; text-align: center; padding-top: 28px; box-sizing: border-box; }
+.setprev span { display: inline-block; padding: 0 16px; }
+
+/* subtitles in the player */
+.psub { position: absolute; left: 160px; width: 1600px; bottom: 70px; text-align: center; font-family: Roboto, Arial, Helvetica, sans-serif; font-weight: bold; opacity: 0; z-index: 2; }
+.psub.on { opacity: 1; }
+.psub span { display: inline-block; padding: 2px 14px; }
+.phint { position: absolute; right: 80px; top: 60px; font-size: 26px; color: #c9d0e0; }
+.pmenu { position: absolute; right: 80px; top: 120px; width: 620px; max-height: 760px; overflow: hidden; padding: 24px; border-radius: 16px; background: rgba(12, 16, 26, 0.96); border: 2px solid #26324a; display: none; z-index: 5; }
+.pmenu.open { display: block; }
+.pmenu h3 { font-size: 34px; margin: 0 0 14px 0; }
+.pm { position: relative; height: 62px; margin-bottom: 6px; border-radius: 10px; background: rgba(255, 255, 255, 0.08); font-size: 28px; }
+.pm span { position: absolute; left: 20px; top: 14px; }
+.pm i { position: absolute; right: 20px; top: 19px; font-style: normal; font-size: 21px; color: #8993ab; }
+.pm b { position: absolute; right: 20px; top: 14px; font-weight: normal; }
+.pm.on { background: #ffffff; color: #04101d; }
+.pm.on i { color: #4a5368; }
+.pmnote { font-size: 24px; color: #8993ab; padding: 10px 6px; }

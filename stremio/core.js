@@ -326,7 +326,10 @@
       detail: text, addon: addon.manifest.name, addonUrl: addon.url,
       filename: hints.filename || '', size: hints.videoSize || 0, group: hints.bingeGroup || '',
       headers: hints.proxyHeaders && hints.proxyHeaders.request ? hints.proxyHeaders.request : null,
-      notWeb: !!hints.notWebReady
+      notWeb: !!hints.notWebReady,
+      subtitles: SX.arr(s.subtitles).filter(function (t) { return t && /^https?:\/\//i.test(t.url || ''); }).map(function (t) {
+        return { id: String(t.id || t.url), url: t.url, lang: t.lang || '', addon: addon.manifest.name };
+      })
     };
   };
 
@@ -357,6 +360,124 @@
         }).catch(function (e) { onAddon(a, [], e); return []; });
       }))
     };
+  };
+
+  // --- subtitles
+
+  // [2-letter, 3-letter codes..., name]. Addons mostly give the 3-letter code.
+  SX.LANGS = [
+    ['en', 'eng', 'English'], ['es', 'spa', 'Spanish'], ['fr', 'fra', 'fre', 'French'], ['de', 'deu', 'ger', 'German'],
+    ['it', 'ita', 'Italian'], ['pt', 'por', 'Portuguese'], ['pb', 'pob', 'Portuguese (Brazil)'], ['nl', 'nld', 'dut', 'Dutch'],
+    ['sv', 'swe', 'Swedish'], ['no', 'nor', 'Norwegian'], ['da', 'dan', 'Danish'], ['fi', 'fin', 'Finnish'],
+    ['pl', 'pol', 'Polish'], ['cs', 'ces', 'cze', 'Czech'], ['hu', 'hun', 'Hungarian'], ['ro', 'ron', 'rum', 'Romanian'],
+    ['el', 'ell', 'gre', 'Greek'], ['tr', 'tur', 'Turkish'], ['ru', 'rus', 'Russian'], ['uk', 'ukr', 'Ukrainian'],
+    ['ar', 'ara', 'Arabic'], ['he', 'heb', 'Hebrew'], ['hi', 'hin', 'Hindi'], ['ne', 'nep', 'Nepali'],
+    ['ja', 'jpn', 'Japanese'], ['ko', 'kor', 'Korean'], ['zh', 'zho', 'chi', 'Chinese'], ['th', 'tha', 'Thai'],
+    ['vi', 'vie', 'Vietnamese'], ['id', 'ind', 'Indonesian'], ['ms', 'msa', 'may', 'Malay'], ['fa', 'fas', 'per', 'Persian']
+  ];
+
+  // The entry for a code (any spelling), or null.
+  SX.lang = function (code) {
+    var c = String(code || '').toLowerCase().replace(/[-_].*$/, '');
+    var found = null;
+    SX.LANGS.forEach(function (l) {
+      if (!found && l.slice(0, -1).indexOf(c) !== -1) found = l;
+    });
+    return found;
+  };
+
+  SX.langName = function (code) {
+    var l = SX.lang(code);
+    return l ? l[l.length - 1] : String(code || 'Unknown');
+  };
+
+  SX.sameLang = function (a, b) {
+    var x = SX.lang(a), y = SX.lang(b);
+    return !!x && x === y;
+  };
+
+  // The tracks every addon with subtitles has for this, each answer handed over as it arrives.
+  SX.subtitles = function (addons, type, id, onAddon) {
+    var askers = addons.filter(function (a) { return a.manifest && SX.supports(a.manifest, 'subtitles', type, id); });
+
+    return Promise.all(askers.map(function (a) {
+      return SX.json(SX.url(a, 'subtitles', type, id), 15000).then(function (r) {
+        var list = SX.arr(r && r.subtitles).filter(function (t) { return t && /^https?:\/\//i.test(t.url || ''); }).map(function (t) {
+          return { id: String(t.id || t.url), url: t.url, lang: t.lang || '', addon: a.manifest.name };
+        });
+        if (onAddon) onAddon(a, list);
+        return list;
+      }).catch(function () { return []; });
+    })).then(function (all) { return all.reduce(function (sum, l) { return sum.concat(l); }, []); });
+  };
+
+  var clock = /(?:(\d+):)?(\d+):(\d+)[.,](\d{1,3})/;
+
+  var seconds = function (m) {
+    return (Number(m[1] || 0) * 3600) + (Number(m[2]) * 60) + Number(m[3]) + Number((m[4] + '00').slice(0, 3)) / 1000;
+  };
+
+  var plain = function (t) {
+    return t.replace(/\{\\[^}]*\}/g, '').replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
+      .replace(/^\s+|\s+$/g, '');
+  };
+
+  // SRT or WebVTT text to [{s, e, t}] in time order.
+  SX.parseSubs = function (text) {
+    var blocks = String(text || '').replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').split(/\n{2,}/);
+    var cues = [];
+
+    blocks.forEach(function (block) {
+      var lines = block.split('\n');
+      var at = -1;
+      lines.forEach(function (l, i) { if (at === -1 && l.indexOf('-->') !== -1) at = i; });
+      if (at === -1) return;
+
+      var parts = lines[at].split('-->');
+      var a = clock.exec(parts[0]), b = clock.exec(parts[1] || '');
+      if (!a || !b) return;
+
+      var body = plain(lines.slice(at + 1).join('\n'));
+      if (body) cues.push({ s: seconds(a), e: seconds(b), t: body });
+    });
+
+    return cues.sort(function (x, y) { return x.s - y.s; });
+  };
+
+  // The cue showing at a time, or null. `from` is where the last one was, a place to start looking.
+  SX.cueAt = function (cues, time, from) {
+    var i = from >= 0 && from < cues.length && cues[from].s <= time ? from : 0;
+    var found = -1;
+    for (; i < cues.length && cues[i].s <= time; i += 1) {
+      if (cues[i].e > time) found = i;
+    }
+    return found;
+  };
+
+  // --- picking a stream without asking
+
+  SX.quality = function (st) {
+    var t = (st.name + ' ' + st.detail + ' ' + st.filename).toLowerCase();
+    if (/2160p?|\b4k\b|\buhd\b/.test(t)) return 2160;
+    if (/1440p?/.test(t)) return 1440;
+    if (/1080p?/.test(t)) return 1080;
+    if (/720p?/.test(t)) return 720;
+    if (/480p?/.test(t)) return 480;
+    if (/360p?/.test(t)) return 360;
+    return 0;
+  };
+
+  // The best playable stream not above a ceiling (0 = no ceiling), or null.
+  SX.pick = function (streams, ceiling) {
+    var best = null;
+    streams.forEach(function (s) {
+      if (s.kind !== 'direct' || s.notWeb) return;
+      var q = SX.quality(s);
+      if (ceiling && q > ceiling) return;
+      if (!best || q > best.q) best = { s: s, q: q };
+    });
+    return best ? best.s : null;
   };
 
   // --- what was watched

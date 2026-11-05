@@ -28,6 +28,13 @@ const requestFor = (method, body) => {
 
 const SAFE = /^https?:\/\//i;
 
+// Text as UTF-8, or, when that is not what it is (older subtitle files often are Windows-1252), as
+// the single-byte text it most likely is.
+const textOf = (buffer) => {
+    const utf8 = buffer.toString('utf8');
+    return utf8.indexOf('\uFFFD') === -1 ? utf8 : buffer.toString('latin1');
+};
+
 // Follows redirects itself, as a browser would, so the plugin sees where it ended up.
 const follow = (url, method, headers, body, left) => {
     const sent = {};
@@ -91,7 +98,7 @@ const attach = (app) => {
             return follow(String(ask.url), method, ask.headers && typeof ask.headers === 'object' ? ask.headers : {}, ask.body, MOST_REDIRECTS)
                 .then((got) => {
                     const headers = got.response.headers.raw();
-                    const body = got.buffer.length > BODY_LIMIT ? '' : got.buffer.toString('utf8');
+                    const body = got.buffer.length > BODY_LIMIT ? '' : textOf(got.buffer);
                     return res.json({ status: got.response.status, url: got.url, headers, body });
                 })
                 .catch((error) => res.status(502).json({ error: `the request failed: ${error.message}` }));

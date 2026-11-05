@@ -84,4 +84,57 @@ check('a manifest without an id or a name is not an addon', () => {
     assert.strictEqual(SX.cleanManifest(null), null);
 });
 
+check('SRT is read: numbers, tags, styling codes, entities and a byte-order mark', () => {
+    const cues = SX.parseSubs('\uFEFF1\r\n00:00:01,000 --> 00:00:03,500\r\n<i>Hello</i> &amp; {\\an8}hi\r\n\r\n2\r\n00:01:04,250 --> 00:01:05,000\r\nBye\r\nnow');
+    assert.deepStrictEqual(cues, [{ s: 1, e: 3.5, t: 'Hello & hi' }, { s: 64.25, e: 65, t: 'Bye\nnow' }]);
+});
+
+check('WebVTT is read too, with its header, settings and short times', () => {
+    const cues = SX.parseSubs('WEBVTT\n\nNOTE a comment\n\ncue1\n00:01.000 --> 00:02.000 align:start\nA\nB\n\n01:00:00.500 --> 01:00:01.000\nLate');
+    assert.deepStrictEqual(cues.map((c) => [c.s, c.e, c.t]), [[1, 2, 'A\nB'], [3600.5, 3601, 'Late']]);
+});
+
+check('cues come back in time order, and junk is skipped', () => {
+    const cues = SX.parseSubs('2\n00:00:09,000 --> 00:00:10,000\nlater\n\nnot a cue\n\n1\n00:00:01,000 --> 00:00:02,000\nfirst\n\n3\n00:00:03,000 --> 00:00:04,000\n   ');
+    assert.deepStrictEqual(cues.map((c) => c.t), ['first', 'later']);
+});
+
+check('the cue showing at a time is found, from anywhere', () => {
+    const cues = [{ s: 1, e: 2, t: 'a' }, { s: 3, e: 5, t: 'b' }, { s: 6, e: 7, t: 'c' }];
+    assert.strictEqual(SX.cueAt(cues, 0.5, -1), -1);
+    assert.strictEqual(SX.cueAt(cues, 1.5, -1), 0);
+    assert.strictEqual(SX.cueAt(cues, 2.5, 0), -1);
+    assert.strictEqual(SX.cueAt(cues, 4, 0), 1);
+    assert.strictEqual(SX.cueAt(cues, 6.5, 1), 2);
+    assert.strictEqual(SX.cueAt(cues, 1.5, 2), 0, 'after jumping back');
+});
+
+check('languages match by any spelling', () => {
+    assert.strictEqual(SX.langName('eng'), 'English');
+    assert.strictEqual(SX.langName('pt-BR'), 'Portuguese');
+    assert.ok(SX.sameLang('en', 'eng'));
+    assert.ok(!SX.sameLang('en', 'spa'));
+    assert.ok(!SX.sameLang('xx', 'yy'));
+    assert.strictEqual(SX.langName('zzz'), 'zzz');
+});
+
+const askedSubs = [];
+SX.json = (url) => { askedSubs.push(url); return Promise.resolve({ subtitles: [{ id: 'x', url: 'https://s.example/a.srt', lang: 'eng' }, { url: 'javascript:1' }] }); };
+const subsAddon = SX.cleanManifest({ id: 'subs', name: 'Subs', resources: ['subtitles'], types: ['movie', 'series'], idPrefixes: ['tt'], catalogs: [] });
+const gotSubs = await SX.subtitles([{ url: 'https://s.example/manifest.json', manifest: subsAddon }, { url: 'u', manifest: cinemeta }], 'movie', 'tt1');
+
+check('subtitles are asked of the addons that declare them, for the types and ids they declared', () => {
+    assert.deepStrictEqual(askedSubs, ['https://s.example/subtitles/movie/tt1.json']);
+    assert.deepStrictEqual(gotSubs.map((t) => [t.lang, t.addon]), [['eng', 'Subs']]);
+});
+
+check('a stream is picked by quality, never above a ceiling, never one that is not a plain file', () => {
+    const s = (name, kind, extra) => Object.assign({ name, detail: '', filename: '', kind, notWeb: false }, extra);
+    const list = [s('2160p HDR', 'direct'), s('1080p', 'direct'), s('720p', 'direct'), s('1080p remux', 'torrent'), s('4K', 'direct', { notWeb: true })];
+    assert.strictEqual(SX.pick(list, 0).name, '2160p HDR');
+    assert.strictEqual(SX.pick(list, 1080).name, '1080p');
+    assert.strictEqual(SX.pick(list, 720).name, '720p');
+    assert.strictEqual(SX.pick(list.slice(3), 0), null);
+});
+
 finish();

@@ -2,6 +2,7 @@
 import { PASS, buttonItem, configRead, configWrite, onCommand, resolve, showToast } from '../../framework/index.js';
 import { openOptions, OPTIONS_ACTION } from '../settings/settingsOptions.js';
 import { openSpeedOptions } from '../player/speed.js';
+import { openFitOptions, setFit } from '../player/zoom.js';
 import { enterMiniPlayer } from '../player/pictureInPicture.js';
 import { recordSkip } from '../sponsorblock/index.js';
 import { openAniUltimatium } from '../aniultimatium/index.js';
@@ -30,6 +31,10 @@ const ACTIONS = {
         recordSkip(parameters.time - video.currentTime);
         video.currentTime = parameters.time;
     },
+
+    OPEN_VIDEO_FIT: () => openFitOptions(),
+
+    SET_VIDEO_FIT: (parameters) => setFit(parameters),
 
     SET_PLAYER_SPEED: (parameters) => {
         const video = document.querySelector('video');

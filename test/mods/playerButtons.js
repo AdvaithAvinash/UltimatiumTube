@@ -58,21 +58,26 @@ const dressed = () => response().transportControls.transportControlsRenderer;
 check('the mini player goes in before playback settings', () => {
     withConfig({ enableMPButton: true }, () => {
         const types = typesIn(dressed(), 'settingActions');
-        assert.deepStrictEqual(types, ['CAPTIONS', 'PIP', 'PLAYBACK_SETTINGS', 'QUALITY', 'SPEED_BUTTON']);
+        assert.deepStrictEqual(types, ['CAPTIONS', 'PIP', 'PIP', 'PLAYBACK_SETTINGS', 'QUALITY', 'SPEED_BUTTON']);
     });
 });
+
+const texts = (controls) => controls.settingActions
+    .map((a) => a.button.buttonRenderer.text && a.button.buttonRenderer.text.runs[0].text)
+    .filter(Boolean);
 
 check('and is left out when it is not wanted', () => {
     withConfig({ enableMPButton: false }, () => {
-        assert.strictEqual(typesIn(dressed(), 'settingActions').indexOf('PIP'), -1);
+        assert.strictEqual(texts(dressed()).indexOf('Mini Player'), -1);
     });
 });
 
-check('the mini player is never added twice', () => {
+check('the mini player and the video fit button are never added twice', () => {
     withConfig({ enableMPButton: true }, () => {
-        const twice = JSON.parse(JSON.stringify(response())).transportControls.transportControlsRenderer;
-        const types = typesIn(twice, 'settingActions').filter((t) => t === 'PIP');
-        assert.strictEqual(types.length, 1);
+        const once = { transportControls: { transportControlsRenderer: dressed() } };
+        const twice = JSON.parse(JSON.stringify(once)).transportControls.transportControlsRenderer;
+        assert.strictEqual(texts(twice).filter((t) => t === 'Mini Player').length, 1);
+        assert.strictEqual(texts(twice).filter((t) => t === 'Video fit').length, 1);
     });
 });
 

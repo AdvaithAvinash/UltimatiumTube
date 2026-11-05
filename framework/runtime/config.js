@@ -100,7 +100,7 @@ const defaultConfig = {
   hideWatchedVideosPages: [],
 
   enablePreviousNextButtons: false,
-  enableMPButton: false,
+  enableMPButton: true,
   enableSuperThanksButton: true,
   enableAIAskButton: true,
 

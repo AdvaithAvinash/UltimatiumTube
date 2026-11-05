@@ -31,7 +31,28 @@ const dressEngagement = (actions) => [
     !configRead('enableAIAskButton') ? 'YOUCHAT_BUTTON' : null
 ].filter(Boolean).reduce(without, actions);
 
-const dressSettings = (actions) => (configRead('enableMPButton') ? withMiniPlayer(actions) : actions);
+// The video fit button sits beside the playback settings, so the fit can be changed while watching.
+const fitButton = () => ({
+    type: 'TRANSPORT_CONTROLS_BUTTON_TYPE_PIP',
+    button: {
+        buttonRenderer: ButtonRenderer(false, 'Video fit', 'FULLSCREEN', {
+            customAction: { action: 'OPEN_VIDEO_FIT' }
+        })
+    }
+});
+
+const withFitButton = (actions) => {
+    if (actions.some((entry) => entry && entry.button && entry.button.buttonRenderer
+        && entry.button.buttonRenderer.command && entry.button.buttonRenderer.command.customAction
+        && entry.button.buttonRenderer.command.customAction.action === 'OPEN_VIDEO_FIT')) return actions;
+
+    const at = actions.findIndex(is('PLAYBACK_SETTINGS'));
+    if (at === -1) return actions.concat([fitButton()]);
+
+    return actions.slice(0, at).concat([fitButton()], actions.slice(at));
+};
+
+const dressSettings = (actions) => withFitButton(configRead('enableMPButton') ? withMiniPlayer(actions) : actions);
 
 // Replaced, not dressed: YouTube's pair are chapter controls, ours step through the queue.
 const skipButton = (title, icon, signal) => ({

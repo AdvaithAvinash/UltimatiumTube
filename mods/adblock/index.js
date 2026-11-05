@@ -19,24 +19,34 @@ onResponse('adverts', ['adPlacements', 'adSlots', 'playerAds', 'entries'], (r) =
 const isAdvert = (item) => !!item && typeof item === 'object' && !Array.isArray(item)
     && !!(item.adSlotRenderer || item.adPlacementRenderer);
 
-const MOST_DEEP = 16;
+const MOST_DEEP = 12;
+
+// Parts of a feed that hold no items, only text, pictures and tracking: a TV's processor has no time
+// to walk them, and an advert is never inside one.
+const LEAVES = {
+    trackingParams: 1, clickTrackingParams: 1, thumbnail: 1, thumbnails: 1, image: 1, accessibility: 1,
+    accessibilityData: 1, commandMetadata: 1, loggingDirectives: 1, text: 1, title: 1, subtitle: 1,
+    avatar: 1, banner: 1, thumbnailOverlays: 1, menu: 1, serviceEndpoint: 1
+};
 
 const scrubAdverts = (node, depth) => {
     if (!node || typeof node !== 'object' || depth > MOST_DEEP) return 0;
 
     if (Array.isArray(node)) {
-        const kept = node.filter((item) => !isAdvert(item));
-        const removed = node.length - kept.length;
+        // Nothing is made unless something is to go, which is nearly always the case.
+        const removed = node.some(isAdvert) ? node.length : 0;
 
         if (removed) {
+            const kept = node.filter((item) => !isAdvert(item));
             node.length = 0;
             kept.forEach((item) => node.push(item));
+            return removed - kept.length + kept.reduce((sum, item) => sum + scrubAdverts(item, depth + 1), 0);
         }
 
-        return removed + node.reduce((sum, item) => sum + scrubAdverts(item, depth + 1), 0);
+        return node.reduce((sum, item) => sum + scrubAdverts(item, depth + 1), 0);
     }
 
-    return Object.keys(node).reduce((sum, key) => sum + scrubAdverts(node[key], depth + 1), 0);
+    return Object.keys(node).reduce((sum, key) => (LEAVES[key] ? sum : sum + scrubAdverts(node[key], depth + 1)), 0);
 };
 
 onResponse('advert sweep', ['contents', 'continuationContents', 'onResponseReceivedCommands',

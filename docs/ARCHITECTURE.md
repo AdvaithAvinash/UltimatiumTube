@@ -281,3 +281,10 @@ Two build-time gates, one per side.
   through the engine's text tracks. Settings are kept in `localStorage` (`sx_cfg`). With no custom
   properties in the engine, the accent colour is written into the text of `style.css` (fetched, changed,
   and put back as a `<style>`), and the other look settings are rules appended to it.
+- **Faults on the Stremio page:** the linked stylesheet is never removed (settings only append rules, and
+  nothing is appended while every look setting is as it came); the page is scaled only when the screen
+  is not 1920x1080, with `transform-origin` in the stylesheet; an error shows at the bottom of the
+  screen and is sent to `/__tube/journal`, so `/__tube/log` says what failed ("stremio: ..."), including
+  a line when the page starts with the screen size, and any addon, plugin or catalog that failed.
+- **Speed:** the advert sweep skips parts of a feed that hold only text and pictures, and the
+  search for late-loading YouTube modules runs every five seconds after the first minute.

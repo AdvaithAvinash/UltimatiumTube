@@ -26,7 +26,7 @@
   // refuses what it is not allowed to ask for directly, so the service asks for it (see /cors-bypass/).
   SX.origin = (function () {
     var loc = root.location;
-    return loc && /^https?:$/.test(loc.protocol) ? loc.origin : '';
+    return loc && /^https?:$/.test(loc.protocol) ? loc.protocol + '//' + loc.host : '';
   })();
 
   SX.route = function (url) {

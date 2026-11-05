@@ -56,12 +56,30 @@
   var CARD = { s: 170, m: 200, l: 240 };
   var DIM = { light: [0.8, 0.5, 0.05], normal: [0.97, 0.8, 0.15], dark: [1, 0.95, 0.5] };
 
-  // The stylesheet with the viewer's choices in it. The engine has no custom properties, so the
-  // accent is written into the text of the stylesheet, and the rest is rules added after it.
+  // The rules for the viewer's choices, added after the linked stylesheet, which is never taken away
+  // (an engine that did not take the replacement would leave the page unstyled). Nothing is added
+  // while every choice is how it came. The engine has no custom properties, so the accent is written
+  // out: every rule of the stylesheet that names the accent is repeated with the chosen colour.
+  var accentRules = function (base, accent) {
+    var out = [];
+    base.split('}').forEach(function (rule) {
+      if (rule.indexOf('#3ea6ff') === -1 && rule.indexOf('62, 166, 255') === -1) return;
+      // Rules inside @keyframes or @media are left alone: they would need their wrapper.
+      if (rule.indexOf('@') !== -1) return;
+      out.push(rule.split('#3ea6ff').join(accent).split('62, 166, 255').join(rgbOf(accent)) + '}');
+    });
+    return out.join('\n');
+  };
+
+  var looksChanged = function () {
+    return Object.keys(DEFAULTS).some(function (k) {
+      return ['accent', 'cardSize', 'hero', 'dim', 'corners', 'badges'].indexOf(k) !== -1 && cfg(k) !== DEFAULTS[k];
+    });
+  };
+
   var buildCss = function (base) {
-    var accent = cfg('accent');
-    var css = base.split('#3ea6ff').join(accent).split('62, 166, 255').join(rgbOf(accent));
     var more = [];
+    if (cfg('accent') !== DEFAULTS.accent) more.push(accentRules(base, cfg('accent')));
 
     var w = CARD[cfg('cardSize')] || 200, h = Math.round(w * 1.5), ww = Math.round(w * 1.7), wh = Math.round(ww * 9 / 16);
     if (w !== 200) {
@@ -81,7 +99,7 @@
     if (cfg('corners') === 'sharp') more.push('.card .cimg, .btn, .s, .a, .ep, .dposter, .key, .chip2, .tab, .query, .box { border-radius: 2px; } .ep .th { border-radius: 2px 0 0 2px; }');
     if (cfg('badges') === 'off') more.push('.card .tag { display: none; }');
 
-    return css + '\n' + more.join('\n');
+    return more.join('\n');
   };
 
   var themeBase = { text: null };
@@ -89,17 +107,19 @@
   var applyTheme = function () {
     var put = function (base) {
       var style = D.getElementById('theme');
+      if (!looksChanged()) {
+        if (style) style.textContent = '';
+        return;
+      }
       if (!style) {
         style = D.createElement('style');
         style.id = 'theme';
         D.head.appendChild(style);
-        // Its rules replace the linked file's, which is then not needed.
-        var link = D.querySelector('link[rel=stylesheet]');
-        if (link) link.parentNode.removeChild(link);
       }
       style.textContent = buildCss(base);
     };
 
+    if (!looksChanged() && !D.getElementById('theme')) return;
     if (themeBase.text !== null) { put(themeBase.text); return; }
 
     var x = new XMLHttpRequest();
@@ -127,12 +147,54 @@
     node.style.backgroundColor = bg === 'box' ? 'rgba(0, 0, 0, 0.72)' : 'transparent';
   };
 
+  // --- when something goes wrong, it is said on the screen and in the service's log (/__tube/log)
+
+  var said = {};
+
+  var report = function (text) {
+    var line = 'stremio: ' + String(text).slice(0, 300);
+    if (said[line]) return;
+    said[line] = 1;
+    try {
+      var x = new XMLHttpRequest();
+      x.open('GET', (SX.origin || '') + '/__tube/journal?m=' + encodeURIComponent(line), true);
+      x.send();
+    } catch (e) { /* nowhere to say it */ }
+  };
+
+  var showFault = function (text) {
+    report(text);
+    var box = D.getElementById('fault');
+    if (!box) {
+      box = D.createElement('div');
+      box.id = 'fault';
+      box.style.cssText = 'position:absolute;left:80px;bottom:40px;width:1760px;font-size:22px;color:#ffb347;z-index:200;';
+      var host = D.getElementById('app') || D.body;
+      host.appendChild(box);
+    }
+    box.textContent = 'Something went wrong: ' + String(text).slice(0, 200);
+  };
+  SX.fault = showFault;
+
+  window.onerror = function (message, source, line) { showFault(message + ' (' + String(source).split('/').pop() + ':' + line + ')'); };
+  window.addEventListener('unhandledrejection', function (e) { showFault(e && e.reason && e.reason.message ? e.reason.message : 'a request failed'); });
+
   // --- fitting the 1920 x 1080 page to the screen
 
   var fit = function () {
     var w = window.innerWidth || 1920, h = window.innerHeight || 1080;
     var k = Math.min(w / 1920, h / 1080);
     var app = $('app');
+
+    // At the size it was drawn for nothing is changed at all.
+    if (Math.abs(k - 1) < 0.01 || !(k > 0)) {
+      app.style.transform = '';
+      app.style.webkitTransform = '';
+      app.style.left = '0px';
+      app.style.top = '0px';
+      return;
+    }
+
     app.style.transformOrigin = '0 0';
     app.style.webkitTransformOrigin = '0 0';
     app.style.transform = 'scale(' + k + ')';
@@ -560,6 +622,7 @@
         });
       };
 
+      var settled = 0;
       specs.forEach(function (s, i) {
         var placeholder = rows.children[(recent.length ? 1 : 0) + i];
         load(s).then(function (page) {
@@ -576,7 +639,19 @@
           var first = row.querySelector('.card');
           if (first && !hero.item) { showHero(first.__item); if (!S.moved && S.stack[S.stack.length - 1] === spec) setFocus(first); }
         }, function (error) {
+          report('row "' + s.title + '" failed: ' + (error && error.message ? error.message : 'error'));
           if (placeholder.parentNode) placeholder.querySelector('.empty').innerHTML = 'Could not load this: ' + esc(error && error.message ? error.message : 'error');
+        }).then(function () {
+          settled += 1;
+          // Nothing came up at all: say so, and offer to try again.
+          if (settled === specs.length && !rows.querySelector('.card') && S.stack[S.stack.length - 1] === spec) {
+            var again = el('div', 'btn main f', 'Try again');
+            again.__ok = function () { showTab(kind); };
+            again.style.margin = '30px 80px';
+            again.style.display = 'inline-block';
+            rows.appendChild(again);
+            if (!S.moved) setFocus(again);
+          }
         });
       });
 
@@ -1178,6 +1253,7 @@
         loadedPlugins[url] = plugin;
         return { url: url, plugin: plugin };
       }, function (error) {
+        report('plugin ' + url + ' did not load: ' + (error && error.message ? error.message : 'error'));
         return { url: url, plugin: null, error: error && error.message ? error.message : 'error' };
       });
     })).then(function (list) {
@@ -1193,6 +1269,7 @@
     var urls = S.phone.concat(local.filter(function (u) { return S.phone.indexOf(u) === -1; }));
 
     return Promise.all([SX.loadAddons(urls), refreshPlugins()]).then(function (all) {
+      all[0].forEach(function (a) { if (!a.manifest) report('addon ' + a.url + ' did not answer: ' + (a.error || '')); });
       S.addons = all[0];
       return all[0];
     });
@@ -1669,12 +1746,19 @@
   var start = function () {
     if (started) return;
     started = true;
-    fit();
-    buildTabs();
-    applyTheme();
+    var boot = $('boot');
+    if (boot) boot.parentNode.removeChild(boot);
+
+    report('started ' + (window.innerWidth || '?') + 'x' + (window.innerHeight || '?') + ' ' + String(window.navigator && window.navigator.userAgent).slice(0, 120));
 
     var msg = el('div', 'msg', '<span class="spin"></span>Loading your addons');
     $('screens').appendChild(msg);
+
+    try {
+      fit();
+      buildTabs();
+      applyTheme();
+    } catch (e) { showFault(e && e.message ? e.message : e); }
 
     phoneLists().then(function (lists) {
       S.phone = lists.addons;
@@ -1684,8 +1768,9 @@
       $('screens').removeChild(msg);
       S.loaded = true;
       showTab(cfg('startTab'));
-    }, function () {
-      msg.innerHTML = 'Could not load the addons';
+    }).then(null, function (e) {
+      msg.innerHTML = 'Could not start: ' + esc(e && e.message ? e.message : 'error');
+      showFault(e && e.message ? e.message : 'could not start');
     });
   };
 

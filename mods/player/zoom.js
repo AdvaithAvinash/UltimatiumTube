@@ -1,4 +1,4 @@
-import { configChangeEmitter, configRead, configWrite, onKey, showToast, whenVideo } from '../../framework/index.js';
+import { buttonItem, configChangeEmitter, configRead, configWrite, every, onKey, overlayPanelItemListRenderer, showModal, showToast, stop, whenVideo } from '../../framework/index.js';
 
 // Video fit: a video whose shape differs from the screen's is shown with bars around it. Zoom to
 // fill crops the edges so the picture covers the screen; Stretch fills it without cropping.
@@ -13,34 +13,102 @@ const fitOf = (read) => (FITS.indexOf(read('videoFit')) === -1 ? 'original' : re
 
 const kept = { video: null };
 
+// The player gives the video element the size and place of the picture inside the bars, so a fit
+// set on the element only crops inside that same box. For Zoom and Stretch the element is made the
+// whole screen, and what the player had written is put back for Original.
+const LAYOUT = { position: 'fixed', left: '0px', top: '0px', width: '100vw', height: '100vh', maxWidth: 'none', maxHeight: 'none' };
+const HELD = '__tubeFitKept';
+
+const names = Object.keys(LAYOUT).concat(['objectFit']);
+
+const write = (style, name, value, priority) => {
+    const css = name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+    if (typeof style.setProperty === 'function') style.setProperty(css, value, priority);
+    else style[name] = value;
+};
+
+const release = (video) => {
+    const held = video[HELD];
+    if (!held) return;
+
+    names.forEach((name) => write(video.style, name, held[name] || '', ''));
+    video[HELD] = null;
+};
+
 const apply = (video) => {
     if (!video || !video.style) return;
 
     const fit = fitOf(configRead);
 
-    // Original puts back what the stock player had, which is no fit of its own.
-    video.style.objectFit = fit === 'original' ? '' : CSS_FIT[fit];
+    if (fit === 'original') {
+        release(video);
+        return;
+    }
+
+    if (!video[HELD]) {
+        const before = {};
+        names.forEach((name) => { before[name] = video.style[name] || ''; });
+        video[HELD] = before;
+    }
+
+    // Written with priority, and written again when the player has changed it.
+    Object.keys(LAYOUT).forEach((name) => {
+        if (video.style[name] !== LAYOUT[name]) write(video.style, name, LAYOUT[name], 'important');
+    });
+    if (video.style.objectFit !== CSS_FIT[fit]) write(video.style, 'objectFit', CSS_FIT[fit], 'important');
+};
+
+const WATCH = 'video fit upkeep';
+
+const upkeep = () => {
+    if (fitOf(configRead) === 'original') {
+        apply(kept.video);
+        stop(WATCH);
+        return;
+    }
+
+    apply(kept.video);
 };
 
 const adopt = (video) => {
     kept.video = video;
     apply(video);
 
-    // The player redraws a video's box when it starts another, so the fit is set again then.
-    ['loadedmetadata', 'playing', 'resize'].forEach((name) => video.addEventListener(name, () => apply(video)));
+    // The player redraws a video's box on resize, quality changes and new videos.
+    ['loadedmetadata', 'playing', 'resize', 'seeked'].forEach((name) => video.addEventListener(name, () => apply(video)));
+    if (fitOf(configRead) !== 'original') every(WATCH, 500, upkeep);
+};
+
+const openFitOptions = () => {
+    const current = FITS.indexOf(fitOf(configRead));
+    const buttons = FITS.map((fit) => buttonItem({ title: NAMES[fit] }, null, [
+        { signalAction: { signal: 'POPUP_BACK' } },
+        { customAction: { action: 'SET_VIDEO_FIT', parameters: fit } }
+    ]));
+
+    showModal('Video fit', overlayPanelItemListRenderer(buttons, current), 'options-fit');
+};
+
+const setFit = (fit) => {
+    if (FITS.indexOf(fit) === -1) return;
+
+    configWrite('videoFit', fit);
+    showToast('Video fit', NAMES[fit]);
 };
 
 const cycle = () => {
     const next = FITS[(FITS.indexOf(fitOf(configRead)) + 1) % FITS.length];
-    configWrite('videoFit', next);
-    showToast('Video fit', NAMES[next]);
+    setFit(next);
 };
 
 const start = () => {
     whenVideo('video fit', adopt);
 
     configChangeEmitter.addEventListener('configChange', (event) => {
-        if (event.detail.key === 'videoFit') apply(kept.video);
+        if (event.detail.key !== 'videoFit') return;
+
+        apply(kept.video);
+        if (fitOf(configRead) !== 'original') every(WATCH, 500, upkeep);
     });
 
     onKey('video fit', [ZOOM_KEY], (event) => {
@@ -49,4 +117,4 @@ const start = () => {
     });
 };
 
-export { apply, cycle, fitOf, FITS, CSS_FIT, start };
+export { apply, cycle, openFitOptions, setFit, fitOf, FITS, CSS_FIT, start };

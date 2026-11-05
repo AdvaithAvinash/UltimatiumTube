@@ -253,5 +253,8 @@ Two build-time gates, one per side.
   origin, which on a TV is the service, not its server. `service/lib/aniApi.js` forwards those calls
   to AniUltimatium's server, and `service/lib/aniShim.js` sends pictures and AniList calls through
   `/cors-bypass/`, which the engine allows.
-- **Video fit** (`mods/player/zoom.js`): sets `object-fit` on the video (`cover` for Zoom to fill,
-  `fill` for Stretch) and sets it again when a video loads. Yellow cycles it.
+- **Video fit** (`mods/player/zoom.js`): the player sizes the `<video>` element to the picture inside
+  the bars, so `object-fit` alone only crops inside that box. Zoom and Stretch make the element the
+  whole screen (fixed, 100vw by 100vh) with `object-fit` `cover` or `fill`, written again every half
+  second because the player rewrites its style; Original puts back what the player wrote. Yellow
+  cycles it; a button in the player's row opens a menu.

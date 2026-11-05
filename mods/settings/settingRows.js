@@ -65,7 +65,7 @@ const aniRow = () => openerRow(
 
 // The same for the Stremio page.
 const stremioRow = () => openerRow(
-    { title: 'Stremio addons', summary: 'Movies and series from your Stremio addons', image: ULTIMATE_MENU.image },
+    { title: 'Stremio and Grayjay', summary: 'Movies, series and videos from addons and plugins', image: ULTIMATE_MENU.image },
     actionCommand('OPEN_STREMIO'), OPEN, 'ultimate'
 );
 

@@ -28,10 +28,11 @@ with YouTube's own TV interface left as it is.
 - **Back asks before leaving.** Back at the start of the app asks "Exit UltimatiumTube?" with Stay and
   Exit. It can be turned off under Startup.
 - **Zoom to fill.** Videos that are not the screen's shape no longer keep bars: pick Zoom to fill (or Stretch) under Playback > Video fit, or press Yellow while a video plays. A **Video fit** button is also in the player's own button row.
-- **Stremio addons.** A movie and series screen built for the TV: a hero banner, rows of posters, search,
-  a library, continue watching and a player, fed by any [Stremio](https://www.stremio.com) addon.
-  Open it from the blue **Stremio addons** row in the UltimatiumTube settings. Add addons on the
-  phone page (Ultimate Settings > Stremio addons) or in the page itself. Cinemeta, which gives the
+- **Stremio addons and Grayjay plugins.** A movie, series and video screen built for the TV: a hero
+  banner, rows of posters, search, a library, continue watching and a player, fed by any
+  [Stremio](https://www.stremio.com) addon and any [Grayjay](https://grayjay.app) plugin.
+  Open it from the blue **Stremio and Grayjay** row in the UltimatiumTube settings. Add addons and
+  plugins on the phone page (Ultimate Settings > Stremio and Grayjay) or in the page itself. Cinemeta, which gives the
   catalogs, is added for you. Streams come from addons that give direct links (for example one set
   up with a debrid service); a TV cannot play torrents. [More below.](#stremio-addons)
 - **Speed up to 15x**, from the speed button in the player and as a default speed in the settings.
@@ -95,11 +96,11 @@ The first row of the UltimatiumTube section. It opens four sections.
 | Customization | A wallpaper switch, a button that turns the wallpaper off and loads the page again, its picture (ten built-in, starting with Blue flames, or one from a web address), dimming, background colour, accent colour of the UltimatiumTube rows, font, and a reset |
 | Ultimate Dev Options | Phone page on or off and how often it refreshes, a SponsorBlock server of your own, custom style rules (CSS), the version, and reset everything |
 | AniUltimatium | A switch. While it is on, an **Open AniUltimatium** entry appears here, and one more blue row in the category |
-| Stremio addons | A switch (on by default), **Open Stremio addons**, and the list of addons |
+| Stremio and Grayjay | A switch (on by default), **Open Stremio and Grayjay**, the list of Stremio addons and the list of Grayjay plugins |
 
 Text such as a server address or style rules is typed on the phone page.
 
-### Stremio addons
+### Stremio addons and Grayjay plugins
 
 The page is bundled in the app (`stremio/`), served by the service on a Samsung TV and shown in a
 screen of the app on Android. Back returns to YouTube.
@@ -112,6 +113,21 @@ screen of the app on Android. Back returns to YouTube.
   stream is listed but cannot be played; use an addon that turns it into a direct link.
 - **Addons:** listed one to a line under **Ultimate Settings > Stremio addons** (typed on the phone),
   or added in the page's **Addons** tab. An addon that does not answer is shown as not reachable.
+- **Grayjay plugins** are added by the address of their configuration (a `.json`, for example
+  from [plugins.grayjay.app](https://plugins.grayjay.app), or a `grayjay://` link), under
+  Ultimate Settings > Stremio and Grayjay or in the page's Addons tab. A plugin's home feed shows as a
+  row of Home, its search is part of Search, and its videos open to a detail screen and the sources
+  it offers. What plays is a whole video file or an HLS playlist. A plugin's requests are made by the
+  service (Samsung) or the app (Android), so the headers it sets, such as User-Agent and Cookie,
+  are sent, and the sites it may reach are limited to those it lists. **A plugin is a program that runs
+  in the page.** The page hides its own objects from it, but that is not a sandbox: add only plugins
+  you trust.
+- **Grayjay, what is not there:** signing in to a site, channels, playlists, comments and
+  subscriptions; video kept apart from its sound and DASH (many sites give their best quality only
+  that way, so a plugin may offer only lower qualities, or nothing, here); and plugins that need a
+  browser's page objects, such as an HTML parser. Plugins are written to block on their requests, which
+  a page cannot do, so the page runs a plugin function again from the start with each answer it has
+  fetched; a plugin that behaves differently when run twice will not work.
 - **Not there:** subtitles from addons, and addon settings pages (an addon is added by its address,
   with its own configuration in it). It has not been run on a real TV; it was run in a browser with
   addons stood in for.

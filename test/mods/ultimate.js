@@ -60,7 +60,7 @@ check('the first row of the category is the Ultimate Settings, in the Ultimate s
 
 check('it opens a list of the four sections', () => {
     const modal = open(['ultimate']);
-    assert.deepStrictEqual(itemsOf(modal).map(titleOf), ['Customization', 'Ultimate Dev Options', 'AniUltimatium', 'Stremio addons']);
+    assert.deepStrictEqual(itemsOf(modal).map(titleOf), ['Customization', 'Ultimate Dev Options', 'AniUltimatium', 'Stremio and Grayjay']);
     assert.strictEqual(modal.header.overlayPanelHeaderRenderer.title.simpleText, 'UltimatiumTube Ultimate Settings');
 });
 
@@ -528,7 +528,7 @@ check('text settings are typed on the phone and shown to it as text', () => {
 check('the phone page carries the new sections, and none of the buttons', () => {
     const titles = phoneSchema().map((group) => group.title);
 
-    ['Customization', 'Ultimate Dev Options', 'AniUltimatium', 'Stremio addons'].forEach((name) => assert.ok(titles.indexOf(name) !== -1, name));
+    ['Customization', 'Ultimate Dev Options', 'AniUltimatium', 'Stremio and Grayjay'].forEach((name) => assert.ok(titles.indexOf(name) !== -1, name));
 
     const keys = phoneSchema().reduce((all, group) => all.concat(group.items.map((item) => item.key)), []);
     assert.ok(keys.indexOf('openAniUltimatium') === -1);

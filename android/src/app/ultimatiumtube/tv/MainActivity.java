@@ -299,12 +299,12 @@ public class MainActivity extends Activity {
             });
         }
 
-        // The addons listed in the settings, as the phone page last left them: one address to a line.
-        private String stremioAddons() {
+        // A list from the settings, as the phone page last left it: one address to a line.
+        private String setting(String key) {
             try {
                 org.json.JSONObject all = new org.json.JSONObject(phoneSettings.read(PhoneServer.address()));
                 org.json.JSONObject config = all.optJSONObject("config");
-                return config == null ? "" : config.optString("stremioAddons", "");
+                return config == null ? "" : config.optString(key, "");
             } catch (Exception e) {
                 return "";
             }
@@ -317,7 +317,8 @@ public class MainActivity extends Activity {
                 @Override public void run() {
                     Intent i = new Intent(MainActivity.this, AniultimatiumActivity.class);
                     i.putExtra("page", "stremio");
-                    i.putExtra("addons", stremioAddons());
+                    i.putExtra("addons", setting("stremioAddons"));
+                    i.putExtra("plugins", setting("grayjayPlugins"));
                     startActivity(i);
                 }
             });

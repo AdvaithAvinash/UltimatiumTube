@@ -80,6 +80,71 @@
     });
   };
 
+  // A Grayjay plugin is added by the address of its configuration; a grayjay:// install link, with
+  // the address after it, is accepted too. The address is kept as it is.
+  SX.pluginUrl = function (text) {
+    var t = String(text || '').replace(/^\s+|\s+$/g, '').replace(/^grayjay:\/\/plugin\//i, '');
+    if (!/^https?:\/\/[^\s"'<>]+$/i.test(t)) return null;
+    return t;
+  };
+
+  SX.parsePlugins = function (text) {
+    var seen = {};
+    return String(text || '').split(/[\n\r;]+/).map(SX.pluginUrl).filter(function (u) {
+      if (!u || seen[u]) return false;
+      seen[u] = true;
+      return true;
+    });
+  };
+
+  // --- requests with headers: a page may not set User-Agent, Cookie or Referer, and a plugin must,
+  // so the service (or the Android app) makes those requests and hands back what came.
+
+  var waiting = {}, serial = 0;
+
+  root.__sxFetchDone = function (id, text) {
+    var w = waiting[id];
+    if (!w) return;
+    delete waiting[id];
+    try { w.resolve(JSON.parse(text)); } catch (e) { w.reject(new Error('bad answer')); }
+  };
+
+  // req: { url, method, headers, body }. Answers { status, url, headers: {name: [values]}, body }.
+  SX.rawFetch = function (req) {
+    var bridge = root.AniNative;
+    if (bridge && bridge.fetch) {
+      return new Promise(function (resolve, reject) {
+        serial += 1;
+        waiting[serial] = { resolve: resolve, reject: reject };
+        try { bridge.fetch(serial, JSON.stringify(req)); } catch (e) { delete waiting[serial]; reject(e); }
+      });
+    }
+
+    return new Promise(function (resolve, reject) {
+      var x = new XMLHttpRequest();
+      var timer = setTimeout(function () { reject(new Error('timeout')); try { x.abort(); } catch (e) { /* gone */ } }, 30000);
+
+      x.open('POST', SX.origin + '/__tube/fetch', true);
+      x.setRequestHeader('X-Tube', '1');
+      x.setRequestHeader('Content-Type', 'application/json');
+      x.onreadystatechange = function () {
+        if (x.readyState !== 4) return;
+        clearTimeout(timer);
+        if (x.status !== 200) return reject(new Error('HTTP ' + x.status));
+        try { resolve(JSON.parse(x.responseText)); } catch (e) { reject(new Error('bad answer')); }
+      };
+      x.onerror = function () { clearTimeout(timer); reject(new Error('network')); };
+      x.send(JSON.stringify(req));
+    });
+  };
+
+  SX.text = function (url) {
+    return SX.rawFetch({ url: url, method: 'GET', headers: {} }).then(function (r) {
+      if (r.status < 200 || r.status >= 300) throw new Error('HTTP ' + r.status);
+      return r.body;
+    });
+  };
+
   // --- what an addon can do
 
   // resources: ["catalog", {"name":"stream","types":[...],"idPrefixes":[...]}]

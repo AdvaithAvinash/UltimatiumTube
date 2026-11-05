@@ -40,7 +40,7 @@ check('an app that is too old is told so, and nothing else happens', () => {
 check('the settings offer Stremio behind the Ultimate row, with the addon list typed on the phone', () => {
     assert.ok(group().ultimate);
     withConfig({ enableStremio: true }, () => {
-        assert.deepStrictEqual(group().items.map((item) => item.key), ['enableStremio', 'openStremio', 'stremioAddons']);
+        assert.deepStrictEqual(group().items.map((item) => item.key), ['enableStremio', 'openStremio', 'stremioAddons', 'grayjayPlugins']);
     });
     withConfig({ enableStremio: false }, () => {
         assert.deepStrictEqual(group().items.map((item) => item.key), ['enableStremio']);

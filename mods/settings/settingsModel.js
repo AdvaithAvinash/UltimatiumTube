@@ -138,6 +138,12 @@ const SEGMENT_VALUES = SEGMENTS.filter((segment) => segment.key !== 'enableSpons
 const SPEED_CHOICES = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
   .map((speed) => ({ label: `${speed}x`, value: speed }));
 
+const VIDEO_FITS = [
+  { label: 'Original', value: 'original' },
+  { label: 'Zoom to fill', value: 'fill' },
+  { label: 'Stretch', value: 'stretch' }
+];
+
 const SIDEBAR = [
   { label: 'Search', value: 'SEARCH' },
   { label: 'Home', value: 'WHAT_TO_WATCH' },
@@ -331,6 +337,11 @@ const GROUPS = [
       Choice('videoPreferredCodec', 'Preferred codec',
         'Some sets decode one codec in hardware and the rest in software',
         SCREEN, CODECS, 'Codec'),
+      Choice('videoFit', 'Video fit',
+        'Original leaves bars around a video that is not the screen\'s shape; Zoom to fill crops '
+        + 'the edges to cover the screen; Stretch fills it without cropping. The Yellow button '
+        + 'changes it while a video plays',
+        SCREEN, VIDEO_FITS, 'Fit'),
       Choice('defaultPlaybackSpeed', 'Speed',
         'The speed every video starts at, up to 15x. Pick another while one plays, from the speed button',
         SKIPPING, SPEED_CHOICES, 'Speed'),

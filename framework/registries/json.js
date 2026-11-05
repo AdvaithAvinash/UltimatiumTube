@@ -1,4 +1,4 @@
-import { until } from './schedule.js';
+import { every, until } from './schedule.js';
 import { booted } from './register.js';
 import { report, warn } from './journal.js';
 
@@ -96,6 +96,12 @@ const ADOPTION_INTERVAL = 250;
 // Navigating loads modules that did not exist at boot, so each navigation reopens a short window.
 const AFTER_NAVIGATION = 5000;
 
+// A module can arrive at any time: the player's, when the first video is played; the ones signing in
+// loads; one that a slow network brings late. After the quick windows above, the walk goes on for as
+// long as the app does, slowly, since a module nothing adopts is a screen no mod ever sees again. Only
+// those not already taken are looked at, so each pass is a few thousand cheap checks.
+const ONGOING_INTERVAL = 2000;
+
 const keepAdopting = (forMs) => {
     adopt();
     until('json adoption', ADOPTION_INTERVAL, adopt, forMs);
@@ -129,7 +135,10 @@ const interceptJson = () => {
     };
 
     keepAdopting(ADOPTION_WINDOW);
+
     window.addEventListener('hashchange', () => keepAdopting(AFTER_NAVIGATION));
+
+    every('json adoption (ongoing)', ONGOING_INTERVAL, adopt);
 };
 
 // The unpatched pair, for code that must not be seen by our own hooks.

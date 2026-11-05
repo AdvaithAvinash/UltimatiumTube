@@ -27,6 +27,7 @@ with YouTube's own TV interface left as it is.
   **AniUltimatium**.
 - **Back asks before leaving.** Back at the start of the app asks "Exit UltimatiumTube?" with Stay and
   Exit. It can be turned off under Startup.
+- **Zoom to fill.** Videos that are not the screen's shape no longer keep bars: pick Zoom to fill (or Stretch) under Playback > Video fit, or press Yellow while a video plays.
 - **Speed up to 15x**, from the speed button in the player and as a default speed in the settings.
 - **AniUltimatium from the app.** Turn it on and an extra blue row opens
   [AniUltimatium](https://github.com/AdvaithAvinash/AniUltimatium), the anime, movie and live TV app.
@@ -76,7 +77,7 @@ phone page.
 | Startup | The page to open, who's-watching prompts |
 | Channels and words | Hidden channels, hidden words, a speed for each channel, the phone page |
 | Feed, Sidebar, Navigation | Shorts, hide watched videos, thumbnails, sidebar sections, scroll speed |
-| Playback, Subtitles, Player controls | Quality, codec, default speed (up to 15x), remembered speed, subtitle tracks, extra player buttons |
+| Playback, Subtitles, Player controls | Quality, codec, video fit (original, zoom to fill, stretch), default speed (up to 15x), remembered speed, subtitle tracks, extra player buttons |
 | Overlays and prompts | Shopping card, end screen cards, up next, "Are you still watching?", sign-in reminder |
 
 ### UltimatiumTube Ultimate Settings

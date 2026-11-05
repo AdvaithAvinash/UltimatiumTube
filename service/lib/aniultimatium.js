@@ -16,6 +16,7 @@ const express = require('express');
 const DIR = process.env.TUBE_ANI_DIR || path.join(__dirname, '..', '..', 'aniultimatium');
 
 const { flatten } = require('./flattenCss.js');
+const { shim } = require('./aniShim.js');
 
 const HEAD = /<head[^>]*>/i;
 
@@ -39,31 +40,7 @@ const SEED = 'try{var s=window.localStorage;'
     + 'if(s.getItem("ea_ui")===null)s.setItem("ea_ui",\'"classic"\');'
     + 'if(s.getItem("ea_lite")===null)s.setItem("ea_lite","true");}catch(e){}';
 
-// Aniultimatium is written for a widget that may call any address and for an engine that has custom
-// properties. Neither is true here, so a small script, placed before its own, makes up for both:
-//  - an address on another site is asked for through the service's /cors-bypass/, which answers with
-//    the access the page expects (Aniultimatium's own server answers for itself and is left alone);
-//  - when the page sets its accent colour, the stylesheet is asked for again with that colour in it.
-const SHIM = '(function(){'
-    + 'var origin=location.origin,via=origin+"/cors-bypass/",own=/^https?:\\/\\/aniultimatium\\.advaithavinash404\\.workers\\.dev(\\/|$)/i;'
-    + 'function route(u){if(typeof u!=="string"||!/^https?:\\/\\//i.test(u)||u.indexOf(origin+"/")===0||u===origin||own.test(u))return u;return via+u;}'
-    + 'if(window.fetch){var f=window.fetch;window.fetch=function(input,init){'
-    + 'if(typeof input==="string")input=route(input);'
-    + 'else if(input&&typeof input.url==="string"&&window.Request){var r=route(input.url);if(r!==input.url)input=new Request(r,input);}'
-    + 'return f.call(this,input,init);};}'
-    + 'if(window.XMLHttpRequest){var o=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(m,u){'
-    + 'var a=Array.prototype.slice.call(arguments);a[1]=route(String(u));return o.apply(this,a);};}'
-    + 'var P=window.CSSStyleDeclaration&&CSSStyleDeclaration.prototype;'
-    + 'if(P&&P.setProperty){var set=P.setProperty,last="' + DEFAULT_ACCENT + '";'
-    + 'P.setProperty=function(name,value){'
-    + 'try{var v=String(value).replace(/\\s+/g,"");'
-    + 'if(name==="--accent-rgb"&&v!==last&&/^\\d{1,3},\\d{1,3},\\d{1,3}$/.test(v)){last=v;'
-    + 'var links=document.getElementsByTagName("link"),old=null;'
-    + 'for(var i=0;i<links.length;i++){if(/styles\\.css/.test(links[i].getAttribute("href")||"")&&links[i].rel==="stylesheet"){old=links[i];break;}}'
-    + 'if(old){var fresh=document.createElement("link");fresh.rel="stylesheet";fresh.href="styles.css?accent="+v;'
-    + 'fresh.onload=function(){if(old.parentNode)old.parentNode.removeChild(old);};old.parentNode.insertBefore(fresh,old.nextSibling);}}}catch(e){}'
-    + 'try{return set.apply(this,arguments);}catch(e){}};}'
-    + '})();';
+const SHIM = shim(DEFAULT_ACCENT);
 
 const bridge = () => `<script>${SEED}${SHIM}window.AniNative={version:function(){return ${JSON.stringify(versionOf())};},`
     + 'sdk:function(){return 0;},exit:function(){window.location.replace("/tv");}};</script>';

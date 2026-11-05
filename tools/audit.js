@@ -26,6 +26,7 @@ const DEV_SURFACES = [
 
 const REQUIRED = ['config.xml', 'icon.png', 'index.html', 'service/dist/index.js',
     'aniultimatium/index.html', 'aniultimatium/start.js', 'aniultimatium/main.js', 'aniultimatium/VERSION.txt',
+    'stremio/index.html', 'stremio/core.js', 'stremio/ui.js', 'stremio/style.css', 'stremio/hls.min.js',
     'wallpapers/blue-flames.jpg'];
 
 // What only Aniultimatium's website needs, and its own Samsung manifest, which would be a second

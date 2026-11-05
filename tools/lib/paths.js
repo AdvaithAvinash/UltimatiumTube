@@ -23,6 +23,8 @@ const WIDGET = [
     { from: 'service/dist', to: 'service/dist' },
     // Aniultimatium, served by the service as a page of its own (see service/lib/aniultimatium.js).
     { from: 'aniultimatium', to: 'aniultimatium' },
+    // The Stremio page, served the same way (see service/lib/stremio.js).
+    { from: 'stremio', to: 'stremio' },
     // The wallpapers of the Customization settings (see service/lib/wallpapers.js).
     { from: 'wallpapers', to: 'wallpapers' }
 ];

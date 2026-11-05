@@ -56,6 +56,11 @@ const defaultConfig = {
 
   // AniUltimatium, bundled in this app: the switch only decides whether it is offered.
   enableAniUltimatium: false,
+  // The Stremio page: movies and series from Stremio addons. The addons are listed one to a line.
+  // The version of the notice shown once at the start.
+  noticeSeen: '',
+  enableStremio: true,
+  stremioAddons: '',
   // The id Aniultimatium's own Samsung app installs under; started first when it is there.
   aniUltimatiumAppId: 'oXabc12345.EnglishAnime',
 

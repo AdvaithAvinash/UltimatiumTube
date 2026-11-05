@@ -63,6 +63,12 @@ const aniRow = () => openerRow(
     actionCommand('OPEN_ANIULTIMATIUM'), OPEN, 'ultimate'
 );
 
+// The same for the Stremio page.
+const stremioRow = () => openerRow(
+    { title: 'Stremio addons', summary: 'Movies and series from your Stremio addons', image: ULTIMATE_MENU.image },
+    actionCommand('OPEN_STREMIO'), OPEN, 'ultimate'
+);
+
 const SECTION = 'ultimatiumtube';
 
 // Every group's rows in one category, so all of UltimatiumTube sits under a single entry. The
@@ -73,6 +79,7 @@ const sectionFor = () => category(
     'UltimatiumTube',
     [ultimateRow()]
         .concat(configRead('enableAniUltimatium') ? [aniRow()] : [])
+        .concat(configRead('enableStremio') ? [stremioRow()] : [])
         .concat(GROUPS.reduce((rows, group, groupIndex) => (group.ultimate
             ? rows
             : rows.concat(group.items.map((item, index) => rowFor(item, [groupIndex, index])))), []))

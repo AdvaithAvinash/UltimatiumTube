@@ -28,6 +28,12 @@ with YouTube's own TV interface left as it is.
 - **Back asks before leaving.** Back at the start of the app asks "Exit UltimatiumTube?" with Stay and
   Exit. It can be turned off under Startup.
 - **Zoom to fill.** Videos that are not the screen's shape no longer keep bars: pick Zoom to fill (or Stretch) under Playback > Video fit, or press Yellow while a video plays. A **Video fit** button is also in the player's own button row.
+- **Stremio addons.** A movie and series screen built for the TV: a hero banner, rows of posters, search,
+  a library, continue watching and a player, fed by any [Stremio](https://www.stremio.com) addon.
+  Open it from the blue **Stremio addons** row in the UltimatiumTube settings. Add addons on the
+  phone page (Ultimate Settings > Stremio addons) or in the page itself. Cinemeta, which gives the
+  catalogs, is added for you. Streams come from addons that give direct links (for example one set
+  up with a debrid service); a TV cannot play torrents. [More below.](#stremio-addons)
 - **Speed up to 15x**, from the speed button in the player and as a default speed in the settings.
 - **AniUltimatium from the app.** Turn it on and an extra blue row opens
   [AniUltimatium](https://github.com/AdvaithAvinash/AniUltimatium), the anime, movie and live TV app.
@@ -82,15 +88,33 @@ phone page.
 
 ### UltimatiumTube Ultimate Settings
 
-The first row of the UltimatiumTube section. It opens three sections.
+The first row of the UltimatiumTube section. It opens four sections.
 
 | Section | What is in it |
 | --- | --- |
 | Customization | A wallpaper switch, a button that turns the wallpaper off and loads the page again, its picture (ten built-in, starting with Blue flames, or one from a web address), dimming, background colour, accent colour of the UltimatiumTube rows, font, and a reset |
 | Ultimate Dev Options | Phone page on or off and how often it refreshes, a SponsorBlock server of your own, custom style rules (CSS), the version, and reset everything |
 | AniUltimatium | A switch. While it is on, an **Open AniUltimatium** entry appears here, and one more blue row in the category |
+| Stremio addons | A switch (on by default), **Open Stremio addons**, and the list of addons |
 
 Text such as a server address or style rules is typed on the phone page.
+
+### Stremio addons
+
+The page is bundled in the app (`stremio/`), served by the service on a Samsung TV and shown in a
+screen of the app on Android. Back returns to YouTube.
+
+- **What it reads from an addon:** its catalogs (home rows, with more loaded as you scroll), search,
+  details and episodes, and streams. Addons are asked only for what they declare.
+- **What plays:** a stream with a direct address, in the page's own player (HLS too). It remembers
+  where you stopped, seeks with Left and Right (more the longer you press), and starts the next
+  episode with the same kind of stream. A YouTube stream opens in YouTube (Samsung only). A torrent
+  stream is listed but cannot be played; use an addon that turns it into a direct link.
+- **Addons:** listed one to a line under **Ultimate Settings > Stremio addons** (typed on the phone),
+  or added in the page's **Addons** tab. An addon that does not answer is shown as not reachable.
+- **Not there:** subtitles from addons, and addon settings pages (an addon is added by its address,
+  with its own configuration in it). It has not been run on a real TV; it was run in a browser with
+  addons stood in for.
 
 ### AniUltimatium
 

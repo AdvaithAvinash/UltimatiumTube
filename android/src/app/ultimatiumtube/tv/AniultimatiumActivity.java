@@ -30,6 +30,7 @@ import android.widget.FrameLayout;
  */
 public class AniultimatiumActivity extends Activity {
     private static final String START_URL = "file:///android_asset/aniultimatium/index.html";
+    private static final String STREMIO_URL = "file:///android_asset/stremio/index.html";
     private static final String BACK_SCRIPT = "(function(){var e=document.createEvent('Event');"
             + "e.initEvent('tizenhwkey',true,true);e.keyName='back';document.dispatchEvent(e);})()";
 
@@ -139,7 +140,11 @@ public class AniultimatiumActivity extends Activity {
         SharedPreferences sp = getSharedPreferences("aniu", MODE_PRIVATE);
         boolean recent = System.currentTimeMillis() - sp.getLong("gone", 0) < 90000;
 
+        // The same screen shows the Stremio page when it is asked for.
+        boolean stremio = "stremio".equals(getIntent().getStringExtra("page"));
+
         if (savedInstanceState != null && !recent) web.restoreState(savedInstanceState);
+        else if (stremio) web.loadUrl(STREMIO_URL);
         else web.loadUrl(recent ? START_URL + "?nointro=1" : START_URL);
     }
 
@@ -323,6 +328,13 @@ public class AniultimatiumActivity extends Activity {
         @JavascriptInterface
         public String version() {
             return versionName();
+        }
+
+        /** The Stremio addons listed in the settings when this screen was opened, one to a line. */
+        @JavascriptInterface
+        public String addons() {
+            String list = getIntent().getStringExtra("addons");
+            return list == null ? "" : list;
         }
 
         @JavascriptInterface

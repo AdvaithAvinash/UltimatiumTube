@@ -110,6 +110,7 @@ const stage = (config) => {
     const ani = join(ROOT, 'aniultimatium');
     if (!existsSync(join(ani, 'index.html'))) throw friendly('aniultimatium/ is missing. Run `node tools/update_aniultimatium.js`.');
     cpSync(ani, join(STAGING, 'assets', 'aniultimatium'), { recursive: true });
+    cpSync(join(ROOT, 'stremio'), join(STAGING, 'assets', 'stremio'), { recursive: true });
 
     // The wallpapers of the Customization settings, which the app serves to the page.
     cpSync(join(ROOT, 'wallpapers'), join(STAGING, 'assets', 'wallpapers'), { recursive: true });

@@ -459,7 +459,36 @@ const aniGroup = () => {
   return group;
 };
 
-// The three sections behind "UltimatiumTube Ultimate Settings". They are groups like the others,
+const stremioGroup = () => {
+  const group = /** @type {any} */ ({
+    id: 'tube_stremio',
+    ultimate: true,
+    title: 'Stremio addons',
+    summary: 'Movies and series from your Stremio addons'
+  });
+
+  Object.defineProperty(group, 'items', {
+    enumerable: true,
+    get: () => {
+      const items = /** @type {any[]} */ ([
+        Switch('enableStremio', 'Stremio addons',
+          'Offers movies and series from Stremio addons: catalogs, search, a library and a player', SKIPPING)
+      ]);
+
+      if (configRead('enableStremio')) {
+        items.push(Action('openStremio', 'Open Stremio addons', 'Back returns to YouTube', SKIPPING, 'OPEN_STREMIO'));
+        items.push(Text('stremioAddons', 'Addons',
+          'The addresses of the addons to use, one to a line (stremio:// or https://). Cinemeta, which gives the catalogs, is added by the page. Streams need an addon that gives direct links. Typed on the phone', SKIPPING, true));
+      }
+
+      return items;
+    }
+  });
+
+  return group;
+};
+
+// The sections behind "UltimatiumTube Ultimate Settings". They are groups like the others,
 // but are reached through that row, not listed with the rest.
 const ULTIMATE = [
   {
@@ -505,7 +534,8 @@ const ULTIMATE = [
         RESTART, () => 'All settings', resetEverything)
     ]
   },
-  aniGroup()
+  aniGroup(),
+  stremioGroup()
 ];
 
 ULTIMATE.forEach((group) => GROUPS.push(group));
@@ -513,7 +543,7 @@ ULTIMATE.forEach((group) => GROUPS.push(group));
 // The first step of the way in: a list of the three sections.
 const ULTIMATE_MENU = {
   title: 'UltimatiumTube Ultimate Settings',
-  summary: 'Customization, developer options and AniUltimatium',
+  summary: 'Customization, developer options, AniUltimatium and Stremio addons',
   image: SCREEN
 };
 

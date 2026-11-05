@@ -91,9 +91,11 @@ check('it lists the Ultimate Settings first, then every row of every other group
     const rows = rowsIn(r.items, 'ultimatiumtube');
     // The Ultimate sections sit behind the first row, not among the rest.
     const listed = GROUPS.filter((group) => !group.ultimate).reduce((count, group) => count + group.items.length, 0);
-    assert.strictEqual(rows.length, listed + 1, `${rows.length} rows for ${listed} items and the way in`);
+    // The way in, and the Stremio row, which is on unless it is switched off.
+    assert.strictEqual(rows.length, listed + 2, `${rows.length} rows for ${listed} items, the way in and Stremio`);
     assert.strictEqual(rows[0], 'UltimatiumTube Ultimate Settings');
-    assert.strictEqual(rows[1], 'SponsorBlock');
+    assert.strictEqual(rows[1], 'Stremio addons');
+    assert.strictEqual(rows[2], 'SponsorBlock');
 });
 
 check('YouTube’s own rows are left exactly as sent', () => {

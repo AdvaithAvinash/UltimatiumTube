@@ -6,34 +6,60 @@ import { buttonItem, configChangeEmitter, configRead, configWrite, every, onKey,
 const ZOOM_KEY = 405; // Yellow on the remote
 
 const FITS = ['original', 'fill', 'stretch'];
-const CSS_FIT = { original: 'contain', fill: 'cover', stretch: 'fill' };
 const NAMES = { original: 'Original', fill: 'Zoom to fill', stretch: 'Stretch' };
 
 const fitOf = (read) => (FITS.indexOf(read('videoFit')) === -1 ? 'original' : read('videoFit'));
 
 const kept = { video: null };
 
-// The player gives the video element the size and place of the picture inside the bars, so a fit
-// set on the element only crops inside that same box. For Zoom and Stretch the element is made the
-// whole screen, and what the player had written is put back for Original.
-const LAYOUT = { position: 'fixed', left: '0px', top: '0px', width: '100vw', height: '100vh', maxWidth: 'none', maxHeight: 'none' };
+// How the engine draws a video: always whole and in its own shape, centred in the video element's
+// box (there is no object-fit to change that). So a fit cannot be set on the element; the element's
+// box is what is changed. Zoom makes the box as big as the picture must be to cover the screen,
+// placed so its middle is the screen's middle, and the part outside the screen is cut off. Stretch
+// makes the box the screen and scales it, by a different amount across and down, until the picture
+// in it fills the screen.
+const boxFor = (mode, vw, vh, sw, sh) => {
+    if (mode === 'fill') {
+        const scale = Math.max(sw / vw, sh / vh);
+        const width = Math.round(vw * scale);
+        const height = Math.round(vh * scale);
+
+        return { left: Math.round((sw - width) / 2), top: Math.round((sh - height) / 2), width, height, scaleX: 1, scaleY: 1 };
+    }
+
+    const inside = Math.min(sw / vw, sh / vh);
+
+    return { left: 0, top: 0, width: sw, height: sh, scaleX: sw / (vw * inside), scaleY: sh / (vh * inside) };
+};
+
 const HELD = '__tubeFitKept';
 
-const names = Object.keys(LAYOUT).concat(['objectFit']);
+const NAMES_SET = ['position', 'left', 'top', 'width', 'height', 'maxWidth', 'maxHeight', 'margin', 'transform', 'transformOrigin', 'objectFit'];
 
-const write = (style, name, value, priority) => {
-    const css = name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
-    if (typeof style.setProperty === 'function') style.setProperty(css, value, priority);
-    else style[name] = value;
+// Plainly first, which every engine takes; with priority too where the engine takes that, since the
+// player's own rules may be marked important.
+const write = (style, name, value) => {
+    style[name] = value;
+
+    if (typeof style.setProperty === 'function') {
+        try {
+            style.setProperty(name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`), value, 'important');
+        } catch (error) {
+            // The plain write stands.
+        }
+    }
 };
 
 const release = (video) => {
     const held = video[HELD];
     if (!held) return;
 
-    names.forEach((name) => write(video.style, name, held[name] || '', ''));
+    NAMES_SET.forEach((name) => { video.style[name] = held[name] || ''; });
     video[HELD] = null;
+    video.__tubeFitTransform = undefined;
 };
+
+const screenSize = () => ({ width: window.innerWidth || 1920, height: window.innerHeight || 1080 });
 
 const apply = (video) => {
     if (!video || !video.style) return;
@@ -45,17 +71,43 @@ const apply = (video) => {
         return;
     }
 
+    // Until the video says its shape there is nothing to work from.
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    if (!(vw > 0 && vh > 0)) return;
+
     if (!video[HELD]) {
         const before = {};
-        names.forEach((name) => { before[name] = video.style[name] || ''; });
+        NAMES_SET.forEach((name) => { before[name] = video.style[name] || ''; });
         video[HELD] = before;
     }
 
-    // Written with priority, and written again when the player has changed it.
-    Object.keys(LAYOUT).forEach((name) => {
-        if (video.style[name] !== LAYOUT[name]) write(video.style, name, LAYOUT[name], 'important');
+    const screen = screenSize();
+    const box = boxFor(fit, vw, vh, screen.width, screen.height);
+    const scaled = Math.abs(box.scaleX - 1) > 0.001 || Math.abs(box.scaleY - 1) > 0.001;
+
+    const wanted = {
+        position: 'fixed',
+        left: `${box.left}px`,
+        top: `${box.top}px`,
+        width: `${box.width}px`,
+        height: `${box.height}px`,
+        maxWidth: 'none',
+        maxHeight: 'none',
+        margin: '0px',
+        transformOrigin: '50% 50%',
+        transform: scaled ? `scale(${box.scaleX}, ${box.scaleY})` : 'none'
+    };
+
+    // Written again whenever the player has put something else there.
+    Object.keys(wanted).forEach((name) => {
+        if (name === 'transform' || name === 'transformOrigin') {
+            if (video.__tubeFitTransform !== wanted.transform) write(video.style, name, wanted[name]);
+        } else if (video.style[name] !== wanted[name]) {
+            write(video.style, name, wanted[name]);
+        }
     });
-    if (video.style.objectFit !== CSS_FIT[fit]) write(video.style, 'objectFit', CSS_FIT[fit], 'important');
+    video.__tubeFitTransform = wanted.transform;
 };
 
 const WATCH = 'video fit upkeep';
@@ -75,7 +127,8 @@ const adopt = (video) => {
     apply(video);
 
     // The player redraws a video's box on resize, quality changes and new videos.
-    ['loadedmetadata', 'playing', 'resize', 'seeked'].forEach((name) => video.addEventListener(name, () => apply(video)));
+    ['loadedmetadata', 'loadeddata', 'playing', 'resize', 'seeked'].forEach((name) => video.addEventListener(name, () => apply(video)));
+    window.addEventListener('resize', () => apply(video));
     if (fitOf(configRead) !== 'original') every(WATCH, 500, upkeep);
 };
 
@@ -117,4 +170,4 @@ const start = () => {
     });
 };
 
-export { apply, cycle, openFitOptions, setFit, fitOf, FITS, CSS_FIT, start };
+export { apply, boxFor, cycle, openFitOptions, setFit, fitOf, FITS, start };

@@ -6,12 +6,19 @@
 // answering nobody, until the TV was reinstalled to. This keeps trying, and looks every so often.
 
 const create = (options) => {
-    const { app, port, bind, addresses, note, noteRarely, setup, retryAfter, checkEvery } = options;
+    const { app, port, bind, addresses, note, noteRarely, setup, retryAfter, checkEvery, busy } = options;
 
     // What is listening now, and whether a try is under way.
-    const current = { server: null, address: null, attempting: false };
+    const current = { server: null, address: null, attempting: false, yielded: false };
+
+    // Asked of whoever holds the port at most this many times in a row, and again only after a
+    // success, so two instances cannot ask each other for ever.
+    const asked = { count: 0 };
+    const MOST_ASKS = 3;
 
     const listen = (found, index) => {
+        if (current.yielded) return;
+
         const address = found[index];
         const serving = { yes: false };
 
@@ -23,6 +30,7 @@ const create = (options) => {
             current.address = address;
             current.attempting = false;
 
+            asked.count = 0;
             note('listening', `${address}:${port}`);
             if (options.listening) options.listening(address);
         });
@@ -41,6 +49,12 @@ const create = (options) => {
             noteRarely('listen', `${address}:${port} — ${why}`);
             if (serving.yes) return undefined;
 
+            // Another instance of this service: it is asked to give the port up before anything else is tried.
+            if (error.code === 'EADDRINUSE' && busy && asked.count < MOST_ASKS && !current.yielded) {
+                asked.count += 1;
+                return busy(address, (agreed) => setTimeout(() => listen(found, index), agreed ? 700 : 100));
+            }
+
             const next = index + 1;
             if (next < found.length) return listen(found, next);
 
@@ -50,7 +64,7 @@ const create = (options) => {
 
         // Closed from outside, or by the system: listen again, rather than stay deaf.
         server.on('close', () => {
-            if (current.server !== server) return;
+            if (current.server !== server || current.yielded) return;
 
             current.server = null;
             current.address = null;
@@ -65,7 +79,7 @@ const create = (options) => {
     // Is what is listening still any use: still open, and, if it chose one address of the set, that
     // address still the set's.
     const check = () => {
-        if (current.attempting) return;
+        if (current.attempting || current.yielded) return;
 
         const server = current.server;
         if (!server) {
@@ -91,6 +105,25 @@ const create = (options) => {
         listen(addresses(), 0);
     };
 
+    // Gives the port to a newer instance, and does not listen again: the one that asked has it now.
+    const yieldPort = () => {
+        current.yielded = true;
+
+        const server = current.server;
+        current.server = null;
+        current.address = null;
+
+        try {
+            if (server) server.close();
+        } catch (error) {
+            // Already closed.
+        }
+
+        // Kept alive, idle: a process that ended would be started again by the platform, and would
+        // then ask for the port back.
+        if (!current.hold) current.hold = setInterval(() => undefined, 3600000);
+    };
+
     // With a `checkEvery`, it looks by itself, as well as when something else asks it to.
     const start = () => {
         listen(addresses(), 0);
@@ -104,7 +137,7 @@ const create = (options) => {
         return timer;
     };
 
-    return { start, check, current };
+    return { start, check, current, yieldPort };
 };
 
 module.exports = { create };

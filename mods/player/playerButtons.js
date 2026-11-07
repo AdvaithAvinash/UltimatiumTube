@@ -35,7 +35,7 @@ const dressEngagement = (actions) => [
 const fitButton = () => ({
     type: 'TRANSPORT_CONTROLS_BUTTON_TYPE_PIP',
     button: {
-        buttonRenderer: ButtonRenderer(false, 'Video fit', 'FULLSCREEN', {
+        buttonRenderer: ButtonRenderer(false, 'Video fit', 'SETTINGS', {
             customAction: { action: 'OPEN_VIDEO_FIT' }
         })
     }

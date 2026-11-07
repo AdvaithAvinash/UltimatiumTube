@@ -253,11 +253,15 @@ Two build-time gates, one per side.
   origin, which on a TV is the service, not its server. `service/lib/aniApi.js` forwards those calls
   to AniUltimatium's server, and `service/lib/aniShim.js` sends pictures and AniList calls through
   `/cors-bypass/`, which the engine allows.
-- **Video fit** (`mods/player/zoom.js`): the player sizes the `<video>` element to the picture inside
-  the bars, so `object-fit` alone only crops inside that box. Zoom and Stretch make the element the
-  whole screen (fixed, 100vw by 100vh) with `object-fit` `cover` or `fill`, written again every half
-  second because the player rewrites its style; Original puts back what the player wrote. Yellow
-  cycles it; a button in the player's row opens a menu.
+- **Video fit** (`mods/player/zoom.js`): the TV's engine draws a video whole and in its own shape,
+  centred in the `<video>` element's box, and has no `object-fit`, so a fit cannot be set on the
+  element; only its box can change. Zoom sizes the box to the picture's shape times the scale that
+  covers the screen (e.g. 2592x1080 for a 2.4:1 film on 16:9), placed so its centre is the screen's,
+  fixed; Stretch makes the box the screen and applies `scale(x, y)` so the picture in it fills the
+  screen. It needs `videoWidth` and `videoHeight`, so it waits for the video's metadata, and is written
+  again every half second because the player rewrites the element's style. Original puts back what the
+  player wrote. Checked in Chromium, which letterboxes the same way, by looking at the corners of the
+  screen (`boxFor` is the arithmetic).
 - **Stremio page** (`stremio/`): `core.js` is the protocol (manifests, catalogs, meta, streams, built
   as the addon spec says; it is what `test/stremio-core.js` runs) and `ui.js` the screens, remote
   navigation (the nearest focusable in the direction pressed) and the player. The page is drawn for

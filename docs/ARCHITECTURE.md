@@ -261,7 +261,12 @@ Two build-time gates, one per side.
   screen. It needs `videoWidth` and `videoHeight`, so it waits for the video's metadata, and is written
   again every half second because the player rewrites the element's style. Original puts back what the
   player wrote. Checked in Chromium, which letterboxes the same way, by looking at the corners of the
-  screen (`boxFor` is the arithmetic).
+  screen (`boxFor` is the arithmetic). In Cobalt's source (`layout/replaced_box.cc`,
+  `rasterizer/skia/render_tree_node_visitor.cc`) the video is a punch-through node: the picture's
+  rectangle, after every transform, is handed to the platform player (`SbPlayerSetBounds`) unclipped.
+  So Stretch hands it a rectangle on the screen, and Zoom one larger than the screen, which a TV's
+  player may or may not accept. What was asked and what the element became are written to
+  `/__tube/log` as `video fit` lines.
 - **Stremio page** (`stremio/`): `core.js` is the protocol (manifests, catalogs, meta, streams, built
   as the addon spec says; it is what `test/stremio-core.js` runs) and `ui.js` the screens, remote
   navigation (the nearest focusable in the direction pressed) and the player. The page is drawn for

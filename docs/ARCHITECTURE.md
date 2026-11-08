@@ -112,7 +112,7 @@ carry. `window.__TUBE_NATIVE_PROXY_PATCHES__ = false` tells it that nothing prox
 service, and the userscript reaches them through `window.UltimatiumNative` instead of `fetch`.
 `tools/build-apk.js` builds it with javac, dx, aapt, zipalign and apksigner.
 
-## Ultimate settings, customization and AniUltimatium
+## Ultimate settings and customization
 
 `mods/settings/settingsModel.js` lists the settings once. Groups marked `ultimate` are not listed in
 the category: the first row ("UltimatiumTube Ultimate Settings", marked `tubeStyle: 'ultimate'`)
@@ -120,25 +120,6 @@ opens a menu of them, each section opens as a list of its settings, and each set
 list. `settingComponents.js` puts the class `tube-ultimate` on the row YouTube draws for a marked
 row, and `mods/theme/` writes the stylesheet that makes that class blue and glowing, and applies the
 wallpaper, colours, font and the custom rules. All of it is rebuilt when a setting changes.
-
-AniUltimatium is the unmodified `public/` of its repository, copied by
-`tools/update_aniultimatium.js` into `aniultimatium/` (minus the website-only files, listed there).
-`mods/aniultimatium/` decides how it is opened. On Android, `AniultimatiumActivity` loads the files
-from the app's assets as Aniultimatium's own app does, and `exit()` closes it, which returns to
-YouTube. On a Samsung TV a widget's own pages are never shown, and the TV's YouTube engine supports
-less CSS than Aniultimatium uses (custom properties, grid), so the page asks the service
-(`service/lib/launchApp.js`) to start Aniultimatium's own app by its id; only if that is not installed
-does it open the bundled copy, which `service/lib/aniultimatium.js` serves at `/aniultimatium/`, adding
-a `window.AniNative` whose `exit()` returns to `/tv` and setting its Classic look the first time.
-
-A page of the service opened in the TV's YouTube engine (Cobalt) meets what that engine lacks. Its CSS
-code has no custom properties, grid, `gap` or `aspect-ratio`; Aniultimatium's stylesheet has 150
-`var()`s. `service/lib/flattenCss.js` reads the variables where the stylesheet sets them (on `:root`,
-for the Modern look on `body.ui-modern`, and the one a small-screen query changes) and writes them in,
-so `/aniultimatium/styles.css` has none; drawn in a browser it is pixel for pixel the same as the
-original. The page also expects a widget's freedom to call any address, so a small script
-(`SHIM` in `service/lib/aniultimatium.js`) sends its requests to other sites through the service's
-`/cors-bypass/`, and asks for the stylesheet again with the accent colour the page chooses.
 
 The wallpaper and the background colour are styles set on the page's own elements, not rules in a
 stylesheet: they are put back to exactly what each element held, and the engine is asked afterwards
@@ -249,10 +230,6 @@ Two build-time gates, one per side.
   response mod (ads, SponsorBlock segments, filters) stopped. It now looks every two seconds as well
   (`json adoption (ongoing)`). `mods/adblock` also sweeps advert items out of shelf and continuation
   responses as a second line.
-- **AniUltimatium on a TV.** On a private address AniUltimatium calls its own `/api` on the page's
-  origin, which on a TV is the service, not its server. `service/lib/aniApi.js` forwards those calls
-  to AniUltimatium's server, and `service/lib/aniShim.js` sends pictures and AniList calls through
-  `/cors-bypass/`, which the engine allows.
 - **Video fit** (`mods/player/zoom.js`): the TV's engine draws a video whole and in its own shape,
   centred in the `<video>` element's box, and has no `object-fit`, so a fit cannot be set on the
   element; only its box can change. Zoom sizes the box to the picture's shape times the scale that
@@ -277,7 +254,7 @@ Two build-time gates, one per side.
   1920x1080 and scaled to the screen; it uses flexbox, transforms and opacity only, as the TV's
   engine has no grid, gap or custom properties. Requests and pictures to other sites go by the
   service's `/cors-bypass/` on a TV (`SX.route`); the video itself is loaded directly. On a Samsung
-  TV `service/lib/stremio.js` serves it; on Android `AniultimatiumActivity` shows it
+  TV `service/lib/stremio.js` serves it; on Android `StremioActivity` shows it
   (`page=stremio`) and hands over the addon list from the settings. The list lives in the
   `stremioAddons` setting, so the phone page edits it; the page reads it from `/api/settings`.
 - **Grayjay plugins** (`stremio/grayjay.js`): a plugin's script is run with the classes and packages
@@ -301,3 +278,8 @@ Two build-time gates, one per side.
   a line when the page starts with the screen size, and any addon, plugin or catalog that failed.
 - **Speed:** the advert sweep skips parts of a feed that hold only text and pictures, and the
   search for late-loading YouTube modules runs every five seconds after the first minute.
+
+- **AniUltimatium was taken out** (1.10.0): the bundled copy, its settings, its service routes
+  (`aniultimatium.js`, `aniApi.js`, `aniShim.js`, `flattenCss.js`, `launchApp.js`) and its Android
+  screen. The audit fails a widget that carries `aniultimatium/` again. The Android screen that showed
+  it is now `StremioActivity`, and the page's bridge is `StremioNative`.

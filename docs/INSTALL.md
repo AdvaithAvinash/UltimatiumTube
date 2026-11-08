@@ -78,16 +78,6 @@ and serves exactly as the original.
 If it still fails, the boot screen shows an address to open on a phone, and that page says what
 failed.
 
-### AniUltimatium on a Samsung TV
-
-The blue AniUltimatium row (Settings > UltimatiumTube > UltimatiumTube Ultimate Settings >
-AniUltimatium, switched on) starts AniUltimatium's own app, so install that too: its `.wgt` is on
-[its releases page](https://github.com/AdvaithAvinash/AniUltimatium/releases), installed the same way
-as this one. Back in AniUltimatium returns to YouTube. Without it, the row opens a copy bundled in
-this app. That copy is adapted for the TV's YouTube engine (its stylesheet is sent with the variables
-that engine lacks filled in, and its requests go through this app), but it has not been seen running on
-a TV, and its embedded movie players need frames, which that engine does not have.
-
 ### Other YouTube apps on the same TV
 
 UltimatiumTube does not clash with YouTube for Tizen or TizenTube over ports, folders or package ids.

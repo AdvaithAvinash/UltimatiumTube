@@ -25,14 +25,11 @@ const DEV_SURFACES = [
 ];
 
 const REQUIRED = ['config.xml', 'icon.png', 'index.html', 'service/dist/index.js',
-    'aniultimatium/index.html', 'aniultimatium/start.js', 'aniultimatium/main.js', 'aniultimatium/VERSION.txt',
     'stremio/index.html', 'stremio/core.js', 'stremio/grayjay.js', 'stremio/ui.js', 'stremio/style.css', 'stremio/hls.min.js',
     'wallpapers/blue-flames.jpg'];
 
-// What only Aniultimatium's website needs, and its own Samsung manifest, which would be a second
-// config.xml inside this one.
-const WEB_ONLY = ['robots.txt', 'sitemap.xml', 'llms.txt', 'og.png', 'link.html', 'about.html', 'add.html',
-    'adframe.html', 'vastrelay.html', 'sw.js', 'config.xml'];
+// AniUltimatium was taken out of the app; nothing of it may be packaged again.
+const REMOVED = ['aniultimatium/'];
 
 const unless = (ok, message) => (ok ? [] : [message]);
 
@@ -99,9 +96,8 @@ const audit = async (widget) => {
         unless(named.indexOf('app/config.xml') === -1,
             'config.xml is filed under app/ rather than at the archive root'),
         unless(!!userScript, 'no userscript asset is packaged'),
-        named.filter((name) => name.indexOf('aniultimatium/') === 0
-            && WEB_ONLY.indexOf(name.slice('aniultimatium/'.length)) !== -1)
-            .map((name) => `${name} is website-only and should not be bundled`),
+        named.filter((name) => REMOVED.some((prefix) => name.indexOf(prefix) === 0))
+            .map((name) => `${name} belongs to something taken out of the app`),
         tokenFailures(service, 'the service bundle'),
         tokenFailures(bundle, 'the userscript'),
         RELEASE ? present.map((surface) => `${surface.what} is in the shipped service bundle`) : [],

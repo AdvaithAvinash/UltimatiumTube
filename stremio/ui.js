@@ -206,7 +206,7 @@
   // --- leaving
 
   var leave = function () {
-    try { if (window.AniNative && window.AniNative.exit) { window.AniNative.exit(); return; } } catch (e) { /* none */ }
+    try { if (window.StremioNative && window.StremioNative.exit) { window.StremioNative.exit(); return; } } catch (e) { /* none */ }
     window.location.replace('/tv');
   };
 
@@ -1323,9 +1323,9 @@
   // running; the Android app passes them in when it opens this page.
   var phoneLists = function () {
     try {
-      if (window.AniNative && window.AniNative.addons) {
-        var given = String(window.AniNative.addons() || '');
-        var plugins = window.AniNative.plugins ? String(window.AniNative.plugins() || '') : '';
+      if (window.StremioNative && window.StremioNative.addons) {
+        var given = String(window.StremioNative.addons() || '');
+        var plugins = window.StremioNative.plugins ? String(window.StremioNative.plugins() || '') : '';
         SX.store.set('phone', given);
         SX.store.set('phonePlugins', plugins);
         return Promise.resolve({ addons: SX.parseList(given), plugins: SX.parsePlugins(plugins) });

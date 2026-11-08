@@ -1,6 +1,6 @@
 'use strict';
 
-// The Stremio page, bundled in the widget and served by this service like Aniultimatium: a page of
+// The Stremio page, bundled in the widget and served by this service: a page of
 // the service, opened from the YouTube settings, with Back going home to YouTube. Its files are
 // written for this engine, so they are served as they are.
 

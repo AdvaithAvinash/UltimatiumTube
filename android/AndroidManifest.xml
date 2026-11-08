@@ -48,9 +48,9 @@
             </intent-filter>
         </activity>
 
-        <!-- Aniultimatium mode: opened from the settings, closed back to YouTube. -->
+        <!-- The Stremio and Grayjay page: opened from the settings, closed back to YouTube. -->
         <activity
-            android:name=".AniultimatiumActivity"
+            android:name=".StremioActivity"
             android:exported="false"
             android:screenOrientation="sensorLandscape"
             android:windowSoftInputMode="stateHidden|adjustPan"

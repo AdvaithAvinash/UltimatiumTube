@@ -23,14 +23,12 @@ import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 
 /**
- * Aniultimatium mode: the Aniultimatium web app, bundled in assets/aniultimatium/ exactly as it is
- * in its own repository, in a full-screen WebView. Set up as Aniultimatium's own Android app sets
- * it up; Back goes to the web page first and leaves this screen, back to YouTube, only from its
- * home screen, through AniNative.exit().
+ * The Stremio and Grayjay page, bundled in assets/stremio/, in a full-screen WebView. Back goes to the
+ * page first and leaves this screen, back to YouTube, only from its home screen, through
+ * StremioNative.exit().
  */
-public class AniultimatiumActivity extends Activity {
-    private static final String START_URL = "file:///android_asset/aniultimatium/index.html";
-    private static final String STREMIO_URL = "file:///android_asset/stremio/index.html";
+public class StremioActivity extends Activity {
+    private static final String START_URL = "file:///android_asset/stremio/index.html";
     private static final String BACK_SCRIPT = "(function(){var e=document.createEvent('Event');"
             + "e.initEvent('tizenhwkey',true,true);e.keyName='back';document.dispatchEvent(e);})()";
 
@@ -79,7 +77,7 @@ public class AniultimatiumActivity extends Activity {
         // The page tells an app from a browser by this.
         s.setUserAgentString(s.getUserAgentString() + " AniUltimatiumTV/" + versionName() + " (AndroidTV)");
 
-        web.addJavascriptInterface(new Bridge(), "AniNative");
+        web.addJavascriptInterface(new Bridge(), "StremioNative");
         web.setWebViewClient(new AniClient());
 
         chrome = new WebChromeClient() {
@@ -135,23 +133,18 @@ public class AniultimatiumActivity extends Activity {
         hideSystemBars();
         web.requestFocus();
 
-        // After a web view crash the next load skips the opening animation (start.js reads
-        // nointro=1), so a crash can never repeat in a loop.
-        SharedPreferences sp = getSharedPreferences("aniu", MODE_PRIVATE);
+        // After a web view crash the page is loaded fresh rather than restored, so a crash cannot repeat.
+        SharedPreferences sp = getSharedPreferences("stremio", MODE_PRIVATE);
         boolean recent = System.currentTimeMillis() - sp.getLong("gone", 0) < 90000;
 
-        // The same screen shows the Stremio page when it is asked for.
-        boolean stremio = "stremio".equals(getIntent().getStringExtra("page"));
-
         if (savedInstanceState != null && !recent) web.restoreState(savedInstanceState);
-        else if (stremio) web.loadUrl(STREMIO_URL);
-        else web.loadUrl(recent ? START_URL + "?nointro=1" : START_URL);
+        else web.loadUrl(START_URL);
     }
 
     private final class AniClient extends WebViewClient {
         // Main frame only, and only to the bundled app: the top page never leaves it (ad
         // redirects). Pages inside the movie players may navigate freely. API 24 and later call
-        // this form; before that nothing is blocked, as in Aniultimatium's own app.
+        // this form; before that nothing is blocked.
         public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
             if (!request.isForMainFrame()) return false;
 
@@ -164,7 +157,7 @@ public class AniultimatiumActivity extends Activity {
         // The web view process died (low memory): start again rather than crash. Android 8 and
         // later call this; the class it names is a stand-in at compile time only.
         public boolean onRenderProcessGone(WebView view, android.webkit.RenderProcessGoneDetail detail) {
-            getSharedPreferences("aniu", MODE_PRIVATE).edit().putLong("gone", System.currentTimeMillis()).apply();
+            getSharedPreferences("stremio", MODE_PRIVATE).edit().putLong("gone", System.currentTimeMillis()).apply();
 
             if (web != null) {
                 root.removeView(web);
@@ -209,7 +202,7 @@ public class AniultimatiumActivity extends Activity {
     }
 
     /** Back goes to the page's own handler (it knows about menus, players and tabs); the page calls
-     *  AniNative.exit() when there is nothing left to close. */
+     *  StremioNative.exit() when there is nothing left to close. */
     @Override
     public boolean dispatchKeyEvent(KeyEvent e) {
         if (e.getKeyCode() == KeyEvent.KEYCODE_BACK) {

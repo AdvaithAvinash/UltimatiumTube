@@ -58,9 +58,9 @@ check('the first row of the category is the Ultimate Settings, in the Ultimate s
     assert.strictEqual(first.serviceEndpoint.customAction.parameters.path[0], 'ultimate');
 });
 
-check('it opens a list of the four sections', () => {
+check('it opens a list of the three sections', () => {
     const modal = open(['ultimate']);
-    assert.deepStrictEqual(itemsOf(modal).map(titleOf), ['Customization', 'Ultimate Dev Options', 'AniUltimatium', 'Stremio and Grayjay']);
+    assert.deepStrictEqual(itemsOf(modal).map(titleOf), ['Customization', 'Ultimate Dev Options', 'Stremio and Grayjay']);
     assert.strictEqual(modal.header.overlayPanelHeaderRenderer.title.simpleText, 'UltimatiumTube Ultimate Settings');
 });
 
@@ -491,7 +491,7 @@ check('starting with the wallpaper on paints it', () => {
 check('the developer options hold the advanced settings', () => {
     const titles = itemsOf(open([indexOfGroup('tube_dev')])).map(titleOf);
 
-    ['Phone settings page', 'Phone page refresh', 'SponsorBlock server', 'AniUltimatium app on this TV', 'Custom style rules', 'Version', 'Reset everything']
+    ['Phone settings page', 'Phone page refresh', 'SponsorBlock server', 'Custom style rules', 'Version', 'Reset everything']
         .forEach((name) => assert.ok(titles.indexOf(name) !== -1, `${name} is missing from ${titles.join(', ')}`));
 });
 
@@ -528,49 +528,35 @@ check('text settings are typed on the phone and shown to it as text', () => {
 check('the phone page carries the new sections, and none of the buttons', () => {
     const titles = phoneSchema().map((group) => group.title);
 
-    ['Customization', 'Ultimate Dev Options', 'AniUltimatium', 'Stremio and Grayjay'].forEach((name) => assert.ok(titles.indexOf(name) !== -1, name));
+    ['Customization', 'Ultimate Dev Options', 'Stremio and Grayjay'].forEach((name) => assert.ok(titles.indexOf(name) !== -1, name));
 
     const keys = phoneSchema().reduce((all, group) => all.concat(group.items.map((item) => item.key)), []);
-    assert.ok(keys.indexOf('openAniUltimatium') === -1);
+    assert.ok(keys.indexOf('openStremio') === -1);
 });
 
-// --- AniUltimatium
+// --- Stremio and Grayjay (AniUltimatium was taken out)
 
-check('with the switch off there is the switch and nothing else, and no extra row', () => {
-    const group = indexOfGroup('tube_aniultimatium');
-
-    assert.deepStrictEqual(itemsOf(open([group])).map(titleOf), ['AniUltimatium']);
-
+check('nothing of AniUltimatium is left in the settings', () => {
     const titles = rowsOf().map((row) => rendererOf(row).title.runs[0].text);
-    assert.strictEqual(titles.filter((title) => title === 'AniUltimatium').length, 0);
+    assert.strictEqual(titles.filter((title) => /AniUltimatium/i.test(title)).length, 0);
+    assert.strictEqual(indexOfGroup('tube_aniultimatium'), -1);
+    assert.strictEqual(configRead('enableAniUltimatium'), undefined);
 });
 
-check('the switch turns it on where it stands, and redraws the list', () => {
-    const group = indexOfGroup('tube_aniultimatium');
-    const [link] = itemsOf(open([group]));
-    const [write, redraw] = commandsOf(link);
+check('the Stremio row is blue and directly under the Ultimate Settings row', () => {
+    const rows = rowsOf().map(rendererOf);
+    const stremio = rows.find((row) => row.title.runs[0].text === 'Stremio and Grayjay');
 
-    assert.strictEqual(write.setClientSettingEndpoint.settingDatas[0].clientSettingEnum.item, 'enableAniUltimatium');
-    assert.strictEqual(write.setClientSettingEndpoint.settingDatas[0].boolValue, true);
-    assert.strictEqual(redraw.customAction.parameters.update, true);
+    assert.ok(stremio, 'the row is missing');
+    assert.strictEqual(stremio.tubeStyle, 'ultimate');
+    assert.strictEqual(stremio.serviceEndpoint.customAction.action, 'OPEN_STREMIO');
+    assert.strictEqual(rows[1], stremio);
 });
 
-check('with it on, the list gains "Open AniUltimatium", and the category a blue row', () => {
-    withConfig({ enableAniUltimatium: true }, () => {
-        const group = indexOfGroup('tube_aniultimatium');
-        const links = itemsOf(open([group]));
-
-        assert.deepStrictEqual(links.map(titleOf), ['AniUltimatium', 'Open AniUltimatium']);
-        assert.strictEqual(commandsOf(links[1])[0].customAction.action, 'OPEN_ANIULTIMATIUM');
-
-        const rows = rowsOf().map(rendererOf);
-        const ani = rows.find((row) => row.title.runs[0].text === 'AniUltimatium');
-
-        assert.ok(ani, 'the extra row is missing');
-        assert.strictEqual(ani.tubeStyle, 'ultimate');
-        assert.strictEqual(ani.serviceEndpoint.customAction.action, 'OPEN_ANIULTIMATIUM');
-        assert.strictEqual(rows[1], ani, 'it is not directly under the Ultimate Settings row');
-    });
+check('its section opens the page and holds both lists', () => {
+    const links = itemsOf(open([indexOfGroup('tube_stremio')]));
+    assert.deepStrictEqual(links.map(titleOf), ['Stremio and Grayjay', 'Open Stremio and Grayjay', 'Addons', 'Grayjay plugins']);
+    assert.strictEqual(commandsOf(links[1])[0].customAction.action, 'OPEN_STREMIO');
 });
 
 // --- speed
@@ -611,7 +597,7 @@ check('a default speed can be set to 15x in the settings, and is a choice of the
 
 check('every setting these sections name is one the config knows', () => {
     const known = configDefaults();
-    const buttons = ['themeReset', 'tubeVersion', 'tubeReset', 'openAniUltimatium', 'openStremio', 'wallpaperOffNow'];
+    const buttons = ['themeReset', 'tubeVersion', 'tubeReset', 'openStremio', 'wallpaperOffNow'];
 
     GROUPS.filter((group) => group.ultimate).forEach((group) => group.items.forEach((item) => {
         if (buttons.indexOf(item.key) === -1) assert.ok(item.key in known, `${item.key} is not in the config`);
@@ -620,7 +606,6 @@ check('every setting these sections name is one the config knows', () => {
 
 check('defaults leave YouTube as it is', () => {
     assert.strictEqual(configRead('themeWallpaperOn'), false);
-    assert.strictEqual(configRead('enableAniUltimatium'), false);
     assert.strictEqual(configRead('defaultPlaybackSpeed'), 1);
     assert.strictEqual(configRead('customCss'), '');
     configWrite('customCss', '');

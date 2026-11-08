@@ -608,7 +608,7 @@ check('a default speed can be set to 15x in the settings, and is a choice of the
 
 check('every setting these sections name is one the config knows', () => {
     const known = configDefaults();
-    const buttons = ['themeReset', 'themePreset', 'tubeStatistics', 'tubeVersion', 'tubeReset', 'openStremio', 'openBookmarks', 'wallpaperOffNow'];
+    const buttons = ['themeReset', 'themePreset', 'tubeStatistics', 'tubeVersion', 'tubeReset', 'openStremio', 'openBookmarks', 'openCollections', 'chooseCollection', 'wallpaperOffNow'];
 
     GROUPS.filter((group) => group.ultimate).forEach((group) => group.items.forEach((item) => {
         if (buttons.indexOf(item.key) === -1) assert.ok(item.key in known, `${item.key} is not in the config`);

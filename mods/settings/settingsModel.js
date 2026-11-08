@@ -123,6 +123,11 @@ const countOfSpeeds = () => {
   return count ? `${count} channel${count === 1 ? '' : 's'}` : 'None';
 };
 
+const SHORTS_LONGEST = [0, 15, 30, 45, 60, 90, 120]
+  .map((seconds) => ({ label: seconds ? `${seconds} s` : 'Off', value: seconds }));
+const SHORTS_SHORTEST = [0, 5, 10, 15, 20]
+  .map((seconds) => ({ label: seconds ? `${seconds} s` : 'Off', value: seconds }));
+
 const countOfQualities = () => {
   const count = Object.keys(configRead('channelQualities') || {}).length;
   return count ? `${count} channel${count === 1 ? '' : 's'}` : 'None';
@@ -367,8 +372,6 @@ const GROUPS = [
       Switch('rememberPlaybackSpeed', 'Remember playback speed',
         'The speed you chose carries into the next video, which YouTube otherwise starts '
         + 'at normal', SKIPPING),
-      Switch('enableSmartResume', 'Smart resume',
-        'A video starts where you stopped it last time (videos over two minutes)', SKIPPING),
       Panel('channelQualities', 'Quality for each channel',
         'Set from the Blue button held while a video plays (or the button you chose for it); wins over Preferred quality',
         SCREEN, countOfQualities, [{ label: 'Forget them all', writes: [{ key: 'channelQualities', value: {} }] }]),
@@ -378,10 +381,39 @@ const GROUPS = [
     ]
   },
   {
+    id: 'tube_intelligence',
+    title: 'Playback intelligence',
+    items: [
+      Switch('enableChapterSkips', 'Skip intro button from chapters',
+        'When SponsorBlock knows nothing of a video, its own chapters named Intro, Opening, Recap, Credits '
+        + 'or Outro get a Skip button too (or are skipped, below)', SKIPPING),
+      Switch('autoSkipIntros', 'Skip intros, outros and recaps on their own',
+        'Off shows a "Skip intro" button instead. Uses SponsorBlock and the chapters', SKIPPING, false),
+      Switch('enableSmartResume', 'Smart resume',
+        'A video starts where you stopped it last time (videos over two minutes)', SKIPPING),
+      Switch('enableSmartSearch', 'Smart search',
+        'A search said or typed as a sentence ("find videos explaining how OLED TVs work in simple terms") '
+        + 'is turned into the words that find it. Rules on this TV, not an AI service', CONTROLS),
+      Choice('shortsMaxSeconds', 'Shorts: pass over longer than',
+        'A Short longer than this is skipped as it comes up', SKIPPING, SHORTS_LONGEST, 'Longer than'),
+      Choice('shortsMinSeconds', 'Shorts: pass over shorter than',
+        'A Short shorter than this is skipped as it comes up', SKIPPING, SHORTS_SHORTEST, 'Shorter than'),
+      Switch('shortsUseHiddenLists', 'Shorts: hidden channels and words too',
+        'A Short from a hidden channel, or with a hidden word in its title, is skipped as it comes up', SKIPPING)
+    ]
+  },
+  {
     id: 'tube_remote',
-    title: 'Remote buttons and bookmarks',
+    title: 'Bookmarks, collections and remote buttons',
     get items() {
       return [
+        Action('openCollections', 'Channel collections', 'Your channels in groups of your own; open one to go to its channels',
+          SKIPPING, 'OPEN_COLLECTIONS'),
+        Action('chooseCollection', 'Add this channel to a collection', 'While a video plays: put its channel in a collection',
+          SKIPPING, 'CHOOSE_COLLECTION'),
+        Panel('channelCollections', 'Clear collections', 'Removes every collection', SKIPPING,
+          () => `${Object.keys(configRead('channelCollections') || {}).length} collections`,
+          [{ label: 'Remove them all', writes: [{ key: 'channelCollections', value: { Favourites: [] } }] }]),
         Action('openBookmarks', 'Bookmarks', 'Moments of videos you kept; open one to go straight back to it',
           SKIPPING, 'OPEN_BOOKMARKS'),
         Panel('videoBookmarks', 'Clear bookmarks', 'Removes every kept moment', SKIPPING,

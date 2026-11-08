@@ -22,6 +22,10 @@ const defaultConfig = {
   sponsorBlockManualSkips: ['intro', 'outro', 'filler'],
   // Seconds; a segment shorter than this is left alone.
   sponsorBlockMinDuration: 0,
+  // Playback intelligence: intros, outros and recaps found from a video's own chapters when SponsorBlock
+  // has none, and whether those (and SponsorBlock's) are skipped on their own instead of offered.
+  enableChapterSkips: true,
+  autoSkipIntros: false,
   // Categories that go quiet for the length of the segment instead of being jumped over.
   sponsorBlockMuteSegments: [],
   // Channel names SponsorBlock stays out of, so a creator's own sponsor reads still play.
@@ -65,6 +69,16 @@ const defaultConfig = {
   // Channel names and words dropped from every shelf; managed from the phone page.
   blockedChannels: [],
   blockedKeywords: [],
+  // Smart Shorts filter: Shorts longer or shorter than these (seconds; 0 is off) are passed over, and
+  // so are Shorts from the hidden channels or with the hidden words when the switch is on.
+  shortsMaxSeconds: 0,
+  shortsMinSeconds: 0,
+  shortsUseHiddenLists: true,
+  // Smart search: a question typed as a sentence is turned into search words.
+  enableSmartSearch: true,
+  // Channel collections: name -> channel names; and the channel ids seen, to open a channel by.
+  channelCollections: { Favourites: [] },
+  channelIds: {},
   // The last channels played, newest first, so the settings can offer them as a pick list.
   recentChannels: [],
 

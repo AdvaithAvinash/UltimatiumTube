@@ -43,11 +43,25 @@ with YouTube's own TV interface left as it is.
   skipped and the time saved, under Ultimate Dev Options.
 - **Remote buttons.** Red, Green, Yellow and Blue each do what you choose, with a second action when
   held: next video fit, the fit menu, the speed menu, bookmark this moment, open bookmarks, quality for
-  this channel, back 10 s, forward 30 s, start again, or open Stremio and Grayjay. As they come: Green
+  this channel, add this channel to a collection, open collections, back 10 s, forward 30 s, start
+  again, or open Stremio and Grayjay. As they come: Green
   bookmarks (held: the list), Yellow changes the fit (held: the menu), Blue opens speed (held: quality for
   this channel), Red is left to YouTube.
 - **Video bookmarks.** Keep a moment of a video and open it later from the list, straight at that time.
 - **Smart resume.** A video over two minutes starts where you stopped it last time.
+- **Playback intelligence** (Settings > UltimatiumTube > Playback intelligence):
+  - **Skip intro button.** When an intro, outro, recap or filler comes up, a *Skip intro* (or *Skip
+    outro*, ...) button appears over the video: from SponsorBlock, and, for a video SponsorBlock knows
+    nothing of, from the video's own chapters named Intro, Opening, Recap, Credits or Outro. Switch on
+    *Skip intros, outros and recaps on their own* to skip them with no button.
+  - **Smart search.** A search typed or said as a sentence, such as *"find videos explaining how OLED
+    TVs work in simple terms"*, is turned into the words that find it (*"how OLED TVs work explained
+    simply"*). It is a set of rules on the TV, not an AI service, so nothing leaves the TV.
+  - **Smart Shorts filter.** Shorts longer or shorter than a length you choose, or from a hidden channel
+    or with a hidden word, are passed over as they come up.
+  - **Smart resume** (below).
+- **Channel collections.** Put channels in collections of your own (Favourites, Music, Learning,
+  Gaming, ...) while one of their videos plays, then open a collection and go to a channel.
 - **Quality lock for each channel.** A preferred quality for one channel, over the one for every video.
 - **Wallpaper Studio.** Eleven pictures drawn for UltimatiumTube (electric blue, neon city, purple
   horizon, nebula, aurora over mountains, AMOLED arc, liquid waves, holographic glass, inferno, rainy
@@ -162,13 +176,13 @@ screen of the app on Android. Back returns to YouTube.
 - **Already there:** auto skip of intros, outros and the other SponsorBlock categories (SponsorBlock
   settings), hiding Shorts and hiding channels and words (which also apply to Shorts), backup and
   restore (the phone page), and a play queue (Add to queue on a video's menu).
-- **Not possible on the TV as it is:** *AI video search* and *smart recommendations* need an AI service
-  and an account or key to pay for it; YouTube's own search already takes whole sentences, and its
-  home screen already recommends from what you watch. *Watch together* and *backup sync between TVs*
+- **Not possible on the TV as it is:** a real *AI* search and *smart recommendations* need an AI service
+  and an account or key to pay for it; Smart search above does the part that can be done on the TV, and
+  YouTube's home screen already recommends from what you watch. *Watch together* and *backup sync between TVs*
   need a server for TVs to meet on. A *plugin marketplace* and a *wallpaper and theme store* with
   uploads and ratings need a hosted service too. *Video and animated wallpapers* would need a second
   video playing behind YouTube, and the TV decodes one video at a time; blur needs a filter the TV's
-  engine does not have. *Channel collections* and filtering Shorts by length are not done yet.
+  engine does not have.
 
 ### From your phone
 

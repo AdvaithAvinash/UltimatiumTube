@@ -8,6 +8,9 @@ import { recordSkip } from '../sponsorblock/index.js';
 import { openStremio } from '../stremio/index.js';
 import { addBookmark, openBookmarks, openBookmark, removeBookmark, clearBookmarks } from '../bookmarks/index.js';
 import { openChannelQuality, setChannelQuality } from '../quality/index.js';
+import {
+    chooseCollection, addToCollection, openCollections, openCollection, removeFromCollection, deleteCollection
+} from '../collections/index.js';
 import { EXIT_CONFIRMED, interpretExit, leaveConfirmed, leaveOrAsk } from '../exitConfirm/index.js';
 import { wallpaperOffNow } from '../theme/index.js';
 import { rememberSpeedForChannel } from '../player/speed.js';
@@ -59,6 +62,13 @@ const ACTIONS = {
     CLEAR_BOOKMARKS: () => clearBookmarks(),
 
     OPEN_CHANNEL_QUALITY: () => openChannelQuality(),
+
+    CHOOSE_COLLECTION: () => chooseCollection(),
+    ADD_TO_COLLECTION: (parameters) => addToCollection(parameters),
+    OPEN_COLLECTIONS: () => openCollections(),
+    OPEN_COLLECTION: (parameters) => openCollection(parameters),
+    REMOVE_FROM_COLLECTION: (parameters) => removeFromCollection(parameters),
+    DELETE_COLLECTION: (parameters) => deleteCollection(parameters),
     SET_CHANNEL_QUALITY: (parameters) => setChannelQuality(parameters),
 
     [EXIT_CONFIRMED]: () => leaveConfirmed(),

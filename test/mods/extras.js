@@ -19,6 +19,10 @@ const { remember, positionFor } = await import('../../mods/resume/index.js');
 const { ACTIONS, ACTION_NAMES, start: startKeys } = await import('../../mods/remoteKeys/index.js');
 const { bookmarks, clock } = await import('../../mods/bookmarks/index.js');
 const { channelQuality } = await import('../../mods/quality/index.js');
+const { chaptersOf } = await import('../../mods/sponsorblock/chapters.js');
+const { smarten } = await import('../../mods/smartSearch/index.js');
+const { reasonToPass } = await import('../../mods/shorts/index.js');
+const { SUGGESTED } = await import('../../mods/collections/index.js');
 
 check('smart resume keeps where a long video was left, and forgets one that was finished or barely started', () => {
     remember('abc', 600, 1200);
@@ -66,6 +70,41 @@ check('a channel\'s own quality wins only for that channel', () => {
         noteVideo({ author: 'Another', videoId: 'v2', title: 'U' });
         assert.strictEqual(channelQuality(), undefined);
     });
+});
+
+check('a video\'s chapters named Intro, Recap and Credits become segments to skip, up to the next chapter', () => {
+    const description = 'Great video!\n0:00 Intro\n0:45 The story\n1:30 Recap of part 1\n2:10 Main part\n9:50 End credits\nThanks';
+    const found = chaptersOf(description, 620).map((s) => [s.category, s.segment[0], s.segment[1]]);
+    assert.deepStrictEqual(found, [['intro', 0, 45], ['preview', 90, 130], ['outro', 590, 620]]);
+});
+
+check('a description that is not a chapter list gives nothing', () => {
+    assert.deepStrictEqual(chaptersOf('Intro at 0:30 and more at 1:00', 300), []);
+    assert.deepStrictEqual(chaptersOf('0:10 Intro\n1:00 B\n2:00 C', 300), [], 'chapters start at 0:00');
+    assert.deepStrictEqual(chaptersOf('0:00 Introduction\n1:00 Opening thoughts? no\n0:30 C', 300), [], 'out of order');
+});
+
+check('smart search turns a sentence into the words that find it, and leaves a plain search alone', () => {
+    assert.strictEqual(smarten('Find videos explaining how OLED TVs work in simple terms.'), 'how OLED TVs work explained simply');
+    assert.strictEqual(smarten('show me some videos about cooking pasta'), 'cooking pasta');
+    assert.strictEqual(smarten('can you find tutorials on python for beginners?'), 'python for beginners');
+    assert.strictEqual(smarten('minecraft'), 'minecraft');
+    assert.strictEqual(smarten('lofi hip hop radio'), 'lofi hip hop radio');
+});
+
+check('the Shorts filter passes over by length, and by the hidden channels and words', () => {
+    const read = (settings) => (key) => settings[key];
+    assert.strictEqual(reasonToPass(58, 'A', 'x', read({ shortsMaxSeconds: 30 })), 'longer than 30 s');
+    assert.strictEqual(reasonToPass(20, 'A', 'x', read({ shortsMaxSeconds: 30 })), null);
+    assert.strictEqual(reasonToPass(3, 'A', 'x', read({ shortsMinSeconds: 5 })), 'shorter than 5 s');
+    assert.strictEqual(reasonToPass(20, 'Loud Channel', 'x', read({ shortsUseHiddenLists: true, blockedChannels: ['loud channel'] })), 'a hidden channel');
+    assert.strictEqual(reasonToPass(20, 'A', 'A PRANK gone wrong', read({ shortsUseHiddenLists: true, blockedKeywords: ['prank'] })), 'a hidden word');
+    assert.strictEqual(reasonToPass(20, 'A', 'A PRANK', read({ shortsUseHiddenLists: false, blockedKeywords: ['prank'] })), null);
+});
+
+check('collections come with Favourites, and offer names that need no typing', () => {
+    assert.deepStrictEqual(Object.keys(configRead('channelCollections')), ['Favourites']);
+    assert.ok(SUGGESTED.indexOf('Music') !== -1 && SUGGESTED.indexOf('Learning') !== -1);
 });
 
 finish();

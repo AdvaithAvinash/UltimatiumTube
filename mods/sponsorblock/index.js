@@ -1,5 +1,6 @@
 import { configRead, waitFor } from '../../framework/index.js';
 import { segmentsFor } from './segmentApi.js';
+import { chapterSegments } from './chapters.js';
 import { segmentOverlay } from './segmentOverlay.js';
 import { autoSkipper } from './autoSkip.js';
 import './manualSkips.js';
@@ -19,9 +20,26 @@ const SKIPPABLE = [
     ['enableSponsorBlockExclusiveAccess', 'exclusive_access']
 ];
 
+// Playback intelligence: intros, outros and recaps skipped on their own rather than offered.
+const INTRO_LIKE = ['intro', 'outro', 'preview'];
+
 const skippableCategories = () => SKIPPABLE
     .filter(([setting]) => configRead(setting))
-    .map(([, category]) => category);
+    .map(([, category]) => category)
+    .concat(configRead('autoSkipIntros') ? INTRO_LIKE : []);
+
+const askedCategories = () => (configRead('sponsorBlockManualSkips') || [])
+    .filter((category) => !(configRead('autoSkipIntros') && INTRO_LIKE.indexOf(category) !== -1));
+
+// SponsorBlock's segments, and for a kind it has none of, the ones the video's own chapters name.
+const allSegmentsFor = async (videoID) => {
+    const fromServer = await segmentsFor(videoID).catch(() => []);
+    if (!configRead('enableChapterSkips')) return fromServer;
+
+    const fromChapters = chapterSegments(videoID)
+        .filter((chapter) => !fromServer.some((segment) => segment.category === chapter.category));
+    return fromServer.concat(fromChapters);
+};
 
 const sponsorBlockFor = (videoID) => {
     const held = {
@@ -59,7 +77,7 @@ const sponsorBlockFor = (videoID) => {
     }
 
     const init = async () => {
-        const segments = await segmentsFor(videoID);
+        const segments = await allSegmentsFor(videoID);
         if (held.gone || !segments.length) return;
 
         held.segments = segments;
@@ -67,7 +85,7 @@ const sponsorBlockFor = (videoID) => {
         held.skipper = autoSkipper(
             segments,
             skippableCategories(),
-            configRead('sponsorBlockManualSkips'),
+            askedCategories(),
             configRead('sponsorBlockMuteSegments')
         );
 
@@ -152,4 +170,5 @@ window.addEventListener('hashchange', () => {
 const segmentsForVideo = () => (window.sponsorblock && window.sponsorblock.segments) || [];
 
 export { recordSkip, summary as savedTimeSummary } from './stats.js';
-export { segmentsForVideo, videoIdIn };
+export { segmentsForVideo, videoIdIn, askedCategories };
+export { chaptersOf } from './chapters.js';

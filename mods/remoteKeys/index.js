@@ -30,6 +30,8 @@ const ACTIONS = {
     replay: { run: () => seekBy(-10), watching: true },
     forward: { run: () => seekBy(30), watching: true },
     restart: { run: () => seekBy(-1e9), watching: true },
+    collect: { run: command('CHOOSE_COLLECTION'), watching: true },
+    collections: { run: command('OPEN_COLLECTIONS'), watching: false },
     stremio: { run: command('OPEN_STREMIO'), watching: false }
 };
 
@@ -82,7 +84,8 @@ const start = () => {
 const ACTION_NAMES = {
     none: 'Nothing (left to YouTube)', fit: 'Next video fit', fitMenu: 'Video fit menu', speed: 'Speed menu',
     bookmark: 'Bookmark this moment', bookmarks: 'Open bookmarks', quality: 'Quality for this channel',
-    replay: 'Back 10 seconds', forward: 'Forward 30 seconds', restart: 'Start the video again', stremio: 'Open Stremio and Grayjay'
+    replay: 'Back 10 seconds', forward: 'Forward 30 seconds', restart: 'Start the video again', collect: 'Add this channel to a collection',
+    collections: 'Open collections', stremio: 'Open Stremio and Grayjay'
 };
 
 const toastUnknown = () => showToast('Remote buttons', 'That button has no action');

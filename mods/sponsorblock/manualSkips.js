@@ -1,6 +1,6 @@
-import { configRead, onResponse, timelyAction } from '../../framework/index.js';
+import { onResponse, timelyAction } from '../../framework/index.js';
 import { nameOf } from './segments.js';
-import { segmentsForVideo } from './index.js';
+import { segmentsForVideo, askedCategories } from './index.js';
 import { skipTo } from './skipTo.js';
 
 const cardFor = (segment) => timelyAction(
@@ -15,7 +15,7 @@ onResponse('sponsorblock overlay', ['playerOverlays'], (response) => {
     const overlay = response.playerOverlays && response.playerOverlays.playerOverlayRenderer;
     if (!overlay) return;
 
-    const byHand = configRead('sponsorBlockManualSkips');
+    const byHand = askedCategories();
     if (!byHand.length) return;
 
     const segments = segmentsForVideo();

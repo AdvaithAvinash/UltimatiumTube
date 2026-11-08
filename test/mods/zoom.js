@@ -1,53 +1,44 @@
 import assert from 'assert';
 import { check, withConfig, finish } from '../harness.js';
 
-global.document = { querySelector: () => null, addEventListener: () => undefined };
+global.document = { querySelector: () => null, querySelectorAll: () => [], addEventListener: () => undefined };
 global.window = { innerWidth: 1920, innerHeight: 1080, addEventListener: () => undefined, localStorage: { getItem: () => null, setItem: () => undefined } };
 
-const { apply, boxFor, fitOf } = await import('../../mods/player/zoom.js');
+const { apply, scaleFor, transformFor, fitOf } = await import('../../mods/player/zoom.js');
 
-const video = (vw, vh, style) => ({ videoWidth: vw, videoHeight: vh, style: Object.assign({}, style) });
-const px = (v) => parseFloat(v);
-
-check('Zoom makes the picture cover the screen: a wide film gets a box wider than the screen', () => {
-    // 2.4:1 on 16:9: the picture must be as tall as the screen, so the box is 2592 wide, centred.
-    const box = boxFor('fill', 1920, 800, 1920, 1080);
-    assert.deepStrictEqual([box.width, box.height, box.left, box.top], [2592, 1080, -336, 0]);
-    assert.strictEqual(box.scaleX, 1);
+const video = (vw, vh, style, box) => ({
+    videoWidth: vw, videoHeight: vh, offsetWidth: (box || [1920])[0], offsetHeight: (box || [1920, 1080])[1],
+    style: Object.assign({}, style), getBoundingClientRect: () => ({ width: 0, height: 0, left: 0, top: 0 })
 });
 
-check('Zoom of a tall picture gets a box taller than the screen', () => {
-    const box = boxFor('fill', 1440, 1080, 1920, 1080);
-    assert.deepStrictEqual([box.width, box.height, box.top], [1920, 1440, -180]);
+check('a fixed zoom scales the picture by that much, whatever its shape', () => {
+    assert.deepStrictEqual(scaleFor('z133', 1280, 720, 1920, 1080), { x: 1.33, y: 1.33 });
+    assert.deepStrictEqual(scaleFor('z133', 0, 0, 1920, 1080), { x: 1.33, y: 1.33 });
 });
 
-check('a picture already the screen\'s shape is left the same size', () => {
-    const box = boxFor('fill', 1280, 720, 1920, 1080);
-    assert.deepStrictEqual([box.width, box.height, box.left, box.top], [1920, 1080, 0, 0]);
+check('Zoom to fill scales a wide film up until it covers the box', () => {
+    // 2.4:1 in 16:9 is drawn 1920x800; it must grow 1080/800 = 1.35 to cover the height.
+    const s = scaleFor('fill', 1920, 800, 1920, 1080);
+    assert.ok(Math.abs(s.x - 1.35) < 1e-9 && Math.abs(s.y - 1.35) < 1e-9);
 });
 
-check('a fixed zoom enlarges the picture as shown about the middle: 1.33x of a 16:9 video', () => {
-    const box = boxFor('z133', 1280, 720, 1920, 1080);
-    assert.deepStrictEqual([box.width, box.height, box.left, box.top], [2554, 1436, -317, -178]);
+check('Zoom to fill of a 16:9 video in a 16:9 box changes nothing (bars inside the picture need a fixed zoom)', () => {
+    assert.deepStrictEqual(scaleFor('fill', 1280, 720, 1920, 1080), { x: 1, y: 1 });
 });
 
-check('a fixed zoom of a wide film starts from the film as shown, not from the screen', () => {
-    const box = boxFor('z115', 1920, 800, 1920, 1080);
-    assert.deepStrictEqual([box.width, box.height], [2208, 920]);
-    assert.strictEqual(box.left, -144);
+check('Stretch scales only the short way', () => {
+    const s = scaleFor('stretch', 1920, 800, 1920, 1080);
+    assert.ok(Math.abs(s.x - 1) < 1e-9 && Math.abs(s.y - 1.35) < 1e-9);
 });
 
-check('Zoom to fill leaves a 16:9 video with bars inside it as it is, which is what the fixed zooms are for', () => {
-    const box = boxFor('fill', 1280, 720, 1920, 1080);
-    assert.deepStrictEqual([box.width, box.height], [1920, 1080]);
+check('an engine that does not say the video\'s shape still gets the fixed zooms', () => {
+    assert.deepStrictEqual(scaleFor('fill', 0, 0, 1920, 1080), { x: 1, y: 1 });
+    assert.deepStrictEqual(scaleFor('z150', 0, 0, 1920, 1080), { x: 1.5, y: 1.5 });
 });
 
-check('Stretch makes the box the screen and scales the picture in it up to the screen', () => {
-    const box = boxFor('stretch', 1920, 800, 1920, 1080);
-    assert.deepStrictEqual([box.width, box.height, box.left, box.top], [1920, 1080, 0, 0]);
-    // The engine keeps the picture whole in the box: 1920 x 800. It must grow 1080/800 down, 1 across.
-    assert.ok(Math.abs(box.scaleX - 1) < 1e-9);
-    assert.ok(Math.abs(box.scaleY - 1.35) < 1e-9);
+check('the transform is written plainly, and none for no change', () => {
+    assert.strictEqual(transformFor({ x: 1.33, y: 1.33 }), 'scale(1.33, 1.33)');
+    assert.strictEqual(transformFor({ x: 1, y: 1 }), 'none');
 });
 
 check('Original leaves the stock player alone', () => {
@@ -58,60 +49,38 @@ check('Original leaves the stock player alone', () => {
     });
 });
 
-check('Zoom writes the box onto the video element', () => {
-    withConfig({ videoFit: 'fill' }, () => {
-        const one = video(1920, 800, { width: '1920px', height: '800px' });
+check('a zoom writes a transform about the middle, and leaves the player\'s size and place alone', () => {
+    withConfig({ videoFit: 'z133' }, () => {
+        const one = video(1280, 720, { width: '1920px', height: '1080px', left: '0px', top: '0px' });
         apply(one);
-        assert.strictEqual(one.style.position, 'fixed');
-        assert.strictEqual(px(one.style.width), 2592);
-        assert.strictEqual(px(one.style.height), 1080);
-        assert.strictEqual(px(one.style.left), -336);
-        assert.strictEqual(one.style.transform, 'none');
+        assert.strictEqual(one.style.transform, 'scale(1.33, 1.33)');
+        assert.strictEqual(one.style.transformOrigin, '50% 50%');
+        assert.deepStrictEqual([one.style.width, one.style.height, one.style.left, one.style.top], ['1920px', '1080px', '0px', '0px']);
     });
 });
 
-check('Stretch writes a scale', () => {
-    withConfig({ videoFit: 'stretch' }, () => {
-        const one = video(1920, 800);
-        apply(one);
-        assert.strictEqual(one.style.transform, 'scale(1, 1.35)');
-        assert.strictEqual(px(one.style.width), 1920);
-    });
-});
-
-check('nothing is done before the video has said its shape', () => {
-    withConfig({ videoFit: 'fill' }, () => {
+check('it works before the video says its shape', () => {
+    withConfig({ videoFit: 'z115' }, () => {
         const one = video(0, 0);
         apply(one);
-        assert.deepStrictEqual(one.style, {});
+        assert.strictEqual(one.style.transform, 'scale(1.15, 1.15)');
     });
 });
 
-check('it is written again when the player has put its own size back, and Original restores it all', () => {
-    const one = video(1920, 800, { width: '1920px', height: '800px', left: '0px' });
-    withConfig({ videoFit: 'fill' }, () => {
-        apply(one);
-        one.style.width = '1920px';
-        apply(one);
-        assert.strictEqual(px(one.style.width), 2592);
-    });
+check('going back to Original puts back what the player had', () => {
+    const one = video(1920, 800, { transform: 'translateZ(0px)' });
+    withConfig({ videoFit: 'fill' }, () => apply(one));
+    assert.ok(/scale/.test(one.style.transform));
     withConfig({ videoFit: 'original' }, () => apply(one));
-    assert.strictEqual(one.style.width, '1920px');
-    assert.strictEqual(one.style.height, '800px');
-    assert.strictEqual(one.style.position, '');
+    assert.strictEqual(one.style.transform, 'translateZ(0px)');
 });
 
-check('the screen\'s size is read when it is applied', () => {
-    global.window.innerWidth = 1280;
-    global.window.innerHeight = 720;
-    withConfig({ videoFit: 'fill' }, () => {
-        const one = video(1920, 800);
+check('a box smaller than the screen (a preview) is fitted inside its own box', () => {
+    withConfig({ videoFit: 'stretch' }, () => {
+        const one = video(1920, 800, {}, [640, 360]);
         apply(one);
-        assert.strictEqual(px(one.style.height), 720);
-        assert.strictEqual(px(one.style.width), 1728);
+        assert.strictEqual(one.style.transform, 'scale(1, 1.35)');
     });
-    global.window.innerWidth = 1920;
-    global.window.innerHeight = 1080;
 });
 
 check('an unknown value counts as Original', () => {

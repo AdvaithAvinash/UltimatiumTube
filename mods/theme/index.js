@@ -12,13 +12,41 @@ import { configChangeEmitter, configRead, every, stop } from '../../framework/in
 const PICTURES = '/__tube/wallpapers/';
 
 // A picture's preset id and its file. To offer another, add the file to wallpapers/ and list it here.
-const WALLPAPER_FILES = { flames: 'blue-flames.jpg' };
+const WALLPAPER_FILES = {
+    flames: 'blue-flames.jpg', electric: 'electric-blue.jpg', cyberpunk: 'cyberpunk-city.jpg',
+    cyberpurple: 'cyber-purple.jpg', nebula: 'space-nebula.jpg', auroraPeaks: 'aurora-mountains.jpg',
+    amoled: 'amoled-arc.jpg', liquid: 'liquid-waves.jpg', holo: 'holographic-glass.jpg',
+    inferno: 'inferno-flames.jpg', rain: 'rainy-window.jpg'
+};
+
+// The collections the pictures are offered in, in the order they are listed.
+/** @type {Array<[string, string[]]>} */
+const WALLPAPER_COLLECTIONS = [
+    ['Ultimatium Originals', ['flames', 'electric', 'ultimatium']],
+    ['Cyberpunk', ['cyberpunk', 'cyberpurple']],
+    ['Space & Galaxy', ['nebula', 'midnight']],
+    ['Nature & Landscapes', ['auroraPeaks', 'aurora', 'ocean', 'forest', 'sunset']],
+    ['AMOLED', ['amoled', 'steel']],
+    ['Abstract & Fluid', ['liquid', 'holo', 'violet']],
+    ['Fire', ['inferno', 'ember']],
+    ['Ambient Worlds', ['rain']]
+];
 
 const picture = (file) => `url("${PICTURES}${file}")`;
 
 // Each is one image, for the background-image of the page.
 const WALLPAPERS = {
     flames: picture(WALLPAPER_FILES.flames),
+    electric: picture(WALLPAPER_FILES.electric),
+    cyberpunk: picture(WALLPAPER_FILES.cyberpunk),
+    cyberpurple: picture(WALLPAPER_FILES.cyberpurple),
+    nebula: picture(WALLPAPER_FILES.nebula),
+    auroraPeaks: picture(WALLPAPER_FILES.auroraPeaks),
+    amoled: picture(WALLPAPER_FILES.amoled),
+    liquid: picture(WALLPAPER_FILES.liquid),
+    holo: picture(WALLPAPER_FILES.holo),
+    inferno: picture(WALLPAPER_FILES.inferno),
+    rain: picture(WALLPAPER_FILES.rain),
     ultimatium: 'radial-gradient(ellipse at 50% 38%, #0a3d91 0%, #04122e 58%, #000000 100%)',
     aurora: 'radial-gradient(ellipse at 18% 22%, #1b6b5a 0%, rgba(27,107,90,0) 55%), '
         + 'radial-gradient(ellipse at 82% 30%, #3b2a7a 0%, rgba(59,42,122,0) 55%), '
@@ -50,12 +78,27 @@ const FONTS = {
 
 const rgb = (hex) => [1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16)).join(', ');
 
+// Shuffle: a built-in picture picked at random, held until the next pick (each time the app opens, or
+// on a timer). Nothing is written to the settings, so the chosen picture stays the one to return to.
+const SHUFFLE = { picked: null };
+
+const shuffled = (read) => {
+    if (!read('themeShuffle') || read('themeShuffle') === 'off') return null;
+    if (!SHUFFLE.picked) {
+        const ids = Object.keys(WALLPAPERS);
+        SHUFFLE.picked = ids[Math.floor(Math.random() * ids.length)];
+    }
+    return SHUFFLE.picked;
+};
+
+const SHUFFLE_EVERY = { '15': 15 * 60000, '60': 60 * 60000 };
+
 // The wallpaper's image, or null while it is off or its picture is not a usable one. An address the
 // viewer typed is used only as an image, and only if it is a plain http(s) one.
 const wallpaperOf = (read) => {
     if (!read('themeWallpaperOn')) return null;
 
-    const chosen = read('themeWallpaper');
+    const chosen = shuffled(read) || read('themeWallpaper');
 
     if (chosen === 'custom') {
         const url = String(read('themeWallpaperUrl') || '').trim();
@@ -265,7 +308,7 @@ const applySheet = () => {
 const THEME_KEYS = ['themeWallpaperOn', 'themeWallpaper', 'themeWallpaperUrl', 'themeDim', 'themeBackground',
     'themeAccent', 'themeFont', 'customCss'];
 
-const BACKDROP_KEYS = ['themeWallpaperOn', 'themeWallpaper', 'themeWallpaperUrl', 'themeDim', 'themeBackground'];
+const BACKDROP_KEYS = ['themeWallpaperOn', 'themeWallpaper', 'themeWallpaperUrl', 'themeDim', 'themeBackground', 'themeShuffle'];
 
 // For the "turn it off now" entry in the settings: off, painted away, and the page loaded again so
 // that it is certain.
@@ -285,6 +328,17 @@ const start = () => {
         if (BACKDROP_KEYS.indexOf(key) !== -1) applyBackdrop(true);
     });
 
+    // Shuffle on a timer picks another picture and paints it.
+    every('tube shuffle', 60000, () => {
+        const period = SHUFFLE_EVERY[configRead('themeShuffle')];
+        if (!period) return;
+        SHUFFLE.at = SHUFFLE.at || Date.now();
+        if (Date.now() - SHUFFLE.at < period) return;
+        SHUFFLE.at = Date.now();
+        SHUFFLE.picked = null;
+        applyBackdrop(false);
+    });
+
     // The wallpaper steps aside while a video plays, and comes back after.
     window.addEventListener('hashchange', () => applyBackdrop(false));
 
@@ -296,5 +350,5 @@ const start = () => {
 };
 
 export {
-    themeCss, wallpaperOf, backdropOf, wallpaperOffNow, WALLPAPER_FILES, WALLPAPERS, BACKGROUNDS, ACCENTS, FONTS, start
+    themeCss, wallpaperOf, backdropOf, wallpaperOffNow, WALLPAPER_FILES, WALLPAPER_COLLECTIONS, WALLPAPERS, BACKGROUNDS, ACCENTS, FONTS, start
 };

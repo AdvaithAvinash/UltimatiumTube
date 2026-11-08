@@ -1,16 +1,24 @@
 import { GRID, PIVOT, SHELF, TILES, configRead, keepShelf, keepTile, onRequest, onResponse } from '../../framework/index.js';
+import { countAds, countRequest, startCounting, adSummary, flush as flushAdStats } from './stats.js';
+
+startCounting();
 
 const blocking = () => configRead('enableAdBlock');
 
 onResponse('adverts', ['adPlacements', 'adSlots', 'playerAds', 'entries'], (r) => {
     if (!blocking()) return;
 
+    countAds((Array.isArray(r.adPlacements) ? r.adPlacements.length : 0) + (Array.isArray(r.adSlots) ? r.adSlots.length : 0)
+        + (r.playerAds ? 1 : 0));
+
     if (r.adPlacements) r.adPlacements = [];
     if (r.playerAds) r.playerAds = false;
     if (r.adSlots) r.adSlots = [];
 
     if (!Array.isArray(r) && r?.entries) {
+        const before = r.entries.length;
         r.entries = r.entries.filter((entry) => !entry?.command?.reelWatchEndpoint?.adClientParams?.isAd);
+        countAds(before - r.entries.length);
     }
 });
 
@@ -51,15 +59,22 @@ const scrubAdverts = (node, depth) => {
 
 onResponse('advert sweep', ['contents', 'continuationContents', 'onResponseReceivedCommands',
     'onResponseReceivedActions'], (r) => {
-    if (blocking()) scrubAdverts(r, 0);
+    if (blocking()) countAds(scrubAdverts(r, 0));
 });
 
-keepShelf('advert sections', [SHELF, PIVOT], (shelf) => !shelf.adSlotRenderer || !blocking());
+keepShelf('advert sections', [SHELF, PIVOT], (shelf) => {
+    const keep = !shelf.adSlotRenderer || !blocking();
+    if (!keep) countAds(1);
+    return keep;
+});
 
-export { scrubAdverts };
+export { scrubAdverts, adSummary, flushAdStats };
 
-keepTile('advert slots', [SHELF, PIVOT, TILES, GRID],
-    (item) => !item.adSlotRenderer || !blocking());
+keepTile('advert slots', [SHELF, PIVOT, TILES, GRID], (item) => {
+    const keep = !item.adSlotRenderer || !blocking();
+    if (!keep) countAds(1);
+    return keep;
+});
 
 // Claiming no-ad playback suppresses adverts upstream, before any response exists.
 onRequest('playback context', ['playbackContext'], (value) => {
@@ -67,6 +82,8 @@ onRequest('playback context', ['playbackContext'], (value) => {
 
     const context = value.playbackContext && value.playbackContext.contentPlaybackContext;
     if (!context || context.isInlinePlaybackNoAd) return value;
+
+    countRequest();
 
     return Object.assign({}, value, {
         playbackContext: Object.assign({}, value.playbackContext, {

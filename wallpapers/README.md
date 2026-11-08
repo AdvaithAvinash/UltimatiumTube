@@ -10,3 +10,9 @@ without any other change.
 
 To offer another picture, add the file here and list it in `WALLPAPER_FILES` in `mods/theme/index.js`,
 then run `npm run package` and `npm run package:android`.
+
+The other pictures (`electric-blue.jpg`, `cyberpunk-city.jpg`, `cyber-purple.jpg`, `space-nebula.jpg`,
+`aurora-mountains.jpg`, `amoled-arc.jpg`, `liquid-waves.jpg`, `holographic-glass.jpg`,
+`inferno-flames.jpg`, `rainy-window.jpg`) were drawn for this project by a program (noise, gradients and
+shapes, no outside images), at 1920 x 1080, so they carry no one else's licence. They are listed by
+collection in `WALLPAPER_COLLECTIONS` in `mods/theme/index.js`.

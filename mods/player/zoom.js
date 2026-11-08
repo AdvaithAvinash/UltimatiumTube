@@ -1,4 +1,4 @@
-import { warn, buttonItem, configChangeEmitter, configRead, configWrite, every, onKey, overlayPanelItemListRenderer, showModal, showToast, stop, whenVideo } from '../../framework/index.js';
+import { warn, buttonItem, configChangeEmitter, configRead, configWrite, every, overlayPanelItemListRenderer, showModal, showToast, stop, whenVideo } from '../../framework/index.js';
 
 // Video fit: a video whose shape differs from the screen's is shown with bars around it. Zoom to
 // fill crops the edges so the picture covers the screen; Stretch fills it without cropping.
@@ -11,8 +11,6 @@ import { warn, buttonItem, configChangeEmitter, configRead, configWrite, every, 
 //
 // Every video element in the page is fitted, not only the first: the TV page can hold more than one
 // (a preview beside the one playing), and the first is not always the one on the screen.
-
-const ZOOM_KEY = 405; // Yellow on the remote
 
 // Zoom to fill works from the video's own shape. Many uploads are 16:9 with the black bars inside
 // the picture (a film, a 4:3 clip); to the player those are already the screen's shape, so the fixed
@@ -204,10 +202,6 @@ const start = () => {
         if (fitOf(configRead) !== 'original') every(WATCH, 500, upkeep);
     });
 
-    onKey('video fit', [ZOOM_KEY], (event) => {
-        if (event.type === 'keydown') cycle();
-        return true;
-    });
 };
 
 export { adopt, apply, applyAll, scaleFor, transformFor, cycle, openFitOptions, setFit, fitOf, FITS, start };

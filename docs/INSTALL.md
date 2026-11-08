@@ -4,8 +4,8 @@ Three files, one for each kind of TV:
 
 | File | For |
 | --- | --- |
-| `UltimatiumTubetizen5.5.wgt` | Samsung TVs on Tizen 5.5 or newer (2020 and later) |
-| `UltimatiumTubetizen5.0.wgt` | Samsung TVs on Tizen 5.0 (2019) |
+| `UltimatiumTubetizen5.5.wgt` | Samsung TVs on Tizen 5.5 and newer (2020 and later) |
+| `UltimatiumTubetizen5.0.wgt` | Samsung TVs on Tizen 5.0 and older (2019 and earlier) |
 | `UltimatiumTube.apk` | Android TV, Google TV, Fire TV, an Android phone or tablet |
 
 Settings > General > About This TV shows the TV's software version. The Tizen version is not named

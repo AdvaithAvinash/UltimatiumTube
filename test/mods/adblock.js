@@ -9,7 +9,7 @@ global.fetch = () => new Promise(() => { });
 
 const { configRead, configWrite } = await import('../../framework/runtime/config.js');
 const { interceptJson } = await import('../../framework/registries/json.js');
-await import('../../mods/adblock/index.js');
+const { flushAdStats, adSummary } = await import('../../mods/adblock/index.js');
 
 interceptJson();
 
@@ -102,6 +102,18 @@ check('a very deep response is not walked past a limit', () => {
         const deep = Array.from({ length: 40 }).reduce((inner) => ({ inner }), { rows: [ad()] });
         assert.doesNotThrow(() => through({ contents: deep }));
     });
+});
+
+check('removed adverts and ad-free playback requests are counted for the statistics', () => {
+    flushAdStats();
+    const before = configRead('adsBlockedCount') || 0;
+    const requests = configRead('adRequestsBlocked') || 0;
+    JSON.parse(JSON.stringify({ adPlacements: [{}, {}, {}], playerAds: [{}], adSlots: [{}] }));
+    JSON.stringify({ playbackContext: { contentPlaybackContext: {} } });
+    flushAdStats();
+    assert.strictEqual(configRead('adsBlockedCount') - before, 5);
+    assert.strictEqual(configRead('adRequestsBlocked') - requests, 1);
+    assert.ok(/adverts removed/.test(adSummary()));
 });
 
 const failed = results.filter((ok) => !ok).length;

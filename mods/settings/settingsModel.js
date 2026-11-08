@@ -2,7 +2,10 @@ import { VERSION, COMMIT, configDefaults, configRead } from '../../framework/ind
 import { SPEEDS } from '../scroller/index.js';
 import { phoneAddress } from '../phone/index.js';
 import { savedTimeSummary } from '../sponsorblock/index.js';
-import { ACCENTS, BACKGROUNDS, FONTS, WALLPAPERS } from '../theme/index.js';
+import { adSummary } from '../adblock/index.js';
+import { ACTION_NAMES } from '../remoteKeys/index.js';
+import { bookmarks } from '../bookmarks/index.js';
+import { ACCENTS, BACKGROUNDS, FONTS, WALLPAPERS, WALLPAPER_COLLECTIONS } from '../theme/index.js';
 
 const ART = 'https://www.gstatic.com/ytlr/img/';
 
@@ -119,6 +122,19 @@ const countOfSpeeds = () => {
   const count = Object.keys(configRead('channelSpeeds') || {}).length;
   return count ? `${count} channel${count === 1 ? '' : 's'}` : 'None';
 };
+
+const countOfQualities = () => {
+  const count = Object.keys(configRead('channelQualities') || {}).length;
+  return count ? `${count} channel${count === 1 ? '' : 's'}` : 'None';
+};
+
+const REMOTE_ACTIONS = Object.keys(ACTION_NAMES).map((id) => ({ label: ACTION_NAMES[id], value: id }));
+
+const remoteChoices = () => [['Red', 'keyRed'], ['Green', 'keyGreen'], ['Yellow', 'keyYellow'], ['Blue', 'keyBlue']]
+  .reduce((/** @type {any[]} */ all, pair) => all.concat([
+    Choice(pair[1], `${pair[0]} button`, `What a press of ${pair[0]} does. Some actions only work while a video plays`, CONTROLS, REMOTE_ACTIONS, pair[0]),
+    Choice(`${pair[1]}Hold`, `${pair[0]} button, held`, `What holding ${pair[0]} for a moment does`, CONTROLS, REMOTE_ACTIONS, `${pair[0]} held`)
+  ]), /** @type {any[]} */ ([]));
 
 const DURATIONS = [0, 1, 2, 3, 5, 10]
   .map((seconds) => ({ label: seconds ? `${seconds} s` : 'Off', value: seconds }));
@@ -351,10 +367,27 @@ const GROUPS = [
       Switch('rememberPlaybackSpeed', 'Remember playback speed',
         'The speed you chose carries into the next video, which YouTube otherwise starts '
         + 'at normal', SKIPPING),
+      Switch('enableSmartResume', 'Smart resume',
+        'A video starts where you stopped it last time (videos over two minutes)', SKIPPING),
+      Panel('channelQualities', 'Quality for each channel',
+        'Set from the Blue button held while a video plays (or the button you chose for it); wins over Preferred quality',
+        SCREEN, countOfQualities, [{ label: 'Forget them all', writes: [{ key: 'channelQualities', value: {} }] }]),
       Choice('speedSettingsIncrement', 'Speed steps',
         'How far one press moves playback speed in the speed control',
         SKIPPING, INCREMENTS, 'Step')
     ]
+  },
+  {
+    id: 'tube_remote',
+    title: 'Remote buttons and bookmarks',
+    get items() {
+      return [
+        Action('openBookmarks', 'Bookmarks', 'Moments of videos you kept; open one to go straight back to it',
+          SKIPPING, 'OPEN_BOOKMARKS'),
+        Panel('videoBookmarks', 'Clear bookmarks', 'Removes every kept moment', SKIPPING,
+          () => `${bookmarks().length} kept`, [{ label: 'Remove them all', writes: [{ key: 'videoBookmarks', value: [] }] }])
+      ].concat(remoteChoices());
+    }
   },
   {
     id: 'tube_subtitles',
@@ -404,8 +437,10 @@ const GROUPS = [
 
 
 const WALLPAPER_NAMES = {
-  flames: 'Blue flames', ultimatium: 'Ultimatium blue', aurora: 'Aurora', sunset: 'Sunset', ocean: 'Ocean', forest: 'Forest',
-  ember: 'Ember', violet: 'Violet', steel: 'Steel', midnight: 'Midnight'
+  flames: 'Blue flames', ultimatium: 'Ultimatium blue', aurora: 'Aurora glow', sunset: 'Sunset', ocean: 'Ocean', forest: 'Forest',
+  ember: 'Ember', violet: 'Violet', steel: 'Steel', midnight: 'Midnight', electric: 'Electric energy',
+  cyberpunk: 'Neon city', cyberpurple: 'Purple horizon', nebula: 'Nebula', auroraPeaks: 'Aurora over mountains',
+  amoled: 'AMOLED arc', liquid: 'Liquid waves', holo: 'Holographic glass', inferno: 'Inferno', rain: 'Rainy window'
 };
 
 const capital = (word) => word.charAt(0).toUpperCase() + word.slice(1);
@@ -413,15 +448,43 @@ const capital = (word) => word.charAt(0).toUpperCase() + word.slice(1);
 const named = (table) => Object.keys(table).map((id) => ({ label: capital(id), value: id }));
 
 // Whether there is a wallpaper at all is its own switch, so it can always be turned off.
+// Listed by collection ("Cyberpunk: Neon city"), then anything not in a collection.
+const inCollection = WALLPAPER_COLLECTIONS.reduce((all, entry) => all.concat(entry[1]), []);
 const WALLPAPER_OPTIONS = []
-  .concat(Object.keys(WALLPAPERS).map((id) => ({ label: WALLPAPER_NAMES[id] || capital(id), value: id })))
+  .concat(WALLPAPER_COLLECTIONS.reduce((all, entry) => all.concat(entry[1]
+    .filter((id) => WALLPAPERS[id])
+    .map((id) => ({ label: `${entry[0]}: ${WALLPAPER_NAMES[id] || capital(id)}`, value: id }))), []))
+  .concat(Object.keys(WALLPAPERS).filter((id) => inCollection.indexOf(id) === -1)
+    .map((id) => ({ label: WALLPAPER_NAMES[id] || capital(id), value: id })))
   .concat([{ label: 'Your own picture (address set on the phone)', value: 'custom' }]);
 
 const DIMS = [0, 20, 40, 60, 80].map((percent) => ({ label: percent ? `${percent}%` : 'None', value: percent }));
 
 const SYNC_SECONDS = [2, 4, 10, 30].map((seconds) => ({ label: `${seconds} s`, value: seconds }));
 
-const THEME_KEYS = ['themeWallpaperOn', 'themeWallpaper', 'themeWallpaperUrl', 'themeDim', 'themeBackground', 'themeAccent', 'themeFont'];
+const THEME_KEYS = ['themeWallpaperOn', 'themeWallpaper', 'themeWallpaperUrl', 'themeDim', 'themeBackground', 'themeAccent', 'themeFont', 'themeShuffle'];
+
+const SHUFFLES = [
+  { label: 'Off', value: 'off' }, { label: 'Each time the app opens', value: 'open' },
+  { label: 'Every 15 minutes', value: '15' }, { label: 'Every hour', value: '60' }
+];
+
+// A theme sets the wallpaper and the look of UltimatiumTube together.
+const THEMES = [
+  ['Ultimatium Blue Flame', { themeWallpaper: 'flames', themeAccent: 'blue', themeBackground: 'black', themeDim: 40 }],
+  ['Cyber Purple', { themeWallpaper: 'cyberpurple', themeAccent: 'purple', themeBackground: 'plum', themeDim: 40 }],
+  ['AMOLED Black', { themeWallpaper: 'amoled', themeAccent: 'white', themeBackground: 'black', themeDim: 0 }],
+  ['Inferno', { themeWallpaper: 'inferno', themeAccent: 'red', themeBackground: 'wine', themeDim: 40 }],
+  ['Holographic', { themeWallpaper: 'holo', themeAccent: 'cyan', themeBackground: 'navy', themeDim: 40 }],
+  ['Neon City', { themeWallpaper: 'cyberpunk', themeAccent: 'pink', themeBackground: 'plum', themeDim: 40 }],
+  ['Deep Space', { themeWallpaper: 'nebula', themeAccent: 'purple', themeBackground: 'navy', themeDim: 20 }]
+];
+
+const themeChoices = () => THEMES.map((theme) => ({
+  label: theme[0],
+  writes: [{ key: 'themeWallpaperOn', value: true }, { key: 'themeShuffle', value: 'off' }]
+    .concat(Object.keys(theme[1]).map((key) => ({ key, value: theme[1][key] })))
+}));
 
 // Everything back to how it ships, at the moment the list is opened, so a setting added later is included.
 const resetEverything = () => {
@@ -476,10 +539,13 @@ const ULTIMATE = [
     items: [
       Switch('themeWallpaperOn', 'Wallpaper',
         'A picture behind YouTube\u2019s home screens. Off puts YouTube\u2019s own background back', SCREEN),
+      Panel('themePreset', 'Themes', 'A wallpaper and the colours of UltimatiumTube together', SCREEN,
+        () => 'Pick one', themeChoices),
       Action('wallpaperOffNow', 'Turn the wallpaper off now',
         'Switches it off and loads the page again, so it is certain. Use this if it will not go', SCREEN, 'WALLPAPER_OFF'),
       Choice('themeWallpaper', 'Wallpaper picture', 'Which picture, when Wallpaper is on', SCREEN, WALLPAPER_OPTIONS, 'Picture'),
       Text('themeWallpaperUrl', 'Your own wallpaper', 'The web address of a picture, used when the picture is "Your own picture". Typed on the phone', SCREEN),
+      Choice('themeShuffle', 'Shuffle wallpapers', 'A different built-in picture now and then; your choice above stays', SCREEN, SHUFFLES, 'Shuffle'),
       Choice('themeDim', 'Wallpaper dimming', 'Darkens the wallpaper so text stays readable', SCREEN, DIMS, 'Dimming'),
       Choice('themeBackground', 'Background colour', 'Behind everything when there is no wallpaper', SCREEN,
         [{ label: 'YouTube\u2019s own', value: 'default' }].concat(named(BACKGROUNDS)), 'Background'),
@@ -495,6 +561,10 @@ const ULTIMATE = [
     title: 'Ultimate Dev Options',
     summary: 'Advanced settings',
     items: [
+      Panel('tubeStatistics', 'Ultimate statistics', 'Adverts removed, SponsorBlock segments skipped and the time saved', MONEY,
+        () => `${adSummary()}; SponsorBlock: ${savedTimeSummary()}`,
+        [{ label: 'Start counting again', writes: [{ key: 'adsBlockedCount', value: 0 }, { key: 'adRequestsBlocked', value: 0 },
+          { key: 'sponsorBlockSavedSeconds', value: 0 }, { key: 'sponsorBlockSkipCount', value: 0 }] }]),
       Switch('enablePhoneSync', 'Phone settings page',
         'Lets the page on your phone read and change these settings. Off also stops the page working', CONTROLS),
       Choice('phoneSyncSeconds', 'Phone page refresh', 'How often the TV asks whether the phone changed something',

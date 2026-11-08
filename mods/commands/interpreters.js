@@ -2,10 +2,12 @@
 import { PASS, buttonItem, configRead, configWrite, onCommand, resolve, showToast } from '../../framework/index.js';
 import { openOptions, OPTIONS_ACTION } from '../settings/settingsOptions.js';
 import { openSpeedOptions } from '../player/speed.js';
-import { openFitOptions, setFit } from '../player/zoom.js';
+import { openFitOptions, setFit, cycle as cycleFit } from '../player/zoom.js';
 import { enterMiniPlayer } from '../player/pictureInPicture.js';
 import { recordSkip } from '../sponsorblock/index.js';
 import { openStremio } from '../stremio/index.js';
+import { addBookmark, openBookmarks, openBookmark, removeBookmark, clearBookmarks } from '../bookmarks/index.js';
+import { openChannelQuality, setChannelQuality } from '../quality/index.js';
 import { EXIT_CONFIRMED, interpretExit, leaveConfirmed, leaveOrAsk } from '../exitConfirm/index.js';
 import { wallpaperOffNow } from '../theme/index.js';
 import { rememberSpeedForChannel } from '../player/speed.js';
@@ -34,6 +36,8 @@ const ACTIONS = {
 
     OPEN_VIDEO_FIT: () => openFitOptions(),
 
+    CYCLE_VIDEO_FIT: () => cycleFit(),
+
     SET_VIDEO_FIT: (parameters) => setFit(parameters),
 
     SET_PLAYER_SPEED: (parameters) => {
@@ -47,6 +51,15 @@ const ACTIONS = {
     ENTER_MP: () => enterMiniPlayer(),
 
     OPEN_STREMIO: () => openStremio(),
+
+    ADD_BOOKMARK: () => addBookmark(),
+    OPEN_BOOKMARKS: () => openBookmarks(),
+    OPEN_BOOKMARK: (parameters) => openBookmark(parameters),
+    REMOVE_BOOKMARK: (parameters) => removeBookmark(parameters),
+    CLEAR_BOOKMARKS: () => clearBookmarks(),
+
+    OPEN_CHANNEL_QUALITY: () => openChannelQuality(),
+    SET_CHANNEL_QUALITY: (parameters) => setChannelQuality(parameters),
 
     [EXIT_CONFIRMED]: () => leaveConfirmed(),
 

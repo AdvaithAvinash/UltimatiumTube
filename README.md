@@ -27,7 +27,7 @@ with YouTube's own TV interface left as it is.
   **AniUltimatium**.
 - **Back asks before leaving.** Back at the start of the app asks "Exit UltimatiumTube?" with Stay and
   Exit. It can be turned off under Startup.
-- **Zoom to fill.** Videos that are not the screen's shape no longer keep bars: pick Zoom to fill (or Stretch) under Playback > Video fit, or press Yellow while a video plays. A **Video fit** button is also in the player's own button row.
+- **Zoom to fill.** Videos that are not the screen's shape no longer keep bars: pick a fit under Playback > Video fit: Zoom to fill for a video of another shape, Zoom 1.33x when the black bars are part of the video itself (most films and old clips uploaded as 16:9), or Stretch, or press Yellow while a video plays. A **Video fit** button is also in the player's own button row.
 - **Stremio addons and Grayjay plugins.** A movie, series and video screen built for the TV: a hero
   banner, rows of posters, search, a library, continue watching and a player, fed by any
   [Stremio](https://www.stremio.com) addon and any [Grayjay](https://grayjay.app) plugin.
@@ -84,7 +84,7 @@ phone page.
 | Startup | The page to open, who's-watching prompts |
 | Channels and words | Hidden channels, hidden words, a speed for each channel, the phone page |
 | Feed, Sidebar, Navigation | Shorts, hide watched videos, thumbnails, sidebar sections, scroll speed |
-| Playback, Subtitles, Player controls | Quality, codec, video fit (original, zoom to fill, stretch), default speed (up to 15x), remembered speed, subtitle tracks, extra player buttons |
+| Playback, Subtitles, Player controls | Quality, codec, video fit (original, zoom to fill, zoom 1.15x / 1.33x / 1.5x, stretch), default speed (up to 15x), remembered speed, subtitle tracks, extra player buttons |
 | Overlays and prompts | Shopping card, end screen cards, up next, "Are you still watching?", sign-in reminder |
 
 ### UltimatiumTube Ultimate Settings

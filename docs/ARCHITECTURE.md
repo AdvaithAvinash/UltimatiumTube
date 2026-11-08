@@ -265,7 +265,11 @@ Two build-time gates, one per side.
   `rasterizer/skia/render_tree_node_visitor.cc`) the video is a punch-through node: the picture's
   rectangle, after every transform, is handed to the platform player (`SbPlayerSetBounds`) unclipped.
   So Stretch hands it a rectangle on the screen, and Zoom one larger than the screen, which a TV's
-  player may or may not accept. What was asked and what the element became are written to
+  player may or may not accept. Zoom to fill works from the video's own shape, so it changes nothing for a 16:9 upload whose black bars
+  are inside the picture (the reported case: a film in a 16:9 frame); the fixed zooms (1.15x, 1.33x, 1.5x)
+  enlarge the picture as shown about the middle, and 1.33x fills a 2.39:1 film or a 4:3 clip in a 16:9
+  frame. A MutationObserver on the video's style puts the fit back as soon as the player writes its
+  own size. What was asked and what the element became are written to
   `/__tube/log` as `video fit` lines.
 - **Stremio page** (`stremio/`): `core.js` is the protocol (manifests, catalogs, meta, streams, built
   as the addon spec says; it is what `test/stremio-core.js` runs) and `ui.js` the screens, remote

@@ -26,6 +26,22 @@ check('a picture already the screen\'s shape is left the same size', () => {
     assert.deepStrictEqual([box.width, box.height, box.left, box.top], [1920, 1080, 0, 0]);
 });
 
+check('a fixed zoom enlarges the picture as shown about the middle: 1.33x of a 16:9 video', () => {
+    const box = boxFor('z133', 1280, 720, 1920, 1080);
+    assert.deepStrictEqual([box.width, box.height, box.left, box.top], [2554, 1436, -317, -178]);
+});
+
+check('a fixed zoom of a wide film starts from the film as shown, not from the screen', () => {
+    const box = boxFor('z115', 1920, 800, 1920, 1080);
+    assert.deepStrictEqual([box.width, box.height], [2208, 920]);
+    assert.strictEqual(box.left, -144);
+});
+
+check('Zoom to fill leaves a 16:9 video with bars inside it as it is, which is what the fixed zooms are for', () => {
+    const box = boxFor('fill', 1280, 720, 1920, 1080);
+    assert.deepStrictEqual([box.width, box.height], [1920, 1080]);
+});
+
 check('Stretch makes the box the screen and scales the picture in it up to the screen', () => {
     const box = boxFor('stretch', 1920, 800, 1920, 1080);
     assert.deepStrictEqual([box.width, box.height, box.left, box.top], [1920, 1080, 0, 0]);

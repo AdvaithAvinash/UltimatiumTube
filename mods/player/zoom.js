@@ -5,8 +5,15 @@ import { warn, buttonItem, configChangeEmitter, configRead, configWrite, every, 
 
 const ZOOM_KEY = 405; // Yellow on the remote
 
-const FITS = ['original', 'fill', 'stretch'];
-const NAMES = { original: 'Original', fill: 'Zoom to fill', stretch: 'Stretch' };
+// Zoom to fill works from the video's own shape. Many uploads are 16:9 with the black bars inside
+// the picture (a film, a 4:3 clip), and to the player those are already the screen's shape, so the
+// fixed zooms are for them: 1.33x fills a 2.39:1 film or a 4:3 clip that was put in a 16:9 frame.
+const FITS = ['original', 'fill', 'z115', 'z133', 'z150', 'stretch'];
+const NAMES = {
+    original: 'Original', fill: 'Zoom to fill', z115: 'Zoom 1.15x', z133: 'Zoom 1.33x (black bars inside the video)',
+    z150: 'Zoom 1.5x', stretch: 'Stretch'
+};
+const ZOOMS = { z115: 1.15, z133: 1.33, z150: 1.5 };
 
 const fitOf = (read) => (FITS.indexOf(read('videoFit')) === -1 ? 'original' : read('videoFit'));
 
@@ -19,6 +26,15 @@ const kept = { video: null };
 // makes the box the screen and scales it, by a different amount across and down, until the picture
 // in it fills the screen.
 const boxFor = (mode, vw, vh, sw, sh) => {
+    if (ZOOMS[mode]) {
+        // The picture as the player shows it (whole, in its shape), made bigger about the middle.
+        const fitted = Math.min(sw / vw, sh / vh) * ZOOMS[mode];
+        const width = Math.round(vw * fitted);
+        const height = Math.round(vh * fitted);
+
+        return { left: Math.round((sw - width) / 2), top: Math.round((sh - height) / 2), width, height, scaleX: 1, scaleY: 1 };
+    }
+
     if (mode === 'fill') {
         const scale = Math.max(sw / vw, sh / vh);
         const width = Math.round(vw * scale);
@@ -148,6 +164,19 @@ const adopt = (video) => {
     ['loadedmetadata', 'loadeddata', 'playing', 'resize', 'seeked'].forEach((name) => video.addEventListener(name, () => apply(video)));
     window.addEventListener('resize', () => apply(video));
     if (fitOf(configRead) !== 'original') every(WATCH, 500, upkeep);
+
+    // The player writes the video's size into its style when it lays the player out; the fit is put
+    // back at once, not at the next look. Writing the same values again changes nothing, so this
+    // does not feed itself.
+    if (typeof MutationObserver === 'function') {
+        try {
+            new MutationObserver(() => {
+                if (fitOf(configRead) !== 'original') apply(video);
+            }).observe(video, { attributes: true, attributeFilter: ['style'] });
+        } catch (error) {
+            // The half-second look still does it.
+        }
+    }
 };
 
 const openFitOptions = () => {
@@ -188,4 +217,4 @@ const start = () => {
     });
 };
 
-export { apply, boxFor, cycle, openFitOptions, setFit, fitOf, FITS, start };
+export { adopt, apply, boxFor, cycle, openFitOptions, setFit, fitOf, FITS, start };

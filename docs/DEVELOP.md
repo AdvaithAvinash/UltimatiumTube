@@ -51,3 +51,16 @@ curl -X POST http://<tv-ip>:8187/eval -H "x-tube-token: $TUBE_DEV_TOKEN" \
 
 Then open <http://localhost:8711> and pick the target. If `/__tube/chii/target.js` on the set
 answers 502, nothing is listening here — `npm run chii` is not running.
+
+## The TV simulation (before every release)
+
+`npm run test:tv` (after `npm run package`) runs each widget as a television would, as far as its
+service can tell: unpacked, its service started from it with the platform's application API stood in
+(processes are contexts, a kill ends one, an ended one is started again as `auto-restart` does), two
+copies of the service at once as some TVs run, the boot screen opened in Chromium with Cobalt's user
+agent, and a stand-in for www.youtube.com on port 443. It checks the container ends up on YouTube
+through the service with the userscript in the page while copies end and start, and that nothing
+churns when left alone. 1.8.2's failure (copies ending each other; a network error on opening) fails
+it. Pass a Node binary as the second argument to run the service on the TV's Node (4.4 for 5.0, 16 for
+newer sets). It needs Playwright with Chromium, openssl and port 443 (root). It cannot show what the
+TV's own video player does, so Video fit is not covered by it.

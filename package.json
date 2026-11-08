@@ -35,6 +35,7 @@
     "probe:cobalt": "node tools/probe-cobalt.js",
     "doctor:tv": "node tools/doctor-tv.js",
     "test:cobalt": "node test/cobalt/run.js",
+    "test:tv": "node test/tv/sim.cjs release/UltimatiumTubetizen5.5.wgt && node test/tv/sim.cjs release/UltimatiumTubetizen5.0.wgt",
     "package:android": "node tools/build-apk.js"
   },
   "devDependencies": {

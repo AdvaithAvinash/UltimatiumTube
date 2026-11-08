@@ -141,6 +141,9 @@ const SPEED_CHOICES = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4, 5, 6, 
 const VIDEO_FITS = [
   { label: 'Original', value: 'original' },
   { label: 'Zoom to fill', value: 'fill' },
+  { label: 'Zoom 1.15x', value: 'z115' },
+  { label: 'Zoom 1.33x (black bars inside the video)', value: 'z133' },
+  { label: 'Zoom 1.5x', value: 'z150' },
   { label: 'Stretch', value: 'stretch' }
 ];
 
@@ -338,9 +341,9 @@ const GROUPS = [
         'Some sets decode one codec in hardware and the rest in software',
         SCREEN, CODECS, 'Codec'),
       Choice('videoFit', 'Video fit',
-        'Original leaves bars around a video that is not the screen\'s shape; Stretch fills the screen '
-        + 'without cropping; Zoom to fill crops the edges to cover it, which needs the TV\'s player to '
-        + 'accept a picture larger than the screen. The Yellow button changes it while a video plays',
+        'Zoom to fill crops a video of another shape to cover the screen. When the bars are part of the '
+        + 'video itself (most films and old clips uploaded as 16:9), use Zoom 1.33x. Stretch fills the '
+        + 'screen without cropping. The Yellow button changes it while a video plays',
         SCREEN, VIDEO_FITS, 'Fit'),
       Choice('defaultPlaybackSpeed', 'Speed',
         'The speed every video starts at, up to 15x. Pick another while one plays, from the speed button',

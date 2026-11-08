@@ -1,7 +1,54 @@
-import { PLAYER, configChangeEmitter, configRead, every, onResponse, until, waitFor, whenPlayer } from '../../framework/index.js';
+import {
+    PLAYER, buttonItem, configChangeEmitter, configRead, configWrite, every, onResponse, overlayPanelItemListRenderer,
+    showModal, showToast, until, waitFor, whenPlayer
+} from '../../framework/index.js';
+import { currentChannel, normal } from '../channels/index.js';
 import { NAMED, chooseQuality } from './ladder.js';
 import { rungToAsk } from './ask.js';
 import { QUALITY, liftCeiling, seedPreferredQuality } from './seed.js';
+
+// Quality lock for each channel: a channel can have its own preferred quality, which wins over the
+// one set for every video.
+const CHANNEL_QUALITIES = 'channelQualities';
+
+const channelQuality = () => {
+    const channel = currentChannel();
+    const kept = configRead(CHANNEL_QUALITIES) || {};
+    return channel ? kept[normal(channel)] : undefined;
+};
+
+const preferredNow = () => channelQuality() || configRead(QUALITY);
+
+const LOCKABLE = ['highest', '2160', '1440', '1080', '720', '480', '360'];
+const LABEL = (q) => (q === 'highest' ? 'Highest available' : `${q}p`);
+
+const openChannelQuality = () => {
+    const channel = currentChannel();
+    if (!channel) {
+        showToast('Quality lock', 'Start a video of the channel first');
+        return;
+    }
+
+    const BACK = { signalAction: { signal: 'POPUP_BACK' } };
+    const current = channelQuality();
+    const items = LOCKABLE.map((q) => buttonItem({ title: LABEL(q) + (q === current ? '  (now)' : '') }, null,
+        [BACK, { customAction: { action: 'SET_CHANNEL_QUALITY', parameters: q } }]))
+        .concat([buttonItem({ title: 'Use the quality set for every video' }, null,
+            [BACK, { customAction: { action: 'SET_CHANNEL_QUALITY', parameters: '' } }])]);
+
+    showModal(`Quality for ${channel}`, overlayPanelItemListRenderer(items, Math.max(0, LOCKABLE.indexOf(current))), 'tube-channel-quality');
+};
+
+const setChannelQuality = (quality) => {
+    const channel = currentChannel();
+    if (!channel) return;
+
+    const kept = Object.assign({}, configRead(CHANNEL_QUALITIES) || {});
+    if (quality && LOCKABLE.indexOf(String(quality)) !== -1) kept[normal(channel)] = String(quality);
+    else delete kept[normal(channel)];
+    configWrite(CHANNEL_QUALITIES, kept);
+    showToast('Quality lock', quality ? `${channel}: ${LABEL(String(quality))}` : `${channel}: the quality for every video`);
+};
 
 // Every playback starts on Auto and must be told its ceiling.
 
@@ -35,7 +82,7 @@ function watchPreferredQuality() {
             held.asked = null;
         }
 
-        const preference = configRead(QUALITY);
+        const preference = preferredNow();
         if (!preference || preference === 'auto') return;
         if (!onWatchPage() || isShorts(player)) return;
 
@@ -54,7 +101,7 @@ function watchPreferredQuality() {
     // Early enough that the first segment fetched is under the right ceiling, and a rung the video
     // does not offer is corrected down once the ladder arrives.
     const capNamed = (player) => {
-        const named = NAMED[parseInt(configRead(QUALITY), 10)];
+        const named = NAMED[parseInt(preferredNow(), 10)];
         if (!named) return;
 
         try {
@@ -91,7 +138,7 @@ function watchPreferredQuality() {
     }
 
     configChangeEmitter.addEventListener('configChange', (event) => {
-        if (event.detail?.key !== QUALITY) return;
+        if (event.detail?.key !== QUALITY && event.detail?.key !== CHANNEL_QUALITIES) return;
 
         // So the next video opens on the new setting rather than being corrected into it.
         seedPreferredQuality();
@@ -115,3 +162,5 @@ if (typeof window !== 'undefined') {
 
     watchPreferredQuality();
 }
+
+export { openChannelQuality, setChannelQuality, channelQuality };

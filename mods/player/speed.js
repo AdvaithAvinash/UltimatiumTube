@@ -1,7 +1,8 @@
 import { buttonItem, configRead, configWrite, onKey, overlayPanelItemListRenderer, showModal, whenVideo } from '../../framework/index.js';
 import { currentChannel, normal } from '../channels/index.js';
 
-const SPEED_KEYS = [406, 191];
+// Blue is one of the remote buttons now (mods/remoteKeys), set to the speed menu unless changed.
+const SPEED_KEYS = [191];
 
 const MAX_SPEED = 15;
 // The step setting decides the rungs up to here; beyond it each whole speed is one rung, so the

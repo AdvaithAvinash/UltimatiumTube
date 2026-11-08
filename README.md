@@ -35,6 +35,27 @@ with YouTube's own TV interface left as it is.
   plugins on the phone page (Ultimate Settings > Stremio and Grayjay) or in the page itself. Cinemeta, which gives the
   catalogs, is added for you. Streams come from addons that give direct links (for example one set
   up with a debrid service); a TV cannot play torrents. [More below.](#stremio-addons)
+- **4K.** Preferred quality starts on *Highest available*, so a 4K (2160p) video plays in 4K on a TV
+  that can show it, at 60fps where the video has it. Pick 2160p under Playback to aim for it exactly,
+  and leave Preferred codec on *Any*: 4K comes as VP9 or AV1, not H.264. The quality lock for each
+  channel (below) can keep one channel at 4K and another lower.
+- **Ultimate statistics.** Adverts removed, videos asked for without adverts, SponsorBlock segments
+  skipped and the time saved, under Ultimate Dev Options.
+- **Remote buttons.** Red, Green, Yellow and Blue each do what you choose, with a second action when
+  held: next video fit, the fit menu, the speed menu, bookmark this moment, open bookmarks, quality for
+  this channel, back 10 s, forward 30 s, start again, or open Stremio and Grayjay. As they come: Green
+  bookmarks (held: the list), Yellow changes the fit (held: the menu), Blue opens speed (held: quality for
+  this channel), Red is left to YouTube.
+- **Video bookmarks.** Keep a moment of a video and open it later from the list, straight at that time.
+- **Smart resume.** A video over two minutes starts where you stopped it last time.
+- **Quality lock for each channel.** A preferred quality for one channel, over the one for every video.
+- **Wallpaper Studio.** Eleven pictures drawn for UltimatiumTube (electric blue, neon city, purple
+  horizon, nebula, aurora over mountains, AMOLED arc, liquid waves, holographic glass, inferno, rainy
+  window and the blue flames) and nine gradients, listed by collection (Ultimatium Originals,
+  Cyberpunk, Space & Galaxy, Nature & Landscapes, AMOLED, Abstract & Fluid, Fire, Ambient Worlds); your
+  own picture by address; dimming; shuffle (each time the app opens, every 15 minutes or every hour);
+  and **Themes** that set the wallpaper and the colours together: Ultimatium Blue Flame, Cyber Purple,
+  AMOLED Black, Inferno, Holographic, Neon City and Deep Space.
 - **Speed up to 15x**, from the speed button in the player and as a default speed in the settings.
 - **The mods ship inside the app.** Nothing is downloaded at launch, so there is no "failed to load
   script" network error.
@@ -46,8 +67,8 @@ Pick the file for your TV from the [releases](https://github.com/AdvaithAvinash/
 
 | File | For |
 | --- | --- |
-| `UltimatiumTubetizen5.5.wgt` | Samsung TVs on Tizen 5.5 or newer (2020 and later). Use this one if you are unsure. |
-| `UltimatiumTubetizen5.0.wgt` | Samsung TVs on Tizen 5.0 (2019) |
+| `UltimatiumTubetizen5.5.wgt` | Samsung TVs on **Tizen 5.5 and newer** (2020 and later, including Tizen 6, 7, 8 and 9). Use this one if you are unsure. |
+| `UltimatiumTubetizen5.0.wgt` | Samsung TVs on **Tizen 5.0 and older** (2019 and earlier). It installs from Tizen 3.0 up; sets before 2019 have not been tried. |
 | `UltimatiumTube.apk` | Android TV, Google TV, Fire TV, or an Android phone or tablet |
 
 A Samsung TV installs only an app signed for that TV, so the `.wgt` files are unsigned and are signed
@@ -135,6 +156,19 @@ screen of the app on Android. Back returns to YouTube.
 - **Not there:** subtitles from plugins, and addon settings pages (an addon is added by its address,
   with its own configuration in it). It has not been run on a real TV; it was run in a browser with
   addons stood in for.
+
+### What was asked for and is not here
+
+- **Already there:** auto skip of intros, outros and the other SponsorBlock categories (SponsorBlock
+  settings), hiding Shorts and hiding channels and words (which also apply to Shorts), backup and
+  restore (the phone page), and a play queue (Add to queue on a video's menu).
+- **Not possible on the TV as it is:** *AI video search* and *smart recommendations* need an AI service
+  and an account or key to pay for it; YouTube's own search already takes whole sentences, and its
+  home screen already recommends from what you watch. *Watch together* and *backup sync between TVs*
+  need a server for TVs to meet on. A *plugin marketplace* and a *wallpaper and theme store* with
+  uploads and ratings need a hosted service too. *Video and animated wallpapers* would need a second
+  video playing behind YouTube, and the TV decodes one video at a time; blur needs a filter the TV's
+  engine does not have. *Channel collections* and filtering Shorts by length are not done yet.
 
 ### From your phone
 

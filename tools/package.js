@@ -14,10 +14,12 @@ const { PROXY, DEV } = require('../service/lib/ports.js');
 const APPS = [
     { label: 'UltimatiumTube 5.5+', output: paths.WGT, include: paths.WIDGET, requiredVersion: null, servedFrom: null, packageId: null },
     {
-        label: 'UltimatiumTube 5.0+',
+        // Tizen 5.0 and older: it installs from Tizen 3.0 (2017) up, and runs its service on the old
+        // Node those sets carry. Sets before 2019 are untested.
+        label: 'UltimatiumTube 5.0 and older',
         output: paths.WGT_LEGACY,
         include: paths.WIDGET_LEGACY,
-        requiredVersion: '5.0',
+        requiredVersion: '3.0',
         servedFrom: `http://127.0.0.2:${PROXY}/tv`,
         // The same package as the 5.5 widget: a TV runs one of the two, and a store that lists both
         // must see one app.

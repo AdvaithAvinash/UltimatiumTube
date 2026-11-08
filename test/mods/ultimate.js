@@ -149,11 +149,22 @@ check('the wallpaper picture list holds the built-in ones and "your own picture"
     const picture = GROUPS[index].items.findIndex((item) => item.key === 'themeWallpaper');
     const labels = itemsOf(open([index, picture])).map(titleOf);
 
-    assert.strictEqual(labels[0], 'Blue flames');
+    assert.strictEqual(labels[0], 'Ultimatium Originals: Blue flames');
     assert.ok(labels.indexOf('None') === -1, 'the list still has None: that is the switch now');
 
-    assert.ok(labels.indexOf('Aurora') !== -1);
+    assert.ok(labels.indexOf('Nature & Landscapes: Aurora glow') !== -1);
+    ['Cyberpunk: Neon city', 'Space & Galaxy: Nebula', 'AMOLED: AMOLED arc', 'Fire: Inferno', 'Ambient Worlds: Rainy window']
+        .forEach((name) => assert.ok(labels.indexOf(name) !== -1, name));
     assert.ok(labels.some((label) => label.indexOf('Your own picture') === 0));
+});
+
+check('a theme sets the wallpaper and the colours together', () => {
+    const index = indexOfGroup('tube_customization');
+    const item = GROUPS[index].items.find((one) => one.key === 'themePreset');
+    const labels = item.options.map((option) => option.label);
+    assert.deepStrictEqual(labels.slice(0, 5), ['Ultimatium Blue Flame', 'Cyber Purple', 'AMOLED Black', 'Inferno', 'Holographic']);
+    const inferno = item.options[3].writes.reduce((all, w) => Object.assign(all, { [w.key]: w.value }), {});
+    assert.deepStrictEqual([inferno.themeWallpaperOn, inferno.themeWallpaper, inferno.themeAccent, inferno.themeShuffle], [true, 'inferno', 'red', 'off']);
 });
 
 // --- the theme
@@ -597,7 +608,7 @@ check('a default speed can be set to 15x in the settings, and is a choice of the
 
 check('every setting these sections name is one the config knows', () => {
     const known = configDefaults();
-    const buttons = ['themeReset', 'tubeVersion', 'tubeReset', 'openStremio', 'wallpaperOffNow'];
+    const buttons = ['themeReset', 'themePreset', 'tubeStatistics', 'tubeVersion', 'tubeReset', 'openStremio', 'openBookmarks', 'wallpaperOffNow'];
 
     GROUPS.filter((group) => group.ultimate).forEach((group) => group.items.forEach((item) => {
         if (buttons.indexOf(item.key) === -1) assert.ok(item.key in known, `${item.key} is not in the config`);

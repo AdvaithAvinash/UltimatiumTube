@@ -28,6 +28,9 @@ const defaultConfig = {
   sponsorBlockExemptChannels: [],
   sponsorBlockSkipCount: 0,
   sponsorBlockSavedSeconds: 0,
+  // Ultimate statistics: adverts taken out, and videos asked for without adverts.
+  adsBlockedCount: 0,
+  adRequestsBlocked: 0,
 
   enableDeArrow: false,
   enableDeArrowThumbnails: false,
@@ -45,6 +48,17 @@ const defaultConfig = {
   // Channel name -> the speed it was last watched at.
   channelSpeeds: {},
   speedSettingsIncrement: 0.25,
+  // Quality lock for each channel: channel name (lower case) -> a quality like '1080' or 'highest'.
+  channelQualities: {},
+  // Smart resume: start a video where it was left (kept on the TV, not in these settings).
+  enableSmartResume: true,
+  // Moments of videos kept to go back to: {videoId, title, channel, t, at}.
+  videoBookmarks: [],
+  // The coloured remote buttons: an action for a press and for a long press (see mods/remoteKeys).
+  keyRed: 'none', keyRedHold: 'none',
+  keyGreen: 'bookmark', keyGreenHold: 'bookmarks',
+  keyYellow: 'fit', keyYellowHold: 'fitMenu',
+  keyBlue: 'speed', keyBlueHold: 'quality',
   // How a video is fitted to the screen: original, fill (zoom to fill) or stretch.
   videoFit: 'original',
 
@@ -68,6 +82,8 @@ const defaultConfig = {
   themeWallpaperUrl: '',
   // Percent. A picture behind white text needs some of this to stay readable.
   themeDim: 40,
+  // Off, 'open' (a new picture each time the app opens), or every '15' or '60' minutes.
+  themeShuffle: 'off',
   themeBackground: 'default',
   themeAccent: 'blue',
   themeFont: 'default',

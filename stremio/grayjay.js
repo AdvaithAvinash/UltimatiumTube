@@ -231,7 +231,7 @@
   // which stops a plugin reaching them by accident; it is not a sandbox, so only plugins that are
   // trusted should be added.
   var HIDDEN = ['window', 'document', 'localStorage', 'sessionStorage', 'XMLHttpRequest', 'fetch', 'location', 'top', 'parent',
-    'self', 'globalThis', 'indexedDB', 'AniNative', 'SX', 'SXUI', 'XDomainRequest', 'WebSocket', 'importScripts'];
+    'self', 'globalThis', 'indexedDB', 'StremioNative', 'SX', 'SXUI', 'XDomainRequest', 'WebSocket', 'importScripts'];
 
   GJ.load = function (configUrl) {
     return SX.json(configUrl, 15000).then(function (config) {

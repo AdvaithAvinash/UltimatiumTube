@@ -54,17 +54,13 @@ const defaultConfig = {
   // The last channels played, newest first, so the settings can offer them as a pick list.
   recentChannels: [],
 
-  // AniUltimatium, bundled in this app: the switch only decides whether it is offered.
-  enableAniUltimatium: false,
-  // The Stremio page: movies and series from Stremio addons. The addons are listed one to a line.
   // The version of the notice shown once at the start.
   noticeSeen: '',
+  // The Stremio page: movies and series from Stremio addons. The addons are listed one to a line.
   enableStremio: true,
   stremioAddons: '',
   // Grayjay plugins, by the address of their configuration, one to a line.
   grayjayPlugins: '',
-  // The id Aniultimatium's own Samsung app installs under; started first when it is there.
-  aniUltimatiumAppId: 'oXabc12345.EnglishAnime',
 
   // Customization: the look of YouTube's own screens. The defaults change nothing.
   themeWallpaperOn: false,

@@ -14,7 +14,7 @@ const SUITES = [
     'mods/voiceCapability.js',
     'mods/subtitles.js', 'mods/sponsorblock/index.js', 'mods/sponsorblock/autoSkip.js',
     'mods/quality.js', 'framework/wait-for.js', 'dom-shims.js', 'mods/network/originRewrite.js',
-    'mods/network/pageOrigin.js', 'framework/journal.js', 'mods/channels.js', 'mods/ultimate.js', 'mods/aniultimatium.js', 'mods/exit.js',
+    'mods/network/pageOrigin.js', 'framework/journal.js', 'mods/channels.js', 'mods/ultimate.js', 'mods/exit.js',
     'mods/zoom.js', 'mods/notice.js', 'mods/stremio.js', 'stremio-core.js', 'grayjay.js'
 ];
 

@@ -5,7 +5,6 @@ import { openSpeedOptions } from '../player/speed.js';
 import { openFitOptions, setFit } from '../player/zoom.js';
 import { enterMiniPlayer } from '../player/pictureInPicture.js';
 import { recordSkip } from '../sponsorblock/index.js';
-import { openAniUltimatium } from '../aniultimatium/index.js';
 import { openStremio } from '../stremio/index.js';
 import { EXIT_CONFIRMED, interpretExit, leaveConfirmed, leaveOrAsk } from '../exitConfirm/index.js';
 import { wallpaperOffNow } from '../theme/index.js';
@@ -46,8 +45,6 @@ const ACTIONS = {
     },
 
     ENTER_MP: () => enterMiniPlayer(),
-
-    OPEN_ANIULTIMATIUM: () => openAniUltimatium(),
 
     OPEN_STREMIO: () => openStremio(),
 

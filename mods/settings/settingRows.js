@@ -53,15 +53,9 @@ const rowFor = (item, path) =>
 
 const OPEN = () => 'Open';
 
-// The way into Customization, Ultimate Dev Options and AniUltimatium. Blue and glowing, so it is
+// The way into Customization, Ultimate Dev Options and Stremio and Grayjay. Blue and glowing, so it is
 // found among YouTube's own rows.
 const ultimateRow = () => openerRow(ULTIMATE_MENU, optionsCommand(['ultimate']), OPEN, 'ultimate');
-
-// While AniUltimatium is switched on, one more row, in the same colour, opens it.
-const aniRow = () => openerRow(
-    { title: 'AniUltimatium', summary: 'Anime, movies and live TV, inside UltimatiumTube', image: ULTIMATE_MENU.image },
-    actionCommand('OPEN_ANIULTIMATIUM'), OPEN, 'ultimate'
-);
 
 // The same for the Stremio page.
 const stremioRow = () => openerRow(
@@ -78,7 +72,6 @@ const sectionFor = () => category(
     SECTION,
     'UltimatiumTube',
     [ultimateRow()]
-        .concat(configRead('enableAniUltimatium') ? [aniRow()] : [])
         .concat(configRead('enableStremio') ? [stremioRow()] : [])
         .concat(GROUPS.reduce((rows, group, groupIndex) => (group.ultimate
             ? rows

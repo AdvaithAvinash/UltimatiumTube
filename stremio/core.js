@@ -111,7 +111,7 @@
 
   // req: { url, method, headers, body }. Answers { status, url, headers: {name: [values]}, body }.
   SX.rawFetch = function (req) {
-    var bridge = root.AniNative;
+    var bridge = root.StremioNative;
     if (bridge && bridge.fetch) {
       return new Promise(function (resolve, reject) {
         serial += 1;

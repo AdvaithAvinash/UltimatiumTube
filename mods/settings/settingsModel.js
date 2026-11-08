@@ -434,34 +434,6 @@ const resetTheme = () => {
   return [{ label: 'Back to the stock look', writes: THEME_KEYS.map((key) => ({ key, value: defaults[key] })) }];
 };
 
-const aniGroup = () => {
-  const group = /** @type {any} */ ({
-    id: 'tube_aniultimatium',
-    ultimate: true,
-    title: 'AniUltimatium',
-    summary: 'Anime, movies and live TV, inside UltimatiumTube'
-  });
-
-  // The way in is listed only while the switch is on.
-  Object.defineProperty(group, 'items', {
-    enumerable: true,
-    get: () => {
-      const items = /** @type {any[]} */ ([
-        Switch('enableAniUltimatium', 'AniUltimatium',
-          'Offers AniUltimatium, the anime, movie and live TV app that comes with UltimatiumTube', SKIPPING)
-      ]);
-
-      if (configRead('enableAniUltimatium')) {
-        items.push(Action('openAniUltimatium', 'Open AniUltimatium', 'Back returns to YouTube', SKIPPING, 'OPEN_ANIULTIMATIUM'));
-      }
-
-      return items;
-    }
-  });
-
-  return group;
-};
-
 const stremioGroup = () => {
   const group = /** @type {any} */ ({
     id: 'tube_stremio',
@@ -529,8 +501,6 @@ const ULTIMATE = [
         CONTROLS, SYNC_SECONDS, 'Every'),
       Text('sponsorBlockServer', 'SponsorBlock server',
         'An address (https://...) of a server that answers like sponsor.ajay.app. Empty uses the official one. Typed on the phone', MONEY),
-      Text('aniUltimatiumAppId', 'AniUltimatium app on this TV',
-        'The id Aniultimatium\u2019s own Samsung app installs under. It is started when it is there. Typed on the phone', SKIPPING),
       Text('customCss', 'Custom style rules',
         'CSS added to YouTube\u2019s page, after everything else. Typed on the phone', SCREEN, true),
       Panel('tubeVersion', 'Version', 'What this build is', MESSAGE, () => `${VERSION} (${COMMIT})`,
@@ -539,7 +509,6 @@ const ULTIMATE = [
         RESTART, () => 'All settings', resetEverything)
     ]
   },
-  aniGroup(),
   stremioGroup()
 ];
 
@@ -548,7 +517,7 @@ ULTIMATE.forEach((group) => GROUPS.push(group));
 // The first step of the way in: a list of the three sections.
 const ULTIMATE_MENU = {
   title: 'UltimatiumTube Ultimate Settings',
-  summary: 'Customization, developer options, AniUltimatium, Stremio and Grayjay',
+  summary: 'Customization, developer options, Stremio and Grayjay',
   image: SCREEN
 };
 

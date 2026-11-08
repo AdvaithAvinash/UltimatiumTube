@@ -289,16 +289,6 @@ public class MainActivity extends Activity {
             });
         }
 
-        // The settings' "Open AniUltimatium": its own screen on top of this one; Back returns here.
-        @JavascriptInterface
-        public void openAni() {
-            runOnUiThread(new Runnable() {
-                @Override public void run() {
-                    startActivity(new Intent(MainActivity.this, AniultimatiumActivity.class));
-                }
-            });
-        }
-
         // A list from the settings, as the phone page last left it: one address to a line.
         private String setting(String key) {
             try {
@@ -315,8 +305,7 @@ public class MainActivity extends Activity {
         public void openStremio() {
             runOnUiThread(new Runnable() {
                 @Override public void run() {
-                    Intent i = new Intent(MainActivity.this, AniultimatiumActivity.class);
-                    i.putExtra("page", "stremio");
+                    Intent i = new Intent(MainActivity.this, StremioActivity.class);
                     i.putExtra("addons", setting("stremioAddons"));
                     i.putExtra("plugins", setting("grayjayPlugins"));
                     startActivity(i);

@@ -106,10 +106,6 @@ const stage = (config) => {
     cpSync(join(ROOT, 'android', 'res'), join(STAGING, 'res'), { recursive: true });
     copyFileSync(userScript, join(STAGING, 'assets', 'userScript.js'));
 
-    // Aniultimatium, as bundled (node tools/update_aniultimatium.js brings it up to date).
-    const ani = join(ROOT, 'aniultimatium');
-    if (!existsSync(join(ani, 'index.html'))) throw friendly('aniultimatium/ is missing. Run `node tools/update_aniultimatium.js`.');
-    cpSync(ani, join(STAGING, 'assets', 'aniultimatium'), { recursive: true });
     cpSync(join(ROOT, 'stremio'), join(STAGING, 'assets', 'stremio'), { recursive: true });
 
     // The wallpapers of the Customization settings, which the app serves to the page.

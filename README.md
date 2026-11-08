@@ -24,7 +24,7 @@ with YouTube's own TV interface left as it is.
   moved or changed.
 - **UltimatiumTube Ultimate Settings.** The first row of that section, in glowing blue. Behind it:
   **Customization** (wallpaper, colours, font), **Ultimate Dev Options** (advanced settings) and
-  **AniUltimatium**.
+  **Stremio and Grayjay**.
 - **Back asks before leaving.** Back at the start of the app asks "Exit UltimatiumTube?" with Stay and
   Exit. It can be turned off under Startup.
 - **Zoom to fill.** Videos that are not the screen's shape no longer keep bars: pick a fit under Playback > Video fit: Zoom to fill for a video of another shape, Zoom 1.33x when the black bars are part of the video itself (most films and old clips uploaded as 16:9), or Stretch, or press Yellow while a video plays. A **Video fit** button is also in the player's own button row.
@@ -36,10 +36,6 @@ with YouTube's own TV interface left as it is.
   catalogs, is added for you. Streams come from addons that give direct links (for example one set
   up with a debrid service); a TV cannot play torrents. [More below.](#stremio-addons)
 - **Speed up to 15x**, from the speed button in the player and as a default speed in the settings.
-- **AniUltimatium from the app.** Turn it on and an extra blue row opens
-  [AniUltimatium](https://github.com/AdvaithAvinash/AniUltimatium), the anime, movie and live TV app.
-  On Android it opens in a screen of the app, bundled in it. On a Samsung TV it starts AniUltimatium's
-  own app, if installed (see below).
 - **The mods ship inside the app.** Nothing is downloaded at launch, so there is no "failed to load
   script" network error.
 
@@ -89,13 +85,12 @@ phone page.
 
 ### UltimatiumTube Ultimate Settings
 
-The first row of the UltimatiumTube section. It opens four sections.
+The first row of the UltimatiumTube section. It opens three sections.
 
 | Section | What is in it |
 | --- | --- |
 | Customization | A wallpaper switch, a button that turns the wallpaper off and loads the page again, its picture (ten built-in, starting with Blue flames, or one from a web address), dimming, background colour, accent colour of the UltimatiumTube rows, font, and a reset |
 | Ultimate Dev Options | Phone page on or off and how often it refreshes, a SponsorBlock server of your own, custom style rules (CSS), the version, and reset everything |
-| AniUltimatium | A switch. While it is on, an **Open AniUltimatium** entry appears here, and one more blue row in the category |
 | Stremio and Grayjay | A switch (on by default), **Open Stremio and Grayjay**, the list of Stremio addons and the list of Grayjay plugins |
 
 Text such as a server address or style rules is typed on the phone page.
@@ -140,24 +135,6 @@ screen of the app on Android. Back returns to YouTube.
 - **Not there:** subtitles from plugins, and addon settings pages (an addon is added by its address,
   with its own configuration in it). It has not been run on a real TV; it was run in a browser with
   addons stood in for.
-
-### AniUltimatium
-
-[AniUltimatium](https://github.com/AdvaithAvinash/AniUltimatium) is bundled in the app, as its own
-files, in `aniultimatium/`. `node tools/update_aniultimatium.js` brings the bundled copy up to date;
-`aniultimatium/VERSION.txt` says which commit it is. It talks to its own online service, so it needs
-the internet.
-
-- **Android and Fire TV:** it opens in a screen of the app and Back returns to YouTube.
-- **Samsung TV:** AniUltimatium's own Samsung app, if installed (its `.wgt` is on its releases page),
-  is the best way: it runs in the TV's web engine, as AniUltimatium is written for. The blue row starts
-  it. Without it, the row opens the copy bundled here, which the service serves to the TV's YouTube
-  engine. That engine has no CSS variables, grid or `gap`, so the service sends AniUltimatium's
-  stylesheet with its variables filled in, routes its requests to other sites through the service (it
-  is written for a widget that may call any address), and starts it in its Classic, low-end look. It
-  has not been seen running on a TV, and AniUltimatium's embedded movie players need frames, which
-  that engine does not have. If the app was installed under another id, set it under Ultimate Dev
-  Options.
 
 ### From your phone
 

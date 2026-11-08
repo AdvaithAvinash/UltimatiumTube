@@ -231,23 +231,17 @@ Two build-time gates, one per side.
   (`json adoption (ongoing)`). `mods/adblock` also sweeps advert items out of shelf and continuation
   responses as a second line.
 - **Video fit** (`mods/player/zoom.js`): the TV's engine draws a video whole and in its own shape,
-  centred in the `<video>` element's box, and has no `object-fit`, so a fit cannot be set on the
-  element; only its box can change. Zoom sizes the box to the picture's shape times the scale that
-  covers the screen (e.g. 2592x1080 for a 2.4:1 film on 16:9), placed so its centre is the screen's,
-  fixed; Stretch makes the box the screen and applies `scale(x, y)` so the picture in it fills the
-  screen. It needs `videoWidth` and `videoHeight`, so it waits for the video's metadata, and is written
-  again every half second because the player rewrites the element's style. Original puts back what the
-  player wrote. Checked in Chromium, which letterboxes the same way, by looking at the corners of the
-  screen (`boxFor` is the arithmetic). In Cobalt's source (`layout/replaced_box.cc`,
-  `rasterizer/skia/render_tree_node_visitor.cc`) the video is a punch-through node: the picture's
-  rectangle, after every transform, is handed to the platform player (`SbPlayerSetBounds`) unclipped.
-  So Stretch hands it a rectangle on the screen, and Zoom one larger than the screen, which a TV's
-  player may or may not accept. Zoom to fill works from the video's own shape, so it changes nothing for a 16:9 upload whose black bars
-  are inside the picture (the reported case: a film in a 16:9 frame); the fixed zooms (1.15x, 1.33x, 1.5x)
-  enlarge the picture as shown about the middle, and 1.33x fills a 2.39:1 film or a 4:3 clip in a 16:9
-  frame. A MutationObserver on the video's style puts the fit back as soon as the player writes its
-  own size. What was asked and what the element became are written to
-  `/__tube/log` as `video fit` lines.
+  centred in the `<video>` element's box, and has no `object-fit`. In Cobalt's source the video is a
+  punch-through node whose rectangle, after every transform, is handed to the TV's player
+  (`SbPlayerSetBounds`). So a fit is a CSS `transform: scale()` on the video element about its middle;
+  the element's size and place stay as YouTube laid them out (1.8.1 to 1.10.0 rewrote them, which the
+  player could fight). Every `<video>` in the page is fitted, since the first is not always the one
+  playing, and a fit works even when the engine does not report the video's size (the fixed zooms
+  need none). Zoom to fill and Stretch work from the video's shape, so for a 16:9 upload with bars
+  inside the picture only the fixed zooms (1.15x, 1.33x, 1.5x) change anything. A MutationObserver puts
+  the fit back as soon as the player changes the element. `video fit` lines in `/__tube/log` say what
+  was asked and what the element became. Checked in Chromium (corners of the screen covered); a TV's
+  player that clips a rectangle larger than the screen would still show no change for the zooms.
 - **Stremio page** (`stremio/`): `core.js` is the protocol (manifests, catalogs, meta, streams, built
   as the addon spec says; it is what `test/stremio-core.js` runs) and `ui.js` the screens, remote
   navigation (the nearest focusable in the direction pressed) and the player. The page is drawn for

@@ -23,8 +23,6 @@ const phoneSettings = require('./lib/phoneSettings.js');
 const aniultimatium = require('./lib/aniultimatium.js');
 const stremio = require('./lib/stremio.js');
 const pluginFetch = require('./lib/pluginFetch.js');
-const handoff = require('./lib/handoff.js');
-const cobaltConfig = require('./lib/cobaltConfig.js');
 const wallpapers = require('./lib/wallpapers.js');
 const aniApi = require('./lib/aniApi.js');
 const launchApp = require('./lib/launchApp.js');
@@ -100,8 +98,6 @@ phoneSettings.attach(app);
 aniultimatium.attach(app);
 stremio.attach(app);
 pluginFetch.attach(app);
-// The listener and the addresses exist further down; they are only used when a request arrives.
-handoff.attach(app, { appId: cobaltConfig.appId, listener: { yieldPort: () => listener.yieldPort() }, note: postmortem.note, addresses: () => candidates() });
 aniApi.attach(app);
 wallpapers.attach(app);
 launchApp.attach(app);
@@ -153,7 +149,6 @@ const listener = require('./lib/listener.js').create({
     note: postmortem.note,
     noteRarely,
     retryAfter: RETRY_LISTEN_AFTER,
-    busy: handoff.takeover({ port: ports.PROXY, appId: cobaltConfig.appId, note: postmortem.note }),
     // An upgrade is not a request express ever sees, and an unanswered one hangs rather than fails.
     setup: (server) => upgrade.attach(server, { rewrite: dev.upgradeRewrite }),
     listening: (address) => {

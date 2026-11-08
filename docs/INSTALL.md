@@ -63,16 +63,17 @@ TV and is what serves YouTube to it. In order of how often it is the cause:
 2. **The app was not signed as a service.** The service needs a Samsung certificate with the
    partner level. In Apps2Samsung turn on both **Force Samsung Certificate** and **Partner Signing**,
    then install again. A widget signed without them installs but its service never starts.
-3. **An older copy still holds the port** (after a reinstall or an update, for example when Apps2Samsung
-   repacks the package to change its name or icon). Only one service can answer on the TV's port. From
-   version 1.8.2 a newer service asks the older one of the same package to give the port up, and
-   ends other processes of its own service where the TV allows; the log (`/__tube/log`) says
-   `handoff:` when it did. An older copy from a version before that cannot be asked, so switch the TV
-   off and on once.
-4. **Another YouTube app has the container.** YouTube for Tizen, TizenTube and this app share the
+3. **Another YouTube app has the container.** YouTube for Tizen, TizenTube and this app share the
    TV's one YouTube container. Close the other app, or switch the TV off and on, then open this one.
-5. **A VPN, a guest network or a router that isolates devices.** The TV talks to itself over its own
+4. **A VPN, a guest network or a router that isolates devices.** The TV talks to itself over its own
    network address, and some routers block that.
+5. **Version 1.8.2.** It made a second copy of the service, which some TVs run, take the port from
+   the first and end it; the TV then started it again, and the two kept ending each other, so the app
+   opened on a network error. Install 1.8.3 or later, then switch the TV off at the plug for 30 seconds.
+
+Changing the app's name or icon in Apps2Samsung changes only `<name>` in `config.xml` and the
+`icon.png` file. The service reads neither: a package renamed to "Youtube" with another icon was run
+and serves exactly as the original.
 
 If it still fails, the boot screen shows an address to open on a phone, and that page says what
 failed.
@@ -115,11 +116,3 @@ build keeps it in `~/.ultimatiumtube/`.
 
 Open the address shown under **Settings > UltimatiumTube > Channels and words** on the TV, with
 `/settings` at the end, on a phone or computer on the same network. It needs no internet.
-
-### A different name or icon
-
-Changing the app's name or icon in Apps2Samsung changes only `<name>` and `icon.png` in `config.xml`'s
-package, which the service does not read; it was checked that a package changed that way (even to the
-name "Youtube") serves exactly as before. What such an install does do is reinstall the app, and a
-reinstall is when an older copy of the service can still hold the port (see above). If the app shows a
-connection error after that, switch the TV off and on once.

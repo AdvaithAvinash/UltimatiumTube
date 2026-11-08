@@ -1,4 +1,4 @@
-import { buttonItem, configChangeEmitter, configRead, configWrite, every, onKey, overlayPanelItemListRenderer, showModal, showToast, stop, whenVideo } from '../../framework/index.js';
+import { warn, buttonItem, configChangeEmitter, configRead, configWrite, every, onKey, overlayPanelItemListRenderer, showModal, showToast, stop, whenVideo } from '../../framework/index.js';
 
 // Video fit: a video whose shape differs from the screen's is shown with bars around it. Zoom to
 // fill crops the edges so the picture covers the screen; Stretch fills it without cropping.
@@ -57,6 +57,7 @@ const release = (video) => {
     NAMES_SET.forEach((name) => { video.style[name] = held[name] || ''; });
     video[HELD] = null;
     video.__tubeFitTransform = undefined;
+    video.__tubeFitSaid = undefined;
 };
 
 const screenSize = () => ({ width: window.innerWidth || 1920, height: window.innerHeight || 1080 });
@@ -108,6 +109,23 @@ const apply = (video) => {
         }
     });
     video.__tubeFitTransform = wanted.transform;
+
+    // What was asked for, and a moment later what the engine made of it, go to the service's log
+    // (/__tube/log) once for each change: that is the only way to see it on a television.
+    const said = `${fit} ${vw}x${vh} on ${screen.width}x${screen.height}`;
+    if (video.__tubeFitSaid !== said) {
+        video.__tubeFitSaid = said;
+        warn('video fit', `${said}: box ${box.width}x${box.height} at ${box.left},${box.top}${scaled ? `, ${wanted.transform}` : ''}`);
+        setTimeout(() => {
+            try {
+                const r = video.getBoundingClientRect();
+                warn('video fit', `${said}: the element is now ${Math.round(r.width)}x${Math.round(r.height)} at `
+                    + `${Math.round(r.left)},${Math.round(r.top)}; style width ${video.style.width}, position ${video.style.position}, transform ${video.style.transform || 'none'}`);
+            } catch (error) {
+                warn('video fit', `could not read the element back: ${error && error.message}`);
+            }
+        }, 1500);
+    }
 };
 
 const WATCH = 'video fit upkeep';

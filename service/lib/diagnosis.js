@@ -7,6 +7,7 @@ const path = require('path');
 
 const reach = require('./reach.js');
 const postmortem = require('./postmortem.js');
+const lastRun = require('./lastRun.js');
 const claimants = require('./claimants.js');
 const cobaltIfItLoads = require('./cobaltIfItLoads.js');
 const { appId, configuredContent, container, switches } = require('./cobaltConfig.js');
@@ -43,6 +44,21 @@ const named = (others) => others
     .map((one) => `${one.name} (${one.id})${one.baseUrl ? ` → ${one.baseUrl}` : ''}`)
     .join(', ');
 
+// A service that keeps being started again is the fault, whatever else looks wrong beside it.
+const restarting = () => {
+    const recent = lastRun.starts();
+    const up = Math.round(process.uptime());
+
+    if (recent.length >= 3) {
+        return result('service starts', false, `started ${recent.length} times in the last 10 minutes (this one ${up}s ago) — `
+            + 'something keeps ending it, so the app opens on a network error. Version 1.8.2 did this; '
+            + 'install 1.8.3 or later and switch the TV off at the plug for 30 seconds. If this stays, '
+            + 'open an issue with the log');
+    }
+
+    return result('service starts', true, `started ${recent.length} time${recent.length === 1 ? '' : 's'} in the last 10 minutes, this one ${up}s ago`);
+};
+
 const slot = () => {
     const others = claimants.rivals();
 
@@ -57,6 +73,12 @@ const slot = () => {
     const heard = !!(cobalt && cobalt.contact().at);
 
     if (heard) return result('container slot', true, `${named(others)} claims ${contested} too, but ours is the one running`);
+
+    // Just started, or started again: nothing could have reached it yet, which says nothing of the slot.
+    if (process.uptime() < 90) {
+        return result('container slot', true, `${named(others)} claims ${contested} too; this service started `
+            + `${Math.round(process.uptime())}s ago, so nothing from the app has reached it yet — open the app, then look again`);
+    }
 
     return result('container slot', false, `${named(others)} claims ${contested} too, and nothing from `
         + 'ours has reached us — that app\'s container is running with its own switches, and this app '
@@ -135,6 +157,7 @@ const all = () => {
 
     return [
         guarded('cobalt', builtIn),
+        guarded('service starts', restarting),
         guarded('container', claim),
         // The 5.0 widget has no boot screen and no CONNECT, so silence there would mean nothing.
         content ? guarded('container slot', slot) : null,

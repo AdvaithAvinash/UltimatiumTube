@@ -90,16 +90,25 @@ claimed.rivals = [{
 
 const slotNow = () => diagnose().find((one) => one.name === 'container slot');
 
+const realUptime = process.uptime;
+check('a rival is not blamed in the first 90 seconds, when nothing could have reached us yet',
+    slotNow().ok === true && /started \d+s ago/.test(slotNow().detail), slotNow().detail);
+
+process.uptime = () => 600;
+
 check('another app holding the slot while nothing reaches us fails, and says what to do about it',
     slotNow().ok === false && /TizenTube/.test(slotNow().detail)
     && /switch the TV off at the plug/.test(slotNow().detail), slotNow().detail);
 
 heard.at = Date.now();
+process.uptime = realUptime;
 
 check('the same rival passes once ours is the one running',
     slotNow().ok === true && /ours is the one running/.test(slotNow().detail), slotNow().detail);
 
 const asked = (name) => diagnose().find((one) => one.name === name);
+
+check('a service started once lately passes the start check', asked('service starts').ok === true, asked('service starts').detail);
 
 check('a share that can be written to passes', asked('share').ok === true, asked('share').detail);
 
@@ -131,6 +140,16 @@ check('a share that cannot be written to fails, and says what is kept there',
     locked.ok === false && /boot screen/.test(locked.detail), locked.detail);
 
 fs.rmSync(root, { recursive: true, force: true });
+
+// A service the TV keeps ending and starting again: the start check says so.
+const realRead = postmortem.read;
+const now = Date.now();
+postmortem.read = () => [now - 50000, now - 30000, now - 10000, now - 20 * 60000]
+    .map((at) => `${new Date(at).toISOString()}  started: pid 1, node v16`).join('\n');
+check('a service started three times in ten minutes fails the start check, and names 1.8.3',
+    asked('service starts').ok === false && /3 times/.test(asked('service starts').detail) && /1\.8\.3/.test(asked('service starts').detail),
+    asked('service starts').detail);
+postmortem.read = realRead;
 
 const failed = results.filter((ok) => !ok).length;
 console.log(`\n${results.length - failed}/${results.length} checks passed.`);

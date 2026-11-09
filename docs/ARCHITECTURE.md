@@ -277,3 +277,14 @@ Two build-time gates, one per side.
   (`aniultimatium.js`, `aniApi.js`, `aniShim.js`, `flattenCss.js`, `launchApp.js`) and its Android
   screen. The audit fails a widget that carries `aniultimatium/` again. The Android screen that showed
   it is now `StremioActivity`, and the page's bridge is `StremioNative`.
+- **Signing in** (1.12.1): YouTube, after a sign-in or an account switch, sends the page to
+  `https://www.youtube.com/tv`; loaded from there the page has no userscript (no settings, adverts
+  back) until the app is opened again. Every page's policy now names only this service in
+  `h5vcc-location-src`, so Cobalt refuses that navigation, reports it (`report-uri /__tube/csp`, a
+  `policy:` line in the log) and fires `securitypolicyviolation`, on which the userscript loads the same
+  path from the service. A redirect from YouTube to itself is rewritten to a path on the service too.
+- **Video fit, again** (1.12.1): YouTube's player makes the video's box the whole screen for some
+  videos and only the picture (a band) for others; a fit worked out against the box did nothing in the
+  second case. The fit is now worked out against the screen: `translate()` and `scale()` with origin
+  `0 0` move the picture from where it is drawn to where the fit wants it. Players smaller than most of
+  the screen (previews, the mini player) are left alone.

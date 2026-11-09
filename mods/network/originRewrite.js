@@ -80,9 +80,25 @@ export default function installProxyPatches() {
     redirectOnAssignment(HTMLScriptElement, 'src');
 }
 
+// YouTube, after a sign-in or an account switch, sends the page to https://www.youtube.com/tv. Loaded
+// from there, the page has no UltimatiumTube in it (no settings, adverts back) until the app is opened
+// again. The service's policy refuses that navigation; the engine says so here, and the same page is
+// loaded from the service instead. The engine names only the origin it refused, so it is /tv.
+const keepOnTheService = () => {
+    document.addEventListener('securitypolicyviolation', (event) => {
+        const directive = String(event.violatedDirective || event.effectiveDirective || '');
+        const blocked = String(event.blockedURI || '');
+        if (directive.indexOf('h5vcc-location-src') === -1 || !/youtube\.com/i.test(blocked)) return;
+
+        const path = blocked.replace(/^https?:\/\/[^/?#]+/i, '');
+        window.location.replace(`${realOrigin()}${path && path !== '/' ? path : '/tv'}`);
+    });
+};
+
 const start = () => {
     if (typeof window === 'undefined' || window.location.protocol !== 'http:') return;
     installProxyPatches();
+    keepOnTheService();
     presentAsYouTube();
 };
 

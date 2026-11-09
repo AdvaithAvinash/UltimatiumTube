@@ -59,9 +59,13 @@ const POLICIES = {
         "style-src * data: blob: 'unsafe-inline'",
         'connect-src *',
         'font-src * data:',
-        // Cobalt refuses a navigation its policy does not name, and the settings open the Stremio
-        // page, a page of this service, by navigating to it.
-        'h5vcc-location-src *'
+        // Cobalt refuses a navigation its policy does not name. Only this service's own pages are
+        // named: YouTube, after a sign-in, sends the page to https://www.youtube.com/tv, which would
+        // load it from YouTube itself, without UltimatiumTube, until the app was opened again. That is
+        // refused now, reported (report-uri), and the userscript loads /tv from here instead.
+        // HOST is filled in for each answer, as the address the page was asked for at.
+        "h5vcc-location-src 'self' http://HOST",
+        'report-uri /__tube/csp'
     ].join('; '),
 
     plain: "default-src *; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; h5vcc-location-src *",
@@ -71,10 +75,11 @@ const POLICIES = {
 
 const state = { policy: 'wide' };
 
-app.use((_, res, next) => {
+app.use((req, res, next) => {
     const chosen = POLICIES[state.policy];
+    const host = String(req.headers.host || '').replace(/[^A-Za-z0-9.:[\]-]/g, '') || '127.0.0.1';
 
-    if (chosen) res.setHeader('Content-Security-Policy', chosen);
+    if (chosen) res.setHeader('Content-Security-Policy', chosen.replace('HOST', host));
     else res.removeHeader('Content-Security-Policy');
 
     next();
@@ -94,6 +99,20 @@ diagRoutes.attach(app);
 phoneSettings.attach(app);
 stremio.attach(app);
 pluginFetch.attach(app);
+
+// What the engine refused under the policy above: one line in the log for each, so a navigation that
+// was kept on this service shows up in /__tube/log.
+app.post('/__tube/csp', (req, res) => {
+    const parts = [];
+    req.on('data', (chunk) => { if (parts.length < 16) parts.push(chunk); });
+    req.on('end', () => {
+        const text = Buffer.concat(parts).toString('utf8').slice(0, 2000);
+        const blocked = /"blocked-uri"\s*:\s*"([^"]*)"/.exec(text);
+        const directive = /"violated-directive"\s*:\s*"([^"]*)"/.exec(text);
+        postmortem.note('policy', `refused ${blocked ? blocked[1] : '?'} (${directive ? directive[1] : '?'})`);
+        res.status(204).end();
+    });
+});
 wallpapers.attach(app);
 
 // dev/ may not know about the container route, and on a set without one it is absent.

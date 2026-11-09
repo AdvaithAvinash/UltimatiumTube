@@ -13,7 +13,7 @@ const { YOUTUBE_ORIGIN, routeFor, headersFor } = require('./route.js');
 const { readText, send } = require('./sending.js');
 const {
     rewriteAttestation, rewriteBody, rerouteAbr, rewriteSetCookie,
-    hidesWatermark, withHiddenWatermark, rewriteStaticHosts
+    hidesWatermark, withHiddenWatermark, rewriteStaticHosts, keepOnService
 } = require('./rewrites.js');
 
 // A cobalt.js that fails to load costs Evergreen's offers, never the proxy.
@@ -131,6 +131,11 @@ const copyHeaders = (req, res, response, route) => {
     if (route.isBypass && movedTo && /^https?:\/\//.test(movedTo)) {
         res.setHeader('Location', proxyPrefix() + movedTo);
     }
+
+    // YouTube sending the page on to itself (after a sign-in, a consent, an account switch): kept on
+    // this service, which is what puts UltimatiumTube in the page.
+    const kept = !route.isBypass && movedTo ? keepOnService(movedTo) : null;
+    if (kept) res.setHeader('Location', kept);
 };
 
 // Must be called after every other route is registered.

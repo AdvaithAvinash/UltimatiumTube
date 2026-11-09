@@ -24,35 +24,50 @@ const ZOOMS = { z115: 1.15, z133: 1.33, z150: 1.5 };
 
 const fitOf = (read) => (FITS.indexOf(read('videoFit')) === -1 ? 'original' : read('videoFit'));
 
-// The scale across and down for a fit, given the video's shape (vw x vh; unknown is 0) and the size
-// of the element's box (bw x bh). The picture is drawn whole inside the box; this is how much bigger
-// it must be drawn.
-const scaleFor = (mode, vw, vh, bw, bh) => {
-    if (ZOOMS[mode]) return { x: ZOOMS[mode], y: ZOOMS[mode] };
+// Where the picture must end up, from where it is now. The picture is drawn whole and centred in the
+// video element's box; YouTube's player makes that box the whole screen for some videos and only the
+// picture's own size (a band across the middle) for others. So the fit is worked out against the
+// screen, not the box: the picture is moved and scaled from where it is drawn to where the fit wants
+// it, which works whichever box the player chose.
+//
+// box: the element's box on the screen before any transform of ours {x, y, w, h}; screen {w, h};
+// vw x vh: the video's own size (0 when the engine does not say: the box's shape is taken).
+// Answers { tx, ty, sx, sy } for transform-origin 0 0, or null for no change.
+const planFor = (mode, vw, vh, box, screen) => {
+    if (mode === 'original' || !(box.w > 0 && box.h > 0)) return null;
 
-    // An engine that does not say the video's shape: the picture is taken to fill the box, so
-    // only the fixed zooms do anything.
-    const w = vw > 0 ? vw : bw;
-    const h = vh > 0 ? vh : bh;
-    const inside = Math.min(bw / w, bh / h);
-    const across = bw / (w * inside);
-    const down = bh / (h * inside);
+    const w = vw > 0 ? vw : box.w;
+    const h = vh > 0 ? vh : box.h;
 
-    if (mode === 'fill') {
-        const both = Math.max(across, down);
-        return { x: both, y: both };
-    }
+    // The picture as drawn now, inside the box.
+    const inBox = Math.min(box.w / w, box.h / h);
+    const cw = w * inBox;
+    const ch = h * inBox;
+    const ox = (box.w - cw) / 2;
+    const oy = (box.h - ch) / 2;
 
-    if (mode === 'stretch') return { x: across, y: down };
+    // The picture as the fit wants it, centred on the screen.
+    const onScreen = Math.min(screen.w / w, screen.h / h);
+    const wanted = ZOOMS[mode] ? { w: w * onScreen * ZOOMS[mode], h: h * onScreen * ZOOMS[mode] }
+        : mode === 'fill' ? { w: w * Math.max(screen.w / w, screen.h / h), h: h * Math.max(screen.w / w, screen.h / h) }
+            : mode === 'stretch' ? { w: screen.w, h: screen.h }
+                : null;
+    if (!wanted) return null;
 
-    return { x: 1, y: 1 };
+    const sx = wanted.w / cw;
+    const sy = wanted.h / ch;
+    const tx = (screen.w - wanted.w) / 2 - box.x - sx * ox;
+    const ty = (screen.h - wanted.h) / 2 - box.y - sy * oy;
+
+    const still = Math.abs(sx - 1) < 0.001 && Math.abs(sy - 1) < 0.001 && Math.abs(tx) < 0.5 && Math.abs(ty) < 0.5;
+    return still ? null : { tx, ty, sx, sy };
 };
 
 const round = (n) => Math.round(n * 10000) / 10000;
 
-const transformFor = (scale) => (Math.abs(scale.x - 1) < 0.001 && Math.abs(scale.y - 1) < 0.001
-    ? 'none'
-    : `scale(${round(scale.x)}, ${round(scale.y)})`);
+const transformFor = (plan) => (plan
+    ? `translate(${Math.round(plan.tx)}px, ${Math.round(plan.ty)}px) scale(${round(plan.sx)}, ${round(plan.sy)})`
+    : 'none');
 
 const HELD = '__tubeFitKept';
 const NAMES_SET = ['transform', 'transformOrigin'];
@@ -80,12 +95,31 @@ const release = (video) => {
     video.__tubeFitSaid = undefined;
 };
 
-// The element's box as YouTube laid it out, before any transform of ours; the screen when the engine
-// does not say.
-const boxOf = (video) => ({
-    width: video.offsetWidth || window.innerWidth || 1920,
-    height: video.offsetHeight || window.innerHeight || 1080
-});
+// The element's box on the screen as YouTube laid it out, before any transform of ours: its offsets
+// added up the chain of the boxes it sits in (those ignore transforms), or, where the engine gives
+// none, a box centred on the screen.
+const screenOf = () => ({ w: window.innerWidth || 1920, h: window.innerHeight || 1080 });
+
+const boxOf = (video) => {
+    const screen = screenOf();
+    const w = video.offsetWidth || screen.w;
+    const h = video.offsetHeight || screen.h;
+
+    if (typeof video.offsetLeft !== 'number') return { x: (screen.w - w) / 2, y: (screen.h - h) / 2, w, h };
+
+    const at = { x: 0, y: 0 };
+    const climb = (node, depth) => {
+        if (!node || depth > 30) return;
+        at.x += node.offsetLeft || 0;
+        at.y += node.offsetTop || 0;
+        climb(node.offsetParent, depth + 1);
+    };
+    climb(video, 0);
+    return { x: at.x, y: at.y, w, h };
+};
+
+// Only the player on the watch screen: a preview on a shelf, or the mini player, is left alone.
+const isMainPlayer = (box, screen) => box.w >= screen.w * 0.85 || box.h >= screen.h * 0.85;
 
 const apply = (video) => {
     if (!video || !video.style) return;
@@ -104,15 +138,16 @@ const apply = (video) => {
     }
 
     const box = boxOf(video);
-    const scale = scaleFor(fit, video.videoWidth || 0, video.videoHeight || 0, box.width, box.height);
-    const transform = transformFor(scale);
+    const screen = screenOf();
+    const plan = isMainPlayer(box, screen) ? planFor(fit, video.videoWidth || 0, video.videoHeight || 0, box, screen) : null;
+    const transform = transformFor(plan);
 
-    if (video.style.transformOrigin !== '50% 50%') write(video.style, 'transformOrigin', '50% 50%');
+    if (video.style.transformOrigin !== '0px 0px') write(video.style, 'transformOrigin', '0px 0px');
     if (video.style.transform !== transform) write(video.style, 'transform', transform);
 
     // What was asked for, and a moment later what the engine made of it, go to the service's log
     // (/__tube/log) once for each change.
-    const said = `${fit} ${video.videoWidth || '?'}x${video.videoHeight || '?'} in ${box.width}x${box.height}: ${transform}`;
+    const said = `${fit} ${video.videoWidth || '?'}x${video.videoHeight || '?'} in ${Math.round(box.w)}x${Math.round(box.h)} at ${Math.round(box.x)},${Math.round(box.y)}: ${transform}`;
     if (video.__tubeFitSaid === said) return;
     video.__tubeFitSaid = said;
     warn('video fit', said);
@@ -204,4 +239,4 @@ const start = () => {
 
 };
 
-export { adopt, apply, applyAll, scaleFor, transformFor, cycle, openFitOptions, setFit, fitOf, FITS, start };
+export { adopt, apply, applyAll, planFor, transformFor, cycle, openFitOptions, setFit, fitOf, FITS, start };

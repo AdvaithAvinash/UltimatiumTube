@@ -66,3 +66,5 @@ keepShelf('shelves emptied by the filter', [SHELF, PIVOT], (shelf) => {
 
     return !items || items.length > 0;
 });
+
+export { detailsOf };

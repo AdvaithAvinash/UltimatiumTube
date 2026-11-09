@@ -330,6 +330,28 @@ public class StremioActivity extends Activity {
             return list == null ? "" : list;
         }
 
+        /** The TV's settings when this screen was opened, as JSON, for the Control Center. */
+        @JavascriptInterface
+        public String config() {
+            String all = getIntent().getStringExtra("config");
+            return all == null ? "{}" : all;
+        }
+
+        /** A place in the YouTube TV application (/tv#/watch?v=...): opened in the main screen, and this one closes. */
+        @JavascriptInterface
+        public void openYouTube(final String path) {
+            if (path == null || !path.startsWith("/tv")) return;
+            runOnUiThread(new Runnable() {
+                @Override public void run() {
+                    android.content.Intent i = new android.content.Intent(StremioActivity.this, MainActivity.class);
+                    i.putExtra("tvPath", path);
+                    i.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                    startActivity(i);
+                    finish();
+                }
+            });
+        }
+
         /** The Grayjay plugins listed in the settings when this screen was opened, one to a line. */
         @JavascriptInterface
         public String plugins() {

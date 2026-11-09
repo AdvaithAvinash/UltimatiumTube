@@ -60,6 +60,30 @@ with YouTube's own TV interface left as it is.
   - **Smart Shorts filter.** Shorts longer or shorter than a length you choose, or from a hidden channel
     or with a hidden word, are passed over as they come up.
   - **Smart resume** (below).
+- **Universal Media Control Center.** The first tab of the Stremio and Grayjay page (*Center*): YouTube,
+  Stremio, Grayjay and AniUltimatium in one place, with continue watching across YouTube, Stremio and
+  Grayjay, favourites (bookmarks and your library), a feed for each of your channel collections (the
+  newest videos of its channels), smart playlists, one search for everything (including YouTube), and
+  AniUltimatium's own app one press away.
+- **Custom feeds and smart playlists.** Each collection becomes a feed; *Play all* or *Shuffle* plays it as
+  one continuous YouTube playlist. Smart playlists ("Name: word, word" a line, under Ultimate Settings >
+  Stremio and Grayjay) collect the feed videos with those words.
+- **Playback profiles.** Cinema, Learning, Music and Sports (and Standard): speed, quality, fit and
+  skipping in one press, under Playback intelligence.
+- **A-B repeat and seek steps.** A remote button marks A, then B and loops between them; the seek steps of
+  the remote's Back and Forward are yours to choose.
+- **User profiles and Guest mode.** *Who is watching* (Profiles and what's new): each person their own
+  settings, bookmarks, themes and filters; Guest starts as the app came and keeps nothing.
+- **Content intelligence.** Duplicates and reposts shown once, clickbait hidden, and rules of your own (a
+  word, `channel: name` or `regex: pattern` a line), all on the TV.
+- **Shorts control center.** Shorts by length, by hidden channels and words, by words of their own, and
+  only from your collections.
+- **Movie covers.** A Stremio title with no picture of its own gets Cinemeta's poster and backdrop.
+- **Voice.** The app now tells the TV it takes voice, so a search said to the TV's own assistant (Bixby,
+  or Alexa built into the TV) can reach it as it does the stock YouTube app. Whether a given TV passes it
+  on has not been seen; an Alexa speaker on its own cannot reach an app on the TV.
+- **Welcome message and What's new.** A glass panel when the app opens, with *OK*, *What's new* and
+  *Don't show again*; *What's new* is also under Profiles and what's new.
 - **Channel collections.** Put channels in collections of your own (Favourites, Music, Learning,
   Gaming, ...) while one of their videos plays, then open a collection and go to a channel.
 - **Quality lock for each channel.** A preferred quality for one channel, over the one for every video.

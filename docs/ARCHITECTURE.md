@@ -288,3 +288,13 @@ Two build-time gates, one per side.
   second case. The fit is now worked out against the screen: `translate()` and `scale()` with origin
   `0 0` move the picture from where it is drawn to where the fit wants it. Players smaller than most of
   the screen (previews, the mini player) are left alone.
+- **1.13.0:** the Control Center is a tab of the Stremio page (`centerTab` in `stremio/ui.js`): it reads the
+  TV's settings from `/api/settings` (Android: `StremioNative.config()`), YouTube's smart-resume store
+  (`tube.resume`, the same origin on a Samsung TV), and each collection's channels' public feeds
+  (`/feeds/videos.xml?channel_id=`, through `/__tube/fetch`). *Play all* asks the service for a
+  temporary YouTube playlist (`/__tube/playlist`, from `/watch_videos?video_ids=`) and opens
+  `/tv#/watch?v=...&list=...`. AniUltimatium is started through `/__tube/launch`. The welcome message and
+  What's new are a panel of our own over YouTube (`mods/notice`), with its own keys while open. User
+  profiles keep each person's settings in `localStorage` (`tube.profiles`) and swap them in on a switch;
+  settings that belong to the TV (phone page, statistics, channel ids) stay. Content intelligence and the
+  Shorts control center are tile filters and Shorts-player rules (`mods/contentIntel`, `mods/shorts`).

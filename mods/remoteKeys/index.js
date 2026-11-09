@@ -27,8 +27,11 @@ const ACTIONS = {
     bookmark: { run: command('ADD_BOOKMARK'), watching: true },
     bookmarks: { run: command('OPEN_BOOKMARKS'), watching: false },
     quality: { run: command('OPEN_CHANNEL_QUALITY'), watching: true },
-    replay: { run: () => seekBy(-10), watching: true },
-    forward: { run: () => seekBy(30), watching: true },
+    replay: { run: () => seekBy(-(Number(configRead('seekBackSeconds')) || 10)), watching: true },
+    forward: { run: () => seekBy(Number(configRead('seekForwardSeconds')) || 30), watching: true },
+    abRepeat: { run: command('AB_REPEAT'), watching: true },
+    profiles: { run: command('OPEN_PROFILES'), watching: false },
+    whatsNew: { run: command('OPEN_WHATS_NEW'), watching: false },
     restart: { run: () => seekBy(-1e9), watching: true },
     collect: { run: command('CHOOSE_COLLECTION'), watching: true },
     collections: { run: command('OPEN_COLLECTIONS'), watching: false },
@@ -84,7 +87,8 @@ const start = () => {
 const ACTION_NAMES = {
     none: 'Nothing (left to YouTube)', fit: 'Next video fit', fitMenu: 'Video fit menu', speed: 'Speed menu',
     bookmark: 'Bookmark this moment', bookmarks: 'Open bookmarks', quality: 'Quality for this channel',
-    replay: 'Back 10 seconds', forward: 'Forward 30 seconds', restart: 'Start the video again', collect: 'Add this channel to a collection',
+    replay: 'Back (the seek step)', forward: 'Forward (the seek step)', abRepeat: 'A-B repeat (mark A, mark B, stop)',
+    profiles: 'Who is watching (profiles)', whatsNew: 'What\u2019s new', restart: 'Start the video again', collect: 'Add this channel to a collection',
     collections: 'Open collections', stremio: 'Open Stremio and Grayjay'
 };
 

@@ -203,3 +203,7 @@ body { font-family: Roboto, Arial, Helvetica, sans-serif; color: #f1f3f8; }
 .pm.on { background: #ffffff; color: #04101d; }
 .pm.on i { color: #4a5368; }
 .pmnote { font-size: 24px; color: #8993ab; padding: 10px 6px; }
+
+/* action tiles of the Control Center */
+.card.action .cimg { background: linear-gradient(135deg, rgba(62, 166, 255, 0.55), rgba(20, 30, 60, 0.95)); border: 2px solid rgba(140, 200, 255, 0.5); }
+.card.action .actlabel { position: absolute; left: 0; top: 70px; width: 340px; text-align: center; font-size: 32px; font-weight: bold; color: #ffffff; }

@@ -566,7 +566,7 @@ check('the Stremio row is blue and directly under the Ultimate Settings row', ()
 
 check('its section opens the page and holds both lists', () => {
     const links = itemsOf(open([indexOfGroup('tube_stremio')]));
-    assert.deepStrictEqual(links.map(titleOf), ['Stremio and Grayjay', 'Open Stremio and Grayjay', 'Addons', 'Grayjay plugins']);
+    assert.deepStrictEqual(links.map(titleOf), ['Stremio and Grayjay', 'Open Stremio and Grayjay', 'Addons', 'Smart playlists', 'AniUltimatium app id', 'Grayjay plugins']);
     assert.strictEqual(commandsOf(links[1])[0].customAction.action, 'OPEN_STREMIO');
 });
 
@@ -608,7 +608,7 @@ check('a default speed can be set to 15x in the settings, and is a choice of the
 
 check('every setting these sections name is one the config knows', () => {
     const known = configDefaults();
-    const buttons = ['themeReset', 'themePreset', 'tubeStatistics', 'tubeVersion', 'tubeReset', 'openStremio', 'openBookmarks', 'openCollections', 'chooseCollection', 'wallpaperOffNow'];
+    const buttons = ['themeReset', 'themePreset', 'tubeStatistics', 'tubeVersion', 'tubeReset', 'openStremio', 'openBookmarks', 'openCollections', 'chooseCollection', 'playbackProfile', 'openProfiles', 'openWhatsNew', 'openWelcome', 'wallpaperOffNow'];
 
     GROUPS.filter((group) => group.ultimate).forEach((group) => group.items.forEach((item) => {
         if (buttons.indexOf(item.key) === -1) assert.ok(item.key in known, `${item.key} is not in the config`);

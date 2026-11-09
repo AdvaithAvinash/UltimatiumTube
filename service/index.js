@@ -22,6 +22,8 @@ const diagRoutes = require('./lib/diagRoutes.js');
 const phoneSettings = require('./lib/phoneSettings.js');
 const stremio = require('./lib/stremio.js');
 const pluginFetch = require('./lib/pluginFetch.js');
+const launchApp = require('./lib/launchApp.js');
+const youtubePlaylist = require('./lib/youtubePlaylist.js');
 const wallpapers = require('./lib/wallpapers.js');
 const routeErrors = require('./lib/routeErrors.js');
 const dev = require('./dev/index.js');
@@ -99,6 +101,8 @@ diagRoutes.attach(app);
 phoneSettings.attach(app);
 stremio.attach(app);
 pluginFetch.attach(app);
+launchApp.attach(app);
+youtubePlaylist.attach(app);
 
 // What the engine refused under the policy above: one line in the log for each, so a navigation that
 // was kept on this service shows up in /__tube/log.

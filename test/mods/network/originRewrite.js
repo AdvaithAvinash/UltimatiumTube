@@ -1,8 +1,14 @@
 // Cobalt 20 cannot construct URL, so redirectUrl reads the host itself; these pin what it sends where.
 
-global.window = { location: { origin: 'http://127.0.0.2:8099' } };
+const replaced = [];
+const heard = {};
+global.window = { location: { origin: 'http://127.0.0.2:8099', protocol: 'http:', replace: (to) => replaced.push(to) }, fetch: null };
+global.document = { addEventListener: (type, fn) => { heard[type] = fn; } };
+global.XMLHttpRequest = function XMLHttpRequest() {};
+global.XMLHttpRequest.prototype.open = () => undefined;
+global.HTMLScriptElement = function HTMLScriptElement() {};
 
-const { redirectUrl } = await import('../../../mods/network/originRewrite.js');
+const { redirectUrl, start } = await import('../../../mods/network/originRewrite.js');
 
 const results = [];
 
@@ -43,6 +49,18 @@ is('another host is left alone', 'https://sponsor.ajay.app/api/skipSegments', 'h
 is('a blob is left alone', 'blob:1030e72d-c1d2', 'blob:1030e72d-c1d2');
 
 check('nothing stays nothing', redirectUrl(undefined) === undefined && redirectUrl('') === '', 'changed');
+
+// After a sign-in YouTube sends the page to https://www.youtube.com; the policy refuses it, and the
+// page is loaded from the service instead.
+start();
+const refuse = (uri, directive) => heard.securitypolicyviolation({ blockedURI: uri, violatedDirective: directive });
+refuse('https://www.youtube.com', "h5vcc-location-src 'self'");
+check('a navigation to YouTube the policy refused is loaded from the service', replaced[0] === 'http://127.0.0.2:8099/tv', replaced[0]);
+refuse('https://www.youtube.com/tv?x=1', "h5vcc-location-src 'self'");
+check('with its path when the engine gives one', replaced[1] === 'http://127.0.0.2:8099/tv?x=1', replaced[1]);
+refuse('https://ads.example', "h5vcc-location-src 'self'");
+refuse('https://www.youtube.com', 'img-src');
+check('anything else refused is left alone', replaced.length === 2, JSON.stringify(replaced));
 
 const failed = results.filter((ok) => !ok).length;
 console.log(`\n${results.length - failed}/${results.length} checks passed.`);

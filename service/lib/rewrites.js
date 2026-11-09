@@ -104,12 +104,17 @@ const restoreCookiePrefixes = (header) => header
 // this one.
 const HIDE_WATERMARK = 'env_hideWatermark=true';
 
+// A redirect from YouTube to itself, as a path on this service; null for any other address.
+const keepOnService = (location) => (/^https?:\/\/(www\.|m\.)?youtube\.com([/?#]|$)/i.test(String(location))
+    ? String(location).replace(/^https?:\/\/[^/?#]+/i, '') || '/tv'
+    : null);
+
 const hidesWatermark = (url) => String(url).indexOf('env_hideWatermark=') !== -1;
 
 const withHiddenWatermark = (url) => `${url}${String(url).indexOf('?') === -1 ? '?' : '&'}${HIDE_WATERMARK}`;
 
 module.exports = {
     rerouteAbr, overrideInnertubeHost, rewriteAttestation, retuneFlags,
-    rewriteBody, rewriteSetCookie, restoreCookiePrefixes,
+    rewriteBody, rewriteSetCookie, restoreCookiePrefixes, keepOnService,
     hidesWatermark, withHiddenWatermark, rewriteStaticHosts
 };

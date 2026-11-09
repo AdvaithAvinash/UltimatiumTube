@@ -105,6 +105,15 @@ check('an https gstatic url routes once, not doubled', () => {
     assert.ok(out.indexOf('https://tv.example') === -1, out);
 });
 
+check('a redirect from YouTube to itself is kept on this service (after a sign-in it went to youtube.com)', () => {
+    const { keepOnService } = rewrites;
+    if (keepOnService('https://www.youtube.com/tv?signin=1#/') !== '/tv?signin=1#/') throw new Error('kept path');
+    if (keepOnService('https://www.youtube.com') !== '/tv') throw new Error('bare host');
+    if (keepOnService('https://youtube.com/tv') !== '/tv') throw new Error('no www');
+    if (keepOnService('https://accounts.google.com/x') !== null) throw new Error('another site is left alone');
+    if (keepOnService('https://www.youtube.com.evil.example/tv') !== null) throw new Error('a look-alike host is left alone');
+});
+
 const failed = results.filter((ok) => !ok).length;
 console.log(`\n${results.length - failed}/${results.length} checks passed.`);
 process.exit(failed ? 1 : 0);

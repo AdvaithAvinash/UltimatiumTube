@@ -30,10 +30,14 @@ const write = (all) => {
     }
 };
 
-const remember = (id, t, d) => {
+// title and channel are kept too, for the Control Center's "Continue watching".
+const remember = (id, t, d, about) => {
     if (!id || !(d > LONG_ENOUGH)) return;
     const all = read();
-    if (t > NEAR_START && t < d * NEAR_END) all[id] = { t: Math.floor(t), d: Math.floor(d), at: Date.now() };
+    const more = about || {};
+    if (t > NEAR_START && t < d * NEAR_END) {
+        all[id] = { t: Math.floor(t), d: Math.floor(d), at: Date.now(), title: more.title || '', channel: more.channel || '' };
+    }
     else delete all[id];
     write(all);
 };
@@ -73,7 +77,7 @@ const follow = (video) => {
         if (!configRead('enableSmartResume')) return;
         const now = id();
         if (!now || held.resumed !== now) return;
-        remember(now, video.currentTime, video.duration);
+        remember(now, video.currentTime, video.duration, currentVideo());
         held.saved = Date.now();
     };
 

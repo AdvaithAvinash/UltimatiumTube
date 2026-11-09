@@ -130,6 +130,14 @@ public class MainActivity extends Activity {
         super.onNewIntent(intent);
         setIntent(intent);
 
+        // The Control Center asking for a YouTube place (a video, a playlist, a search): a path of the
+        // TV application, never another site.
+        String path = intent == null ? null : intent.getStringExtra("tvPath");
+        if (path != null && path.startsWith("/tv")) {
+            web.loadUrl("https://www.youtube.com" + path);
+            return;
+        }
+
         // A link sent to a running app opens in it rather than being dropped.
         if (intent != null && intent.getData() != null) web.loadUrl(addressFor(intent));
     }
@@ -290,6 +298,17 @@ public class MainActivity extends Activity {
         }
 
         // A list from the settings, as the phone page last left it: one address to a line.
+        // The whole of the settings, for the Control Center (collections, bookmarks, smart playlists).
+        private String configJson() {
+            try {
+                org.json.JSONObject all = new org.json.JSONObject(phoneSettings.read(PhoneServer.address()));
+                org.json.JSONObject config = all.optJSONObject("config");
+                return config == null ? "{}" : config.toString();
+            } catch (Exception e) {
+                return "{}";
+            }
+        }
+
         private String setting(String key) {
             try {
                 org.json.JSONObject all = new org.json.JSONObject(phoneSettings.read(PhoneServer.address()));
@@ -308,6 +327,7 @@ public class MainActivity extends Activity {
                     Intent i = new Intent(MainActivity.this, StremioActivity.class);
                     i.putExtra("addons", setting("stremioAddons"));
                     i.putExtra("plugins", setting("grayjayPlugins"));
+                    i.putExtra("config", configJson());
                     startActivity(i);
                 }
             });

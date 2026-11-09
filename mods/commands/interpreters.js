@@ -8,6 +8,9 @@ import { recordSkip } from '../sponsorblock/index.js';
 import { openStremio } from '../stremio/index.js';
 import { addBookmark, openBookmarks, openBookmark, removeBookmark, clearBookmarks } from '../bookmarks/index.js';
 import { openChannelQuality, setChannelQuality } from '../quality/index.js';
+import { openProfiles, switchProfile } from '../profiles/index.js';
+import { abPress } from '../abRepeat/index.js';
+import { showWhatsNew, showWelcome } from '../notice/index.js';
 import {
     chooseCollection, addToCollection, openCollections, openCollection, removeFromCollection, deleteCollection
 } from '../collections/index.js';
@@ -62,6 +65,12 @@ const ACTIONS = {
     CLEAR_BOOKMARKS: () => clearBookmarks(),
 
     OPEN_CHANNEL_QUALITY: () => openChannelQuality(),
+
+    OPEN_PROFILES: () => openProfiles(),
+    SWITCH_PROFILE: (parameters) => switchProfile(parameters),
+    AB_REPEAT: () => abPress(),
+    OPEN_WHATS_NEW: () => showWhatsNew(),
+    OPEN_WELCOME: () => showWelcome(),
 
     CHOOSE_COLLECTION: () => chooseCollection(),
     ADD_TO_COLLECTION: (parameters) => addToCollection(parameters),

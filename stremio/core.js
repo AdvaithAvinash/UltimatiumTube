@@ -253,9 +253,16 @@
 
   var thumb = function (m) { return m.poster || m.logo || ''; };
 
+  // Covers for a title an addon gives none for: Cinemeta's own pictures, by the IMDb id (tt...).
+  SX.cover = function (id, kind) {
+    var tt = /^(tt\d+)/.exec(String(id || ''));
+    return tt ? 'https://images.metahub.space/' + (kind || 'poster') + '/medium/' + tt[1] + '/img' : '';
+  };
+
   SX.preview = function (m, addon) {
     return {
-      id: String(m.id), type: m.type, name: m.name || '', poster: thumb(m), background: m.background || '',
+      id: String(m.id), type: m.type, name: m.name || '', poster: thumb(m) || SX.cover(m.id, 'poster'),
+      background: m.background || SX.cover(m.id, 'background'),
       logo: m.logo || '', description: m.description || '', year: m.releaseInfo || m.year || '',
       rating: m.imdbRating || '', genres: SX.arr(m.genres), runtime: m.runtime || '', addon: addon ? addon.url : ''
     };
@@ -298,8 +305,8 @@
           writer: SX.arr(m.writer), videos: m.videos, released: m.released || '', country: m.country || '',
           awards: m.awards || '', website: m.website || ''
         });
-        if (!full.poster) full.poster = item.poster;
-        if (!full.background) full.background = item.background;
+        if (!full.poster) full.poster = item.poster || SX.cover(item.id, 'poster');
+        if (!full.background) full.background = item.background || SX.cover(item.id, 'background');
         return withVideos(full);
       }).catch(function () { return next(at + 1); });
     };
@@ -478,6 +485,61 @@
       if (!best || q > best.q) best = { s: s, q: q };
     });
     return best ? best.s : null;
+  };
+
+  // --- YouTube: a channel's newest videos (its public feed), as cards
+
+  var unxml = function (t) {
+    return String(t || '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
+  };
+
+  SX.parseFeed = function (xml, channel) {
+    return String(xml || '').split('<entry>').slice(1).map(function (entry) {
+      var pick = function (re) { var m = re.exec(entry); return m ? unxml(m[1]) : ''; };
+      var id = pick(/<yt:videoId>([^<]+)<\/yt:videoId>/);
+      if (!id) return null;
+      return {
+        id: id, type: 'ytvideo', name: pick(/<title>([^<]*)<\/title>/), author: pick(/<name>([^<]*)<\/name>/) || channel || '',
+        published: pick(/<published>([^<]+)<\/published>/),
+        poster: 'https://i.ytimg.com/vi/' + id + '/hqdefault.jpg', background: 'https://i.ytimg.com/vi/' + id + '/maxresdefault.jpg',
+        description: pick(/<media:description>([^<]*)<\/media:description>/)
+      };
+    }).filter(Boolean);
+  };
+
+  SX.channelFeed = function (channelId, name) {
+    return SX.text('https://www.youtube.com/feeds/videos.xml?channel_id=' + encodeURIComponent(channelId))
+      .then(function (xml) { return SX.parseFeed(xml, name); });
+  };
+
+  // Newest first, each video once, across many feeds.
+  SX.mergeFeeds = function (lists) {
+    var seen = {};
+    return lists.reduce(function (all, l) { return all.concat(l); }, [])
+      .filter(function (v) { if (seen[v.id]) return false; seen[v.id] = 1; return true; })
+      .sort(function (a, b) { return a.published < b.published ? 1 : a.published > b.published ? -1 : 0; });
+  };
+
+  // "Name: word, word" a line: a smart playlist of the feed videos whose title has any of the words.
+  SX.smartPlaylists = function (text) {
+    return String(text || '').split(/\n+/).map(function (line) {
+      var m = /^\s*([^:]+):\s*(.+)$/.exec(line);
+      if (!m) return null;
+      var words = m[2].split(',').map(function (w) { return w.trim().toLowerCase(); }).filter(Boolean);
+      return words.length ? { name: m[1].trim(), words: words } : null;
+    }).filter(Boolean);
+  };
+
+  SX.matchWords = function (videos, words) {
+    return videos.filter(function (v) {
+      var t = (v.name + ' ' + v.author).toLowerCase();
+      return words.some(function (w) { return t.indexOf(w) !== -1; });
+    });
+  };
+
+  SX.shuffle = function (list, random) {
+    var r = random || Math.random;
+    return list.map(function (v) { return { v: v, k: r() }; }).sort(function (a, b) { return a.k - b.k; }).map(function (e) { return e.v; });
   };
 
   // --- what was watched

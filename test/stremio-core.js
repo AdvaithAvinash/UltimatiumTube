@@ -137,4 +137,27 @@ check('a stream is picked by quality, never above a ceiling, never one that is n
     assert.strictEqual(SX.pick(list.slice(3), 0), null);
 });
 
+check('a title with an IMDb id and no poster gets Cinemeta\'s cover and backdrop', () => {
+    const p = SX.preview({ id: 'tt0111161', type: 'movie', name: 'X' }, { url: 'u' });
+    assert.strictEqual(p.poster, 'https://images.metahub.space/poster/medium/tt0111161/img');
+    assert.strictEqual(p.background, 'https://images.metahub.space/background/medium/tt0111161/img');
+    assert.strictEqual(SX.preview({ id: 'kitsu:1', type: 'anime', name: 'Y' }, { url: 'u' }).poster, '');
+    assert.strictEqual(SX.preview({ id: 'tt1', name: 'Z', poster: 'https://own/p.jpg' }, { url: 'u' }).poster, 'https://own/p.jpg');
+});
+
+check('a channel feed is read into videos, newest first across channels, each once', () => {
+    const a = SX.parseFeed('<feed><entry><yt:videoId>aaaaaaaaaaa</yt:videoId><title>A &amp; B</title><published>2026-01-02</published><author><name>One</name></author></entry></feed>');
+    const b = SX.parseFeed('<feed><entry><yt:videoId>bbbbbbbbbbb</yt:videoId><title>New</title><published>2026-03-01</published></entry><entry><yt:videoId>aaaaaaaaaaa</yt:videoId><title>A &amp; B</title><published>2026-01-02</published></entry></feed>', 'Two');
+    assert.deepStrictEqual(a.map((v) => [v.id, v.name, v.author, v.type]), [['aaaaaaaaaaa', 'A & B', 'One', 'ytvideo']]);
+    assert.deepStrictEqual(SX.mergeFeeds([a, b]).map((v) => v.id), ['bbbbbbbbbbb', 'aaaaaaaaaaa']);
+});
+
+check('smart playlists are "Name: word, word" lines, matched against titles and channels', () => {
+    const lists = SX.smartPlaylists('Tech: oled, review\nnot a list\nMusic: lofi');
+    assert.deepStrictEqual(lists.map((l) => l.name), ['Tech', 'Music']);
+    const videos = [{ name: 'OLED vs QLED', author: 'X' }, { name: 'Cooking', author: 'Lofi Girl' }, { name: 'Other', author: 'Y' }];
+    assert.deepStrictEqual(SX.matchWords(videos, lists[0].words).map((v) => v.name), ['OLED vs QLED']);
+    assert.deepStrictEqual(SX.matchWords(videos, lists[1].words).map((v) => v.name), ['Cooking']);
+});
+
 finish();

@@ -55,8 +55,17 @@ const reasonToPass = (seconds, channel, title, read) => {
     if (seconds > 0 && longest && seconds > longest + 0.5) return `longer than ${longest} s`;
     if (seconds > 0 && shortest && seconds < shortest) return `shorter than ${shortest} s`;
 
-    if (!read('shortsUseHiddenLists')) return null;
     const name = String(channel || '').trim().toLowerCase();
+    const text0 = String(title || '').toLowerCase();
+    const own = String(read('shortsBlockedWords') || '').split(/\n+/).map((w) => w.trim().toLowerCase()).filter(Boolean);
+    if (own.some((w) => text0.indexOf(w) !== -1)) return 'a word you hid for Shorts';
+    if (read('shortsOnlyCollections') && name) {
+        const kept = Object.keys(read('channelCollections') || {})
+            .reduce((all, key) => all.concat(lowered((read('channelCollections') || {})[key])), []);
+        if (kept.indexOf(name) === -1) return 'not in your collections';
+    }
+
+    if (!read('shortsUseHiddenLists')) return null;
     if (name && lowered(read('blockedChannels')).indexOf(name) !== -1) return 'a hidden channel';
     const text = String(title || '').toLowerCase();
     const word = lowered(read('blockedKeywords')).find((w) => text.indexOf(w) !== -1);

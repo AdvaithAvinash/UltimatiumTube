@@ -5,6 +5,7 @@ import { savedTimeSummary } from '../sponsorblock/index.js';
 import { adSummary } from '../adblock/index.js';
 import { ACTION_NAMES } from '../remoteKeys/index.js';
 import { bookmarks } from '../bookmarks/index.js';
+import { playbackChoices } from '../profiles/index.js';
 import { ACCENTS, BACKGROUNDS, FONTS, WALLPAPERS, WALLPAPER_COLLECTIONS } from '../theme/index.js';
 
 const ART = 'https://www.gstatic.com/ytlr/img/';
@@ -122,6 +123,8 @@ const countOfSpeeds = () => {
   const count = Object.keys(configRead('channelSpeeds') || {}).length;
   return count ? `${count} channel${count === 1 ? '' : 's'}` : 'None';
 };
+
+const SEEK_STEPS = [2, 5, 10, 15, 30, 60, 120].map((seconds) => ({ label: `${seconds} s`, value: seconds }));
 
 const SHORTS_LONGEST = [0, 15, 30, 45, 60, 90, 120]
   .map((seconds) => ({ label: seconds ? `${seconds} s` : 'Off', value: seconds }));
@@ -394,12 +397,48 @@ const GROUPS = [
       Switch('enableSmartSearch', 'Smart search',
         'A search said or typed as a sentence ("find videos explaining how OLED TVs work in simple terms") '
         + 'is turned into the words that find it. Rules on this TV, not an AI service', CONTROLS),
-      Choice('shortsMaxSeconds', 'Shorts: pass over longer than',
+      Panel('playbackProfile', 'Playback profiles', 'Cinema, Learning, Music and Sports: speed, quality, fit and skipping in one press',
+        SKIPPING, () => configRead('playbackProfile') || 'Standard', playbackChoices),
+      Choice('seekBackSeconds', 'Seek step back', 'How far the remote\u2019s Back action goes', SKIPPING, SEEK_STEPS, 'Back'),
+      Choice('seekForwardSeconds', 'Seek step forward', 'How far the remote\u2019s Forward action goes', SKIPPING, SEEK_STEPS, 'Forward')
+    ]
+  },
+  {
+    id: 'tube_shorts_center',
+    title: 'Shorts control center',
+    items: [
+      Choice('shortsMaxSeconds', 'Pass over Shorts longer than',
         'A Short longer than this is skipped as it comes up', SKIPPING, SHORTS_LONGEST, 'Longer than'),
-      Choice('shortsMinSeconds', 'Shorts: pass over shorter than',
+      Choice('shortsMinSeconds', 'Pass over Shorts shorter than',
         'A Short shorter than this is skipped as it comes up', SKIPPING, SHORTS_SHORTEST, 'Shorter than'),
-      Switch('shortsUseHiddenLists', 'Shorts: hidden channels and words too',
-        'A Short from a hidden channel, or with a hidden word in its title, is skipped as it comes up', SKIPPING)
+      Switch('shortsUseHiddenLists', 'Hidden channels and words too',
+        'A Short from a hidden channel, or with a hidden word in its title, is skipped as it comes up', SKIPPING),
+      Text('shortsBlockedWords', 'Words that hide a Short', 'For Shorts only, one to a line. Typed on the phone', SKIPPING, true),
+      Switch('shortsOnlyCollections', 'Only Shorts from my collections',
+        'Shorts from channels in none of your collections are skipped', SKIPPING, false)
+    ]
+  },
+  {
+    id: 'tube_content',
+    title: 'Content intelligence',
+    items: [
+      Switch('hideDuplicates', 'Duplicates and reposts once',
+        'The same video twice in a screen, or the same title posted again by another channel, is shown once', SKIPPING, false),
+      Switch('hideClickbait', 'Hide clickbait',
+        'Titles that shout (mostly capitals), stack !!! or emojis, or say "you won\u2019t believe"', SKIPPING, false),
+      Text('contentRules', 'Your own rules',
+        'One to a line: a word to hide, "channel: name", or "regex: pattern". Typed on the phone', SKIPPING, true)
+    ]
+  },
+  {
+    id: 'tube_profiles',
+    title: 'Profiles and what\u2019s new',
+    items: [
+      Action('openProfiles', 'Who is watching', 'Each person their own settings, bookmarks, themes and filters; Guest keeps nothing',
+        CONTROLS, 'OPEN_PROFILES'),
+      Action('openWhatsNew', 'What\u2019s new', 'What this version brings', MESSAGE, 'OPEN_WHATS_NEW'),
+      Action('openWelcome', 'The welcome message', 'Shows it again', MESSAGE, 'OPEN_WELCOME'),
+      Switch('welcomeHidden', 'Hide the welcome message', 'On after "Don\u2019t show again"', MESSAGE, false)
     ]
   },
   {
@@ -534,7 +573,7 @@ const stremioGroup = () => {
     id: 'tube_stremio',
     ultimate: true,
     title: 'Stremio and Grayjay',
-    summary: 'Movies, series and videos from Stremio addons and Grayjay plugins'
+    summary: 'The Control Center: YouTube, Stremio, Grayjay and AniUltimatium in one place'
   });
 
   Object.defineProperty(group, 'items', {
@@ -549,6 +588,10 @@ const stremioGroup = () => {
         items.push(Action('openStremio', 'Open Stremio and Grayjay', 'Back returns to YouTube', SKIPPING, 'OPEN_STREMIO'));
         items.push(Text('stremioAddons', 'Addons',
           'The addresses of the addons to use, one to a line (stremio:// or https://). Cinemeta, which gives the catalogs, is added by the page. Streams need an addon that gives direct links. Typed on the phone', SKIPPING, true));
+        items.push(Text('smartPlaylists', 'Smart playlists',
+          'For the Control Center: "Name: word, word" a line; each plays the videos of your feeds with any of the words', SKIPPING, true));
+        items.push(Text('aniUltimatiumAppId', 'AniUltimatium app id',
+          'The id AniUltimatium\u2019s own Samsung app installs under, so the Control Center can start it. Typed on the phone', SKIPPING));
         items.push(Text('grayjayPlugins', 'Grayjay plugins',
           'The addresses of the plugins to use (the .json configuration, or a grayjay:// link), one to a line. A plugin is a program that runs in the page, so add only ones you trust, such as those on plugins.grayjay.app. Typed on the phone', SKIPPING, true));
       }

@@ -84,11 +84,30 @@ const defaultConfig = {
 
   // The version of the notice shown once at the start.
   noticeSeen: '',
+  // The welcome message at the start: hidden for good by "Don't show again".
+  welcomeHidden: false,
+  // The playback profile last chosen (Cinema, Learning, Music, Sports, Standard) and the user profile.
+  playbackProfile: 'Standard',
+  userProfile: 'Main',
+  // Seek steps of the remote buttons, in seconds.
+  seekBackSeconds: 10,
+  seekForwardSeconds: 30,
+  // Content intelligence: duplicates and reposts shown once, clickbait hidden, rules of your own.
+  hideDuplicates: false,
+  hideClickbait: false,
+  contentRules: '',
+  // Shorts control center: words that hide a Short, and Shorts only from channels in your collections.
+  shortsBlockedWords: '',
+  shortsOnlyCollections: false,
   // The Stremio page: movies and series from Stremio addons. The addons are listed one to a line.
   enableStremio: true,
   stremioAddons: '',
   // Grayjay plugins, by the address of their configuration, one to a line.
   grayjayPlugins: '',
+  // Smart playlists of the Control Center: "Name: word, word" a line, over the feeds of your collections.
+  smartPlaylists: '',
+  // The id AniUltimatium's own Samsung app installs under, for the Control Center to start it.
+  aniUltimatiumAppId: 'oXabc12345.EnglishAnime',
 
   // Customization: the look of YouTube's own screens. The defaults change nothing.
   themeWallpaperOn: false,

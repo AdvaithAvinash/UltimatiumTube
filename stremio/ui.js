@@ -20,12 +20,13 @@
   var cut = function (s, n) { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
   var now = function () { return new Date().getTime(); };
 
-  var TABS = [['home', 'Home'], ['movies', 'Movies'], ['series', 'Series'], ['search', 'Search'], ['library', 'Library'], ['addons', 'Addons'], ['settings', 'Settings']];
+  var TABS = [['center', 'Center'], ['home', 'Home'], ['movies', 'Movies'], ['series', 'Series'], ['search', 'Search'], ['library', 'Library'], ['addons', 'Addons'], ['settings', 'Settings']];
   var TYPE_NAMES = { gjvideo: 'Videos', movie: 'Movies', series: 'Series', tv: 'TV', channel: 'Channels', anime: 'Anime' };
 
   var SINGULAR = { gjvideo: 'Video', movie: 'Movie', series: 'Series', tv: 'TV', channel: 'Channel', anime: 'Anime' };
 
   var S = {
+    tv: SX.store.get('tv', {}),
     keys: 0, addons: [], plugins: [], pluginList: [], phone: [], phonePlugins: [], stack: [], focus: null, tab: 'home', loaded: false, heroTimer: 0,
     last: {}
   };
@@ -34,7 +35,7 @@
 
   var DEFAULTS = {
     accent: '#3ea6ff', cardSize: 'm', hero: 'on', dim: 'normal', corners: 'round', badges: 'on',
-    startTab: 'home', autoNext: 'on', autoPick: 'ask',
+    startTab: 'center', autoNext: 'on', autoPick: 'ask',
     subLang: 'off', subSize: 'm', subColor: '#ffffff', subBg: 'shadow', subPos: 'low'
   };
 
@@ -399,7 +400,7 @@
     S.moved = false;
     markTabs(name);
 
-    var make = { home: homeTab, movies: homeTab, series: homeTab, search: searchTab, library: libraryTab, addons: addonsTab, settings: settingsTab }[name];
+    var make = { center: centerTab, home: homeTab, movies: homeTab, series: homeTab, search: searchTab, library: libraryTab, addons: addonsTab, settings: settingsTab }[name];
     var spec = make(name);
     var first = spec.start ? spec.start() : null;
     setFocus(first || focusables()[0]);
@@ -445,15 +446,23 @@
   // --- cards and rows
 
   var makeCard = function (item) {
-    var card = el('div', 'card f' + (item.type === 'gjvideo' ? ' wide' : ''));
+    if (item.type === 'action') {
+      var act = el('div', 'card f wide action');
+      act.innerHTML = '<div class="cimg"><div class="actlabel">' + esc(item.name) + '</div></div><div class="ctitle">' + esc(item.note || '') + '</div>';
+      act.__item = item;
+      act.__ok = function () { item.run(); };
+      return act;
+    }
+    var card = el('div', 'card f' + (item.type === 'gjvideo' || item.type === 'ytvideo' ? ' wide' : ''));
     var frac = item.fraction ? '<div class="bar"><i style="width:' + Math.round(item.fraction * 100) + '%"></i></div>' : '';
     var tag = item.type === 'gjvideo' ? (item.runtime ? '<div class="tag">' + esc(item.runtime) + '</div>' : '')
       : item.rating && !item.fraction ? '<div class="tag">★ ' + esc(item.rating) + '</div>' : '';
     card.innerHTML = '<div class="cimg"><div class="noimg">' + esc(cut(item.name, 40)) + '</div>' + tag + frac + '</div>'
       + '<div class="ctitle">' + esc(item.name) + '</div>'
+      + (item.type === 'ytvideo' ? '<div class="csub">' + esc([item.author, item.t ? 'at ' + SX.format(item.t) : ''].filter(Boolean).join('  \u00b7  ')) + '</div>' : '')
       + (item.type === 'gjvideo' ? '<div class="csub">' + esc([item.author, item.views ? item.views + ' views' : ''].filter(Boolean).join('  \u00b7  ')) + '</div>' : '');
     card.__item = item;
-    card.__ok = function () { openDetail(item); };
+    card.__ok = function () { if (item.type === 'ytvideo') openYouTube(item.id, item.t); else openDetail(item); };
     return card;
   };
 
@@ -939,6 +948,11 @@
       rows.style.transform = 'translateY(0)';
       if (!st.q) return;
 
+      // YouTube's own search, with the same words.
+      var q = st.q;
+      rows.appendChild(makeRow('YouTube', [{ type: 'action', name: '\u25B6  Search YouTube', note: '\u201c' + q + '\u201d', run: function () { openYouTubePath('/tv#/search?q=' + encodeURIComponent(q)); } }],
+        { onReveal: function (r) { alignRow(r, rows); } }));
+
       var asked = 0, got = 0;
       S.addons.forEach(function (a) {
         if (!a.manifest) return;
@@ -1033,6 +1047,143 @@
     add('Saved', saved.filter(function (x) { return x.type !== 'movie' && x.type !== 'series'; }));
 
     if (!rows.children.length) rows.appendChild(el('div', 'empty', 'Nothing here yet. Open a title and choose Library, or start watching something.'));
+
+    spec.start = function () { return rows.querySelector('.card'); };
+    return spec;
+  };
+
+  // --- the Universal Media Control Center: YouTube, Stremio, Grayjay and AniUltimatium in one place
+
+  var openYouTubePath = function (path) {
+    try {
+      if (window.StremioNative && window.StremioNative.openYouTube) { window.StremioNative.openYouTube(path); return; }
+    } catch (e) { /* the page's own way below */ }
+    if (!SX.origin) { toast('Open YouTube from the app to play this'); return; }
+    window.location.assign(path);
+  };
+
+  var openYouTube = function (id, t, list) {
+    openYouTubePath('/tv#/watch?v=' + encodeURIComponent(id) + (list ? '&list=' + encodeURIComponent(list) : '') + (t ? '&t=' + Math.floor(t) + 's' : ''));
+  };
+
+  // A list of videos as one continuous YouTube playlist (YouTube makes it from the ids).
+  var playAll = function (videos, shuffled) {
+    var list = shuffled ? SX.shuffle(videos) : videos;
+    if (!list.length) { toast('Nothing to play yet'); return; }
+    if (!SX.origin) { openYouTube(list[0].id); return; }
+    toast('Making the playlist…');
+    SX.json('/__tube/playlist?ids=' + list.slice(0, 50).map(function (v) { return v.id; }).join(','), 15000).then(function (r) {
+      openYouTube(list[0].id, 0, r && r.list);
+    }, function () { openYouTube(list[0].id); });
+  };
+
+  var launchAni = function () {
+    var id = (S.tv && S.tv.aniUltimatiumAppId) || 'oXabc12345.EnglishAnime';
+    if (!SX.origin) { toast('Open AniUltimatium from the TV’s apps'); return; }
+    var x = new XMLHttpRequest();
+    x.open('POST', '/__tube/launch?app=' + encodeURIComponent(id), true);
+    x.setRequestHeader('X-Tube', '1');
+    x.onreadystatechange = function () {
+      if (x.readyState !== 4) return;
+      var r = {};
+      try { r = JSON.parse(x.responseText); } catch (e) { r = {}; }
+      if (!r.ok) toast(r.reason === 'not installed' ? 'AniUltimatium is not installed on this TV (install its own .wgt)' : 'AniUltimatium did not start: ' + (r.reason || 'no answer'));
+    };
+    x.send();
+    toast('Starting AniUltimatium…');
+  };
+
+  // What YouTube was left at (smart resume, on this TV: the same page address keeps it).
+  var youtubeResume = function () {
+    var all = {};
+    try { all = JSON.parse(window.localStorage.getItem('tube.resume') || '{}') || {}; } catch (e) { all = {}; }
+    return Object.keys(all).map(function (id) {
+      var r = all[id];
+      return { id: id, type: 'ytvideo', name: r.title || 'A YouTube video', author: r.channel || 'YouTube', t: r.t,
+        fraction: r.d ? r.t / r.d : 0, at: r.at, poster: 'https://i.ytimg.com/vi/' + id + '/hqdefault.jpg' };
+    }).sort(function (a, b) { return b.at - a.at; }).slice(0, 20);
+  };
+
+  var youtubeBookmarks = function () {
+    return SX.arr(S.tv && S.tv.videoBookmarks).map(function (b) {
+      return { id: b.videoId, type: 'ytvideo', name: b.title || 'A YouTube video', author: b.channel || '', t: b.t,
+        poster: 'https://i.ytimg.com/vi/' + b.videoId + '/hqdefault.jpg' };
+    });
+  };
+
+  var centerTab = function () {
+    var spec = addScreen({ tabs: true, tab: 'center' });
+    var root = spec.root;
+    root.innerHTML = '<div class="bg"><div class="shade flat" style="position:absolute"></div></div>'
+      + '<div class="rowswrap" style="top:150px;height:930px"><div class="rows"></div></div>';
+    var rows = root.querySelector('.rows');
+    var add = function (title, items, opts) {
+      if (!items.length) return null;
+      var row = makeRow(title, items, Object.assign({ onReveal: function (r) { alignRow(r, rows); } }, opts || {}));
+      rows.appendChild(row);
+      return row;
+    };
+
+    add('Control Center', [
+      { type: 'action', name: '▶  YouTube', note: 'Back to YouTube', run: function () { openYouTubePath('/tv'); } },
+      { type: 'action', name: '⌕  Search everything', note: 'Stremio, Grayjay and YouTube', run: function () { showTab('search'); } },
+      { type: 'action', name: '★  Movies and series', note: 'Stremio and Grayjay', run: function () { showTab('home'); } },
+      { type: 'action', name: '♥  AniUltimatium', note: 'Its own app on this TV', run: launchAni },
+      { type: 'action', name: '☰  Library', note: 'Saved and continue watching', run: function () { showTab('library'); } }
+    ]);
+
+    var cont = youtubeResume().concat(continueList()).slice(0, 30);
+    add('Continue watching', cont);
+    add('Favourites', youtubeBookmarks().concat(library()));
+
+    // A feed for each collection: the newest videos of its channels.
+    var collections = (S.tv && S.tv.channelCollections) || {};
+    var ids = (S.tv && S.tv.channelIds) || {};
+    var everything = [];
+    var feeds = Object.keys(collections).filter(function (name) { return SX.arr(collections[name]).length; });
+    var pending = { n: feeds.length };
+
+    var smart = function () {
+      SX.smartPlaylists(S.tv && S.tv.smartPlaylists).forEach(function (pl) {
+        var found = SX.matchWords(SX.mergeFeeds([everything]), pl.words).slice(0, 40);
+        if (!found.length) return;
+        add('Smart playlist · ' + pl.name, [
+          { type: 'action', name: '▶  Play all', note: found.length + ' videos', run: function () { playAll(found, false); } },
+          { type: 'action', name: '⇄  Shuffle', note: 'In any order', run: function () { playAll(found, true); } }
+        ].concat(found));
+      });
+    };
+
+    feeds.forEach(function (name) {
+      var placeholder = el('div', 'row', '<div class="rowtitle">' + esc('Feed · ' + name) + '</div><div class="empty"><span class="spin"></span>Loading</div>');
+      rows.appendChild(placeholder);
+      var asks = SX.arr(collections[name]).map(function (channel) {
+        var id = ids[String(channel).trim().toLowerCase()];
+        return id ? SX.channelFeed(id, channel).catch(function () { return []; }) : Promise.resolve([]);
+      });
+      Promise.all(asks).then(function (lists) {
+        var videos = SX.mergeFeeds(lists).slice(0, 40);
+        everything = everything.concat(videos);
+        if (!placeholder.parentNode) return;
+        if (!videos.length) {
+          placeholder.querySelector('.empty').innerHTML = 'Nothing yet: watch a video of each channel once so the app knows it';
+        } else {
+          var row = makeRow('Feed · ' + name, [
+            { type: 'action', name: '▶  Play all', note: videos.length + ' newest', run: function () { playAll(videos, false); } },
+            { type: 'action', name: '⇄  Shuffle', note: 'In any order', run: function () { playAll(videos, true); } }
+          ].concat(videos), { onReveal: function (r) { alignRow(r, rows); } });
+          rows.replaceChild(row, placeholder);
+        }
+        pending.n -= 1;
+        if (pending.n === 0) smart();
+      });
+    });
+
+    if (!feeds.length) {
+      add('Feeds', [{ type: 'action', name: '+  Make a feed', note: 'Put channels in a collection on YouTube', run: function () {
+        toast('On YouTube, while a video plays: Settings > UltimatiumTube > Add this channel to a collection');
+      } }]);
+    }
 
     spec.start = function () { return rows.querySelector('.card'); };
     return spec;
@@ -1160,7 +1311,7 @@
     { key: 'corners', label: 'Corners', options: [['round', 'Rounded'], ['sharp', 'Sharp']] },
     { key: 'badges', label: 'Rating on posters', options: ONOFF },
     { head: 'Playing' },
-    { key: 'startTab', label: 'Opens on', options: [['home', 'Home'], ['movies', 'Movies'], ['series', 'Series'], ['library', 'Library']] },
+    { key: 'startTab', label: 'Opens on', options: [['center', 'Control Center'], ['home', 'Home'], ['movies', 'Movies'], ['series', 'Series'], ['library', 'Library']] },
     { key: 'autoNext', label: 'Start the next episode', options: ONOFF },
     { key: 'autoPick', label: 'Choosing a stream', options: [['ask', 'Ask me'], ['best', 'Best quality'], ['1080', 'Best up to 1080p'], ['720', 'Best up to 720p']] },
     { head: 'Subtitles' },
@@ -1328,6 +1479,7 @@
         var plugins = window.StremioNative.plugins ? String(window.StremioNative.plugins() || '') : '';
         SX.store.set('phone', given);
         SX.store.set('phonePlugins', plugins);
+        try { S.tv = JSON.parse(String((window.StremioNative.config && window.StremioNative.config()) || '{}')) || {}; } catch (e) { S.tv = {}; }
         return Promise.resolve({ addons: SX.parseList(given), plugins: SX.parsePlugins(plugins) });
       }
     } catch (e) { /* asked below */ }
@@ -1341,6 +1493,8 @@
 
     return SX.json('/api/settings', 4000).then(function (r) {
       if (!r || !r.config) return read(kept());
+      S.tv = r.config;
+      SX.store.set('tv', r.config);
       var answer = { addons: String(r.config.stremioAddons || ''), plugins: String(r.config.grayjayPlugins || '') };
       SX.store.set('phone', answer.addons);
       SX.store.set('phonePlugins', answer.plugins);

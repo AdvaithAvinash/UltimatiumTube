@@ -216,6 +216,15 @@ under **Settings > About** (the TV's address, then `:8189/settings`). Open it on
 on the same network. Changes reach the TV within a few seconds. **Back up settings** saves a file you
 can restore from later.
 
+### Staying signed in
+
+Before 1.13.1 the Tizen 5.5+ app could sign every account out at random: the app is opened at the TV's
+own address on your home network, the TV keeps the sign-in under that address, and when the router
+gave the TV a new address the sign-in was left behind. The app now keeps using the address it was at
+for as long as the TV has it, and keeps a copy of the sign-in in its own folder on the TV: opened at a
+new address, it puts the sign-in back and reloads once. The copy is only ever given to the TV itself.
+Giving the TV a fixed address in your router (a DHCP reservation) avoids the change altogether.
+
 ### What is not here
 
 Automatic frame-rate matching, which TizenTube Cobalt offers, is not in UltimatiumTube. It needs a

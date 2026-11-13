@@ -16,6 +16,7 @@ const WELCOME = [
 ];
 
 const WHATS_NEW = [
+    ['Stay signed in', 'A new network address for the TV no longer signs every account out'],
     ['Universal Media Control Center', 'One place for YouTube, Stremio, Grayjay and AniUltimatium: continue watching, favourites, feeds, search'],
     ['Custom feeds', 'The newest videos of the channels in each of your collections'],
     ['Smart playlists', 'Play a feed or a keyword mix as one continuous playlist, shuffled or in order'],

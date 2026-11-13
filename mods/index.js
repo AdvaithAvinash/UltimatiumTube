@@ -2,6 +2,7 @@
 
 import { boot, interceptJson, register } from '../framework/index.js';
 import { start as startNetwork } from './network/originRewrite.js';
+import { start as startKeepSignIn } from './network/keepSignIn.js';
 import { start as startSettings } from './settings/nativeSettings.js';
 import { start as startShell } from './shell/startup.js';
 import { start as startPage } from './shell/startPage.js';
@@ -48,6 +49,7 @@ import './shell/whosWatching.js';
 import './dev/index.js';
 
 register('origin rewrite', 'network', startNetwork);
+register('keep sign-in', 'network', startKeepSignIn);
 register('native settings', 'settings', startSettings);
 
 register('ui shell', 'ui', startShell);

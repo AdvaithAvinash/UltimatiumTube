@@ -298,3 +298,13 @@ Two build-time gates, one per side.
   profiles keep each person's settings in `localStorage` (`tube.profiles`) and swap them in on a switch;
   settings that belong to the TV (phone page, statistics, channel ids) stay. Content intelligence and the
   Shorts control center are tile filters and Shorts-player rules (`mods/contentIntel`, `mods/shorts`).
+- **Staying signed in (1.13.1):** on Tizen 5.5+ the page is served from the TV's own address on the home
+  network, and the engine keeps the page's storage (YouTube's sign-in, this app's settings) per address.
+  A new address from the router, or a set on cable and Wi-Fi listing its interfaces in another order,
+  opened the page with empty storage: every account signed out. Two fixes: the address the page was last
+  sent to is written to the app folder (`address`) and kept while the set still has it
+  (`service/lib/serviceAddress.js`); and the page posts a copy of its storage to the service every 30
+  seconds (`/__tube/keep`, answered only to the TV itself and only with the `X-Tube` header, kept in
+  `keep.json` in the app folder). Opened at a new address, the page puts the copy back and loads once
+  more (`mods/network/keepSignIn.js`); at the same address nothing is put back, so a sign-out on purpose
+  stays.

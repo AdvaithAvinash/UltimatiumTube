@@ -77,6 +77,22 @@ const results = []; const check = (label, ok, detail) => { console.log(`${ok ? '
   const before = starts.count; await sleep(20000);
   check('left alone for 20s, no copy is ended and started again', starts.count === before, `${starts.count - before} restarts`);
   await run('after 20s more');
+  // The TV's address changes: the page opens somewhere its storage is empty. It must find the copy the
+  // service kept for the old address, put it back and load again, signed in.
+  const kept = path.join(share, 'keep.json');
+  const waitFor = async (test, ms) => { const until = Date.now() + ms; while (Date.now() < until) { if (test()) return true; await sleep(500); } return test(); };
+  const readKept = () => { try { return JSON.parse(fs.readFileSync(kept, 'utf8')); } catch (e) { return null; } };
+  const here = await page.evaluate(() => location.origin);
+  check('the page\'s storage is kept by the service, under its address', await waitFor(() => (readKept() || {}).origin === here, 15000), JSON.stringify(readKept()).slice(0, 160));
+  fs.writeFileSync(kept, JSON.stringify({ origin: 'http://10.9.9.9:' + PORT, at: Date.now(), items: { 'yt.sim.signin': 'still signed in' } }));
+  await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+  await run('at a new address');
+  const back = async () => page.evaluate(() => localStorage.getItem('yt.sim.signin')).catch(() => null);
+  const restored = await waitFor(() => true, 0) && await (async () => { const until = Date.now() + 20000; while (Date.now() < until) { if (await back() === 'still signed in') return true; await sleep(500); } return false; })();
+  check('at a new address the sign-in is put back', restored, String(await back()));
+  check('and the copy now belongs to the new address', await waitFor(() => (readKept() || {}).origin === here, 15000), JSON.stringify(readKept()).slice(0, 160));
+  const other = await new Promise((resolve) => require('http').get({ host: '127.0.0.1', port: PORT, path: '/__tube/keep' }, (res) => { res.resume(); resolve(res.statusCode); }).on('error', () => resolve(0)));
+  check('the copy is not given out without the app\'s header', other === 403, String(other));
   const log = fs.readFileSync(path.join(share, 'service.log'), 'utf8');
   check('no copy gave up its port or ended the other', !/handoff|giving the port|ending another/.test(log));
   console.log('page errors:', JSON.stringify(errors.slice(0, 3)));

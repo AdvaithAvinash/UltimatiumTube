@@ -315,3 +315,8 @@ Two build-time gates, one per side.
   connections (`sending.dropAll`), which stay bound to the old one and hang. DNS answers IPv4 first, and
   the reachability check has a deadline on connecting. The sign-in copy is smaller (values up to 128KB,
   2MB in all, once a minute) and is put back at most once per copy, marked in the page's own storage.
+- **Interface modes (1.14.0):** `mods/uiMode` offers three modes as one settings row (`uiMode`). SmartTube
+  style and YouTube as it comes are presets over existing settings; leaving UltimatiumTube mode keeps
+  those settings in `uiModeSaved`, and choosing it again writes them back. What has no setting of its own
+  checks `isStock()`: the video fit player button, the long-press menu and the welcome panel are left out
+  in YouTube as it comes.

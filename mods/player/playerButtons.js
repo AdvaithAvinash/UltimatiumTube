@@ -1,4 +1,5 @@
 import { ButtonRenderer, configRead, onResponse } from '../../framework/index.js';
+import { isStock } from '../uiMode/index.js';
 
 const type = (entry) => String((entry && entry.type) || '');
 
@@ -52,7 +53,11 @@ const withFitButton = (actions) => {
     return actions.slice(0, at).concat([fitButton()], actions.slice(at));
 };
 
-const dressSettings = (actions) => withFitButton(configRead('enableMPButton') ? withMiniPlayer(actions) : actions);
+// YouTube as it comes has no buttons of ours.
+const dressSettings = (actions) => {
+    const dressed = configRead('enableMPButton') ? withMiniPlayer(actions) : actions;
+    return isStock() ? dressed : withFitButton(dressed);
+};
 
 // Replaced, not dressed: YouTube's pair are chapter controls, ours step through the queue.
 const skipButton = (title, icon, signal) => ({

@@ -1,4 +1,5 @@
 import { VERSION, configRead, configWrite, every, findResolver, onKey, resolve, stop } from '../../framework/index.js';
+import { isStock } from '../uiMode/index.js';
 
 // The welcome message the app opens with, and the "What's new" page, as a glass panel of our own drawn
 // over YouTube: a translucent dark pane with a glowing edge and its buttons in a row. Its keys are
@@ -16,6 +17,7 @@ const WELCOME = [
 ];
 
 const WHATS_NEW = [
+    ['Interface modes', 'UltimatiumTube, SmartTube style, or YouTube as it comes (like youtube-dummy), in one press under Settings'],
     ['Starts reliably', 'The app no longer stays on the start screen when the TV answers on another address, and keeps loading after the router gives the TV a new one'],
     ['Stay signed in', 'A new network address for the TV no longer signs every account out'],
     ['Universal Media Control Center', 'One place for YouTube, Stremio, Grayjay and AniUltimatium: continue watching, favourites, feeds, search'],
@@ -122,7 +124,7 @@ const NAME = 'startup notice';
 
 const start = () => {
     onKey('glass panel', ALL_KEYS, keys);
-    if (configRead('welcomeHidden')) return;
+    if (configRead('welcomeHidden') || isStock()) return;
 
     // The page is not ready for a panel until YouTube's own commands can be sent.
     every(NAME, 1500, () => {

@@ -5,6 +5,11 @@ const CONFIG_KEY = 'tube.settings';
 // Out of the box the TV looks and behaves like the stock YouTube app; only ads and sponsor
 // segments go. Everything else is opt-in under Settings > UltimatiumTube.
 const defaultConfig = {
+  // The interface mode: 'ultimatiumtube', 'smarttube' (SmartTube's look and habits) or 'stock' (YouTube
+  // as it comes); and your own setup of what a mode changes, kept while another mode is on.
+  uiMode: 'ultimatiumtube',
+  uiModeSaved: {},
+
   enableAdBlock: true,
 
   enableSponsorBlock: true,

@@ -1,10 +1,12 @@
 import { GRID, MenuServiceItemRenderer, PIVOT, SHELF, TILES, clone, onTile } from '../../framework/index.js';
 import { longPressData } from './items.js';
+import { isStock } from '../uiMode/index.js';
 
 // Most tiles arrive with a menu from the container, so the usual job is appending one item to it.
 
 const addLongPress = (item) => {
-    if (!item.tileRenderer) return;
+    // YouTube as it comes keeps YouTube's own long-press menu.
+    if (isStock() || !item.tileRenderer) return;
     if (item.tileRenderer.style !== 'TILE_STYLE_YTLR_DEFAULT') return;
 
     if (item.tileRenderer.onLongPressCommand?.showMenuCommand?.menu?.menuRenderer?.items) {

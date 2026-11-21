@@ -142,6 +142,20 @@ phone page.
 | Playback, Subtitles, Player controls | Quality, codec, video fit (original, zoom to fill, zoom 1.15x / 1.33x / 1.5x, stretch), default speed (up to 15x), remembered speed, subtitle tracks, extra player buttons |
 | Overlays and prompts | Shopping card, end screen cards, up next, "Are you still watching?", sign-in reminder |
 
+### Interface modes
+
+The first row of the UltimatiumTube settings, **Interface mode**, switches the whole app in one press:
+
+| Mode | What you get |
+|---|---|
+| **UltimatiumTube** | Everything UltimatiumTube adds, as you set it up |
+| **SmartTube style** | SmartTube's look and habits over YouTube's own TV screens: dark grey with red, sponsor segments skipped with a note, DeArrow titles, dislikes, sharper thumbnails, previous/next and mini player buttons, a speed remembered per channel, no "still watching?", paid-promotion or sign-in nags |
+| **YouTube as it comes (dummy)** | YouTube's own TV app untouched, the way [youtube-dummy](https://github.com/no-cover/youtube-dummy) shows it: no theme, wallpaper, extra buttons, menus, panels or welcome message. Only adverts and sponsor segments go, quietly |
+
+Your own setup is kept while another mode is on, and comes back exactly when you choose UltimatiumTube
+again. SmartTube style is SmartTube's look and defaults applied to YouTube's TV interface; SmartTube's
+own screens belong to its Android app and are not copied here.
+
 ### UltimatiumTube Ultimate Settings
 
 The first row of the UltimatiumTube section. It opens three sections.

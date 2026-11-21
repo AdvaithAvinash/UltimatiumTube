@@ -16,16 +16,20 @@ const ROUTE = '/__tube/keep';
 const SAVE = 'keep sign-in';
 const ASK = 'keep sign-in read';
 
-const SAVE_EVERY = 30000;
+const SAVE_EVERY = 60000;
 const ASK_EVERY = 5000;
 const ASK_AT_MOST = 12;
 
 // A value bigger than this is a cache, not a sign-in, and is left out of the copy.
-const BIGGEST = 512 * 1024;
-const MOST = 5 * 1024 * 1024;
+const BIGGEST = 128 * 1024;
+const MOST = 2 * 1024 * 1024;
 
-// Set for the load that follows a move, so a move that does not take is not tried in a loop.
+// Which copy was last brought to this address, kept in the page's own storage (which outlives a
+// reload on every engine, where the session's may not): a copy is put back once, never in a loop.
 const MOVED = 'tube.keep.moved';
+
+// However the service answers, or if it never does, the page loads again within this long.
+const RELOAD_WITHIN = 4000;
 
 const state = { answered: false, sent: '', asked: 0 };
 
@@ -41,7 +45,7 @@ const storageOf = (name) => {
 const keysOf = (store) => Array.from({ length: store.length }, (_, i) => store.key(i)).filter((key) => typeof key === 'string');
 
 // What the page holds now, without the values too big to be worth carrying.
-const snapshot = (store) => keysOf(store).reduce((items, key) => {
+const snapshot = (store) => keysOf(store).filter((key) => key !== MOVED).reduce((items, key) => {
     const value = store.getItem(key);
     if (typeof value === 'string' && value.length <= BIGGEST) items[key] = value;
     return items;
@@ -77,7 +81,7 @@ const startSaving = () => {
 // The page's storage made the same as the copy: what the copy holds put in, what it does not taken
 // out (what YouTube wrote while it found itself signed out at the new address).
 const putBack = (store, items) => {
-    keysOf(store).filter((key) => !Object.prototype.hasOwnProperty.call(items, key)
+    keysOf(store).filter((key) => key !== MOVED && !Object.prototype.hasOwnProperty.call(items, key)
         && (store.getItem(key) || '').length <= BIGGEST).forEach((key) => store.removeItem(key));
 
     return Object.keys(items).filter((key) => {
@@ -90,6 +94,23 @@ const putBack = (store, items) => {
     }).length;
 };
 
+const remember = (store, which) => {
+    try {
+        store.setItem(MOVED, which);
+    } catch (error) {
+        // A full store: the session's mark, or the copy marked as this address's, still stops a loop.
+    }
+};
+
+const once = (run) => {
+    const held = { done: false };
+    return () => {
+        if (held.done) return;
+        held.done = true;
+        run();
+    };
+};
+
 // Answers whether the page is loading again.
 const restore = (copy) => {
     const store = storageOf('localStorage');
@@ -98,8 +119,8 @@ const restore = (copy) => {
 
     if (!store || !copy || !copy.origin || !copy.items || copy.origin === here) return false;
 
-    const moved = session && session.getItem(MOVED);
-    if (moved === here) {
+    const which = `${copy.origin}|${copy.at || 0}`;
+    if (store.getItem(MOVED) === which || (session && session.getItem(MOVED) === which)) {
         warn('keep sign-in', `the storage of ${copy.origin} was already brought to ${here}; not again`);
         return false;
     }
@@ -108,12 +129,14 @@ const restore = (copy) => {
     warn('keep sign-in', `the TV's address changed from ${copy.origin} to ${here}: ${count} stored items `
         + 'brought over, sign-in included; loading again');
 
-    if (session) session.setItem(MOVED, here);
+    remember(store, which);
+    if (session) remember(session, which);
 
     // The copy is marked as this address's before loading again, so the next load finds nothing to move.
     const text = JSON.stringify({ origin: here, items: snapshot(store) });
-    const reload = () => window.location.reload();
-    request('POST', text).then(reload, reload);
+    const reload = once(() => window.location.reload());
+    setTimeout(reload, RELOAD_WITHIN);
+    if (text.length <= MOST) request('POST', text).then(reload, reload);
     return true;
 };
 

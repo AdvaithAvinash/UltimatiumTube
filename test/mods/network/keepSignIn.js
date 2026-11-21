@@ -59,11 +59,18 @@ await settle();
 check('the copy is marked as the new address\'s', page.posts.length === 1 && page.posts[0].origin === page.origin,
     JSON.stringify(page.posts.map((p) => p.origin)));
 check('and the page loads once more, signed in', page.reloads === 1, page.reloads);
-check('the move is remembered for this load', window.sessionStorage.getItem(MOVED) === page.origin);
+check('the move is remembered for this load', window.sessionStorage.getItem(MOVED) === `${OLD}|0`, window.sessionStorage.getItem(MOVED));
+check('and in the page\'s own storage, which outlives a reload everywhere', window.localStorage.getItem(MOVED) === `${OLD}|0`);
+check('the mark is not carried in the copy', !(MOVED in page.posts[0].items), Object.keys(page.posts[0].items).join());
 
 check('a move that did not take is not tried again in a loop', restore(copy) === false);
+window.sessionStorage.removeItem(MOVED);
+check('nor when the engine forgets the session across the reload', restore(copy) === false);
 await settle();
 check('so the page does not load again', page.reloads === 1, page.reloads);
+
+check('a newer copy from the old address is put back again', restore(Object.assign({ at: 5 }, copy)) === true);
+await settle();
 
 check('nothing kept yet: nothing to put back', restore({}) === false);
 check('a copy without items is not put back', restore({ origin: OLD }) === false);

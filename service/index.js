@@ -1,6 +1,11 @@
 'use strict';
 
+const dns = require('dns');
 const os = require('os');
+
+// Node 17 and later try a name's IPv6 address first, and on a home network whose IPv6 is broken every
+// connection to YouTube then hangs before it falls back.
+if (typeof dns.setDefaultResultOrder === 'function') dns.setDefaultResultOrder('ipv4first');
 
 const postmortem = require('./lib/postmortem.js');
 const lastRun = require('./lib/lastRun.js');
@@ -31,6 +36,7 @@ const dev = require('./dev/index.js');
 const upgrade = require('./lib/upgrade.js');
 const { serviceAddress } = require('./lib/serviceAddress.js');
 const tender = require('./lib/tend.js');
+const sending = require('./lib/sending.js');
 const knobs = require('./lib/knobs.js');
 
 // A cobalt.js that will not load must not stop the proxy starting.
@@ -176,7 +182,7 @@ const listener = require('./lib/listener.js').create({
     }
 });
 
-const tending = tender.create({ listener, cobalt, serviceAddress, note: postmortem.note });
+const tending = tender.create({ listener, cobalt, serviceAddress, note: postmortem.note, moved: sending.dropAll });
 
 const holdFor = dev.startDelay();
 if (holdFor) postmortem.note('listen', `held shut for ${holdFor / 1000}s by TUBE_START_DELAY`);
@@ -204,11 +210,17 @@ module.exports = {
     onStop: () => {}
 };
 
-// Staging a directory and issuing a certificate must not be able to stop the proxy answering.
-if (cobalt) {
+// Staging a directory and issuing a certificate must not be able to stop the proxy answering, nor
+// hold the port shut while they walk the content tree: queued behind the listen, so the port opens
+// first and the boot screen finds the service answering.
+const prepare = () => {
+    if (!cobalt) return;
+
     try {
         cobalt.prepare();
     } catch (e) {
         postmortem.note('cobalt', `prepare threw: ${postmortem.describe(e)}`);
     }
-}
+};
+
+setTimeout(prepare, holdFor);

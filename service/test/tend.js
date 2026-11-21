@@ -10,7 +10,7 @@ const check = (label, ok, detail) => {
 };
 
 const fakes = (overrides) => {
-    const calls = { check: 0, prepare: 0, refresh: 0, notes: [] };
+    const calls = { check: 0, prepare: 0, refresh: 0, notes: [], moved: [] };
     const world = Object.assign({ failed: null, address: '192.168.1.5', listenerThrows: false, statusThrows: false }, overrides);
 
     const tender = create({
@@ -21,6 +21,7 @@ const fakes = (overrides) => {
             refresh: () => { calls.refresh += 1; }
         },
         serviceAddress: () => world.address,
+        moved: (was, now) => calls.moved.push(`${was}>${now}`),
         note: (what, text) => calls.notes.push(`${what}: ${text instanceof Error ? text.message : text}`)
     });
 
@@ -75,6 +76,16 @@ const times = (n, run) => Array.from({ length: n }).forEach(run);
     const { tender, calls } = fakes({ noCobalt: true });
     tender.tend();
     check('with no container route there is only the listener to look after', calls.check === 1 && calls.notes.length === 0);
+}
+
+{
+    const { tender, calls, world } = fakes({ noCobalt: true });
+    tender.tend();
+    world.address = '192.168.1.9';
+    tender.tend();
+    tender.tend();
+    check('a new address lets go of connections made from the old one, once, container route or not',
+        calls.moved.join() === '192.168.1.5>192.168.1.9', calls.moved.join());
 }
 
 const failed = results.filter((ok) => !ok).length;

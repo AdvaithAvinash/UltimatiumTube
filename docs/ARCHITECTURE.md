@@ -308,3 +308,10 @@ Two build-time gates, one per side.
   `keep.json` in the app folder). Opened at a new address, the page puts the copy back and loads once
   more (`mods/network/keepSignIn.js`); at the same address nothing is put back, so a sign-out on purpose
   stays.
+- **Starting reliably (1.13.2):** the boot screen hands over to an alternate address when the chosen one
+  does not answer, but its policy allowed navigation only to the chosen one, so that handover was
+  refused and the TV stayed on the boot screen; every address it may hand over to is now allowed. The
+  port opens before the container's content is staged. A new address drops pooled upstream
+  connections (`sending.dropAll`), which stay bound to the old one and hang. DNS answers IPv4 first, and
+  the reachability check has a deadline on connecting. The sign-in copy is smaller (values up to 128KB,
+  2MB in all, once a minute) and is put back at most once per copy, marked in the page's own storage.

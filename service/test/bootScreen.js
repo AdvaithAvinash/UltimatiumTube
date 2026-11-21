@@ -264,6 +264,11 @@ const checks = (script) => {
         page.indexOf(`connect-src ${CONFIG.service} `) !== -1
         && page.indexOf(`h5vcc-location-src https://www.youtube.com ${CONFIG.service}`) !== -1,
         (/content="([^"]*)"/.exec(page) || [])[1]);
+    const policy = (/content="([^"]*)"/.exec(page) || [])[1] || '';
+    const listed = (name) => ((new RegExp(`${name} ([^;]*)`).exec(policy) || [])[1] || '').split(' ');
+    const reached = listed('connect-src').filter((one) => one.indexOf('http://') === 0);
+    check('and go to every address it may hand over to when the chosen one does not answer',
+        reached.length > 1 && reached.every((one) => listed('h5vcc-location-src').indexOf(one) !== -1), policy);
 
     const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'tube-boot-'));
     const written = writeBootScreen(scratch, script);

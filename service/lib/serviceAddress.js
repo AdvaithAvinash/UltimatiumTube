@@ -88,4 +88,10 @@ const lanAddresses = () => {
 // Loopback only off a television, where nothing else is listening.
 const serviceAddress = () => lanAddresses()[0] || '127.0.0.1';
 
-module.exports = { lanAddresses, serviceAddress };
+// Skips the memo, for a check that must not turn the page away in the seconds after a new lease.
+const freshAddresses = () => {
+    held.at = 0;
+    return lanAddresses();
+};
+
+module.exports = { lanAddresses, freshAddresses, serviceAddress };

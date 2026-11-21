@@ -95,7 +95,8 @@ check('it lists the Ultimate Settings first, then every row of every other group
     assert.strictEqual(rows.length, listed + 2, `${rows.length} rows for ${listed} items, the way in and Stremio`);
     assert.strictEqual(rows[0], 'UltimatiumTube Ultimate Settings');
     assert.strictEqual(rows[1], 'Stremio and Grayjay');
-    assert.strictEqual(rows[2], 'SponsorBlock');
+    assert.strictEqual(rows[2], 'Interface mode');
+    assert.strictEqual(rows[3], 'SponsorBlock');
 });
 
 check('YouTube’s own rows are left exactly as sent', () => {

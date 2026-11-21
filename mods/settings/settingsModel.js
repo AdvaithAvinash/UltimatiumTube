@@ -6,6 +6,7 @@ import { adSummary } from '../adblock/index.js';
 import { ACTION_NAMES } from '../remoteKeys/index.js';
 import { bookmarks } from '../bookmarks/index.js';
 import { playbackChoices } from '../profiles/index.js';
+import { modeChoices, nameOf, uiMode } from '../uiMode/index.js';
 import { ACCENTS, BACKGROUNDS, FONTS, WALLPAPERS, WALLPAPER_COLLECTIONS } from '../theme/index.js';
 
 const ART = 'https://www.gstatic.com/ytlr/img/';
@@ -216,6 +217,15 @@ const START_PAGES = [
 ];
 
 const GROUPS = [
+  {
+    id: 'tube_mode',
+    title: 'Interface mode',
+    items: [
+      Panel('uiMode', 'Interface mode',
+        'UltimatiumTube, SmartTube style, or YouTube as it comes (like youtube-dummy). Your own setup is kept and comes back '
+        + 'with UltimatiumTube mode', SCREEN, () => nameOf(uiMode()), modeChoices)
+    ]
+  },
   {
     id: 'tube_sponsorblock',
     title: 'SponsorBlock',

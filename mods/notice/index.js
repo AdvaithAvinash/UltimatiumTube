@@ -16,6 +16,7 @@ const WELCOME = [
 ];
 
 const WHATS_NEW = [
+    ['Starts reliably', 'The app no longer stays on the start screen when the TV answers on another address, and keeps loading after the router gives the TV a new one'],
     ['Stay signed in', 'A new network address for the TV no longer signs every account out'],
     ['Universal Media Control Center', 'One place for YouTube, Stremio, Grayjay and AniUltimatium: continue watching, favourites, feeds, search'],
     ['Custom feeds', 'The newest videos of the channels in each of your collections'],

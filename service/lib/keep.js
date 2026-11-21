@@ -11,18 +11,21 @@
 const fs = require('fs');
 const path = require('path');
 
-const { lanAddresses } = require('./serviceAddress.js');
+const { lanAddresses, freshAddresses } = require('./serviceAddress.js');
 
 const ROUTE = '/__tube/keep';
-const LIMIT = 6 * 1024 * 1024;
+const LIMIT = 3 * 1024 * 1024;
 
 const fileOf = () => path.join(process.env.TUBE_SHARE || '/home/owner/share/ultimatiumtube', 'keep.json');
 
 const addressOf = (req) => String((req.socket && req.socket.remoteAddress) || '').replace(/^::ffff:/, '');
 
+// The addresses are read afresh when the cached ones do not match: in the seconds after a new lease
+// the page already asks from the new one.
 const fromThisSet = (req) => {
     const address = addressOf(req);
-    return /^127\./.test(address) || address === '::1' || lanAddresses().indexOf(address) !== -1;
+    return /^127\./.test(address) || address === '::1' || lanAddresses().indexOf(address) !== -1
+        || freshAddresses().indexOf(address) !== -1;
 };
 
 // A page on another site can send a form post but not a custom header.

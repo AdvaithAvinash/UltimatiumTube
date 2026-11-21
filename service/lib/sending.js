@@ -95,4 +95,11 @@ const readText = (response, url, req, headers) => textOf(response).catch((error)
     return send(url, req, headers, true).then(textOf);
 });
 
-module.exports = { send, readText };
+// Pooled sockets stay bound to an address the TV no longer has, and each of them fails a request or
+// hangs until the kernel gives up: YouTube then stops loading after a new address from the router.
+const dropAll = () => {
+    [httpsAgent, httpAgent].forEach((agent) => agent.destroy());
+    bigheaders.reset();
+};
+
+module.exports = { send, readText, dropAll };

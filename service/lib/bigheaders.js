@@ -117,4 +117,16 @@ const fetchOverHttp2 = (target, options) => new Promise((resolve, reject) => {
 const isHeaderOverflow = (error) => !!error
     && (error.code === 'HPE_HEADER_OVERFLOW' || /header overflow/i.test(error.message || ''));
 
-module.exports = { fetchOverHttp2, isHeaderOverflow };
+// Sessions opened from an address the TV no longer has.
+const reset = () => {
+    sessions.forEach((session) => {
+        try {
+            session.close();
+        } catch (error) {
+            // Closing already.
+        }
+    });
+    sessions.clear();
+};
+
+module.exports = { fetchOverHttp2, isHeaderOverflow, reset };

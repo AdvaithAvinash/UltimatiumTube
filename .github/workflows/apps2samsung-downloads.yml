@@ -1,30 +1,20 @@
-
-name: Update Apps2Samsung Downloads
-
-on:
-  schedule:
-    - cron: "0 */6 * * *"
-  workflow_dispatch:
-
-permissions:
-  contents: write
-
-jobs:
-  update:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Fetch Apps2Samsung catalogue
-        run: |
-          curl -fsSL \
-            https://apps2samsung.com/catalog/resolved.json \
-            -o resolved.json
-
-      - name: Inspect catalogue
+      - name: Inspect UltimatiumTube entry
         run: |
           python3 - <<'PY'
           import json
-          data = json.load(open("resolved.json"))
-          print(json.dumps(data, indent=2)[:20000])
+
+          with open("resolved.json") as f:
+              data = json.load(f)
+
+          def search(obj):
+              if isinstance(obj, dict):
+                  if "UltimatiumTube" in json.dumps(obj):
+                      print(json.dumps(obj, indent=2))
+                  for value in obj.values():
+                      search(value)
+              elif isinstance(obj, list):
+                  for value in obj:
+                      search(value)
+
+          search(data)
           PY

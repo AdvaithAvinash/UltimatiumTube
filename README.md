@@ -1,6 +1,7 @@
 ## UltimatiumTube
 
 [![Latest Release](https://img.shields.io/github/v/release/AdvaithAvinash/UltimatiumTube?display_name=tag&style=for-the-badge&logo=github&label=Latest%20Release)](https://github.com/AdvaithAvinash/UltimatiumTube/releases/latest)
+[![Apps2Samsung Downloads](https://img.shields.io/badge/Apps2Samsung-Downloads-blue?style=for-the-badge&logo=samsung)](https://apps2samsung.com/)
 [![Release Downloads](https://img.shields.io/github/downloads/AdvaithAvinash/UltimatiumTube/total?style=for-the-badge&logo=github&label=Total%20Downloads)](https://github.com/AdvaithAvinash/UltimatiumTube/releases)
 
 

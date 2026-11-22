@@ -10,8 +10,13 @@ with YouTube's own TV interface left as it is.
   [youtube-dummy](https://github.com/no-cover/youtube-dummy) does. It does not start Samsung's Cobalt
   container and does not wait on a service on the TV ("host"), so if YouTube answers, the app works.
   On Android TV it is YouTube's TV page in a full-screen WebView. Neither is a different skin.
-- **Choose your interface.** The first time it opens, the app asks: **Stock YouTube UI** (YouTube as
-  it comes) or **SmartTube UI**. Change it any time under Settings > UltimatiumTube > Interface mode.
+- **Like YouTube's own TV app.** YouTube gives a TV's web browser a cut-down version of its TV app
+  (limited animation, scripts fetched in batches). UltimatiumTube asks for what Samsung's own YouTube
+  engine gets: full animations, Shorts in their own player, search suggestions without the wait, and a
+  remote that answers at once. *Full animations* can be switched off under Navigation for a slow TV.
+- **Welcome to UltimatiumTube.** Every time it opens, the app greets you and offers **Stock YouTube UI**
+  (YouTube as it comes) or **SmartTube UI**; OK keeps the one you have. It is also under Settings >
+  UltimatiumTube > Interface mode.
 - **No ads.** Ads are removed from YouTube's responses before the player knows they exist.
 - **SponsorBlock, with more control.** Sponsor segments, intros, outros, subscribe reminders and
   self-promotion are skipped automatically and drawn on YouTube's own progress bar. You can mute a

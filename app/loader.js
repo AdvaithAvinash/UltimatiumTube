@@ -122,6 +122,35 @@ function prelude(hash) {
         + '});';
 }
 
+// YouTube serves its TV app to the TV's web browser in a cut-down form it does not give Samsung's own
+// YouTube engine: "limited animation" (lists jump instead of gliding, so the remote feels slow, and
+// Shorts lose their own player), and scripts fetched in batches later (search suggestions wait on
+// them). The page is told what it tells the engine instead. Full animation can be switched off in
+// the settings for a TV that struggles with it.
+var TUNES = [
+    ['"TV_APP_QUALITY_LIMITED_ANIMATION"', '"TV_APP_QUALITY_FULL_ANIMATION"', 'animation'],
+    ['"enable_animation":false', '"enable_animation":true', 'animation'],
+    ['"is_limited_animation":true', '"is_limited_animation":false', 'animation'],
+    ['"enable_dynamic_import_batching":true', '"enable_dynamic_import_batching":false', 'always']
+];
+
+// UltimatiumTube's settings, as the page keeps them (the app's window shares this page's storage).
+function settings() {
+    try {
+        return JSON.parse(window.localStorage.getItem('tube.settings') || '{}') || {};
+    } catch (error) {
+        return {};
+    }
+}
+
+function tune(html, kept) {
+    var animate = kept.fullAnimation !== false;
+    return TUNES.reduce(function (text, rule) {
+        if (rule[2] === 'animation' && !animate) return text;
+        return text.split(rule[0]).join(rule[1]);
+    }, html);
+}
+
 // A script's text can never close the tag it is written in.
 function safe(text) {
     return String(text).replace(/<\/(script)/gi, '<\\/$1');
@@ -167,7 +196,7 @@ function load() {
 
         var page;
         try {
-            page = pageFor(html, loader.script, loader.hash);
+            page = pageFor(tune(html, settings()), loader.script, loader.hash);
         } catch (error) {
             return retry('YouTube answered with something unexpected (' + (error && error.message) + ').');
         }

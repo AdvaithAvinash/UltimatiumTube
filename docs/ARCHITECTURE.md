@@ -333,3 +333,10 @@ Two build-time gates, one per side.
   `test/tv/loader.cjs` runs the unpacked widget in Chromium against a stand-in YouTube.
 - **Choosing the interface:** until `uiChosen`, the app opens on a glass panel with two choices, Stock
   YouTube UI and SmartTube UI (`mods/notice`), which apply the presets of `mods/uiMode`.
+- **Like YouTube's own TV app (1.15.1):** YouTube's `/tv` page for a TV browser user agent differs from
+  the one for Samsung's Cobalt engine in four flags: `LIVING_ROOM_APP_QUALITY`/`appQuality`
+  `TV_APP_QUALITY_LIMITED_ANIMATION`, `enable_animation: false`, `is_limited_animation: true`, and
+  `enable_dynamic_import_batching: true`. The loader rewrites them to Cobalt's values before writing the
+  page (`TUNES` in `app/loader.js`; the animation ones are skipped when `fullAnimation` is off).
+  `keyrouter.long.press`, which holds each key back to tell a long press, is no longer in config.xml.
+  The welcome panel with the two interfaces shows every time the app opens.

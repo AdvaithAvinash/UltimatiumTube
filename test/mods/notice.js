@@ -4,7 +4,7 @@ import { check, finish } from '../harness.js';
 global.document = { querySelector: () => null, addEventListener: () => undefined };
 
 const { WELCOME, WHATS_NEW, CHOOSER, choose } = await import('../../mods/notice/index.js');
-const { configDefaults, configRead } = await import('../../framework/runtime/config.js');
+const { configDefaults, configRead, configWrite } = await import('../../framework/runtime/config.js');
 
 check('the welcome message is the developer\'s, and shows until "Don\'t show again"', () => {
     assert.ok(/Dev of UltimatiumTube here/.test(WELCOME[0]));
@@ -18,7 +18,7 @@ check('What\'s new names the features of this version', () => {
         .forEach((name) => assert.ok(names.indexOf(name) !== -1, name));
 });
 
-check('the app opens on a choice of two interfaces, Stock YouTube UI and SmartTube UI, until one is chosen', () => {
+check('the app opens on Welcome to UltimatiumTube and a choice of two interfaces, Stock YouTube UI and SmartTube UI', () => {
     assert.ok(/Welcome to UltimatiumTube/.test(CHOOSER[0]));
     const named = CHOOSER.filter(Array.isArray).map((row) => row[0]);
     assert.deepStrictEqual(named, ['Stock YouTube UI', 'SmartTube UI']);
@@ -37,6 +37,12 @@ check('choosing Stock YouTube UI after it takes the stock mode, with the own set
     assert.strictEqual(configRead('uiMode'), 'stock');
     assert.strictEqual(configRead('themeBackground'), 'default');
     assert.strictEqual(configRead('uiModeSaved').themeAccent, 'blue');
+});
+
+check('choosing the interface already on keeps it as it is, with what was changed in it since', () => {
+    configWrite('themeAccent', 'green');
+    choose('stock');
+    assert.strictEqual(configRead('themeAccent'), 'green');
 });
 
 finish();

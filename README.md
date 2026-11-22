@@ -5,6 +5,10 @@
 ![Android](https://img.shields.io/badge/Android-Supported-3DDC84?logo=android&logoColor=white)
 ![Tizen](https://img.shields.io/badge/Samsung-Tizen-1428A0?logo=samsung&logoColor=white)
 ![Android TV](https://img.shields.io/badge/Android-TV-3DDC84?logo=androidtv&logoColor=white)
+![AI Search](https://img.shields.io/badge/AI-Search-8A2BE2)
+![Multi Source](https://img.shields.io/badge/Multi--Source-Streaming-blue)
+![Live Sports](https://img.shields.io/badge/Live-Sports-red)
+![HLS](https://img.shields.io/badge/HLS-Playback-orange)
 
 
 <img src="app/icon.png" width="160" align="right">

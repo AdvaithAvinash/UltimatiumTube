@@ -1,12 +1,19 @@
-# A stable-v* tag becomes a GitHub release. The packages are the ones committed under release/ in the
-# tagged commit, exactly as built and tested, so the Android app keeps the key it is signed with and
+# A release of UltimatiumTube. The packages are the ones committed under release/ in the commit it is
+# made from, exactly as built and tested, so the Android app keeps the key it is signed with and
 # installs over the version before it; the title and notes are release/TITLE and release/NOTES.md.
+# Made either by pushing a stable-v* tag, or by running this workflow on a branch with a tag to create.
 
 name: Release
 
 on:
   push:
     tags: ['stable-v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'The tag to create, such as stable-v1.17'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -23,8 +30,10 @@ jobs:
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+          TARGET: ${{ github.sha }}
         run: |
+          case "$TAG" in stable-v*) ;; *) echo "::error::$TAG is not a stable-v tag"; exit 1 ;; esac
           for file in release/UltimatiumTubetizen5.5.wgt release/UltimatiumTubetizen5.0.wgt release/UltimatiumTube.apk release/TITLE release/NOTES.md; do
             test -s "$file" || { echo "::error::$file is missing from the tagged commit"; exit 1; }
           done
@@ -32,5 +41,5 @@ jobs:
             gh release upload "$TAG" release/UltimatiumTubetizen5.5.wgt release/UltimatiumTubetizen5.0.wgt release/UltimatiumTube.apk --clobber
           else
             gh release create "$TAG" release/UltimatiumTubetizen5.5.wgt release/UltimatiumTubetizen5.0.wgt release/UltimatiumTube.apk \
-              --title "$(cat release/TITLE)" --notes-file release/NOTES.md --verify-tag
+              --title "$(cat release/TITLE)" --notes-file release/NOTES.md --target "$TARGET"
           fi

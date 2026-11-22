@@ -1,4 +1,9 @@
-# UltimatiumTube
+## UltimatiumTube
+
+[![Latest Release](https://img.shields.io/github/v/release/AdvaithAvinash/UltimatiumTube?display_name=tag&style=for-the-badge&logo=github&label=Latest%20Release)](https://github.com/AdvaithAvinash/UltimatiumTube/releases/latest)
+[![Release Downloads](https://img.shields.io/github/downloads/AdvaithAvinash/UltimatiumTube/total?style=for-the-badge&logo=github&label=Total%20Downloads)](https://github.com/AdvaithAvinash/UltimatiumTube/releases)
+
+[![Downloads](https://img.shields.io/github/downloads/AdvaithAvinash/UltimatiumTube/total?style=for-the-badge&logo=github&label=Downloads)](https://github.com/AdvaithAvinash/UltimatiumTube/releases)
 
 <img src="app/icon.png" width="160" align="right">
 
@@ -306,3 +311,97 @@ Sponsor segments, community titles and dislike counts come from
 **FAQ**
 **Why Is ultimatiumtube named "ultimatiumtube"** 
 See, UltimatiumTube's name was inspired by AniUltimatium, the name was supposed to be AniUltimatum but i mispelled it and didn't care much since my most starred repo is AniUltimatium, I decided to make my entire samsung collection full of Ultimatium's (except for some exceptions)
+
+## 🔄 Self-Updating System
+
+UltimatiumTube **1.16.0** introduces an independent self-updating mechanism that keeps the app's scripts and features up to date without requiring users to reinstall the `.wgt` package for every update.
+
+Inspired by the approach used by `youtube-dummy`, UltimatiumTube checks GitHub for newer application code and downloads updates in the background.
+
+### How It Works
+
+Unlike a conventional app update that requires downloading and reinstalling a new WGT, UltimatiumTube separates its updateable application logic from the installed TV application.
+
+The update process works as follows:
+
+1. **Automatic update check:** Approximately 20 seconds after YouTube opens, UltimatiumTube checks GitHub for a newer version.
+2. **Background download:** If a newer version is available, the updated script is downloaded without interrupting playback.
+3. **Download validation:** The downloaded update is checked for completion before being made available.
+4. **Update notification:** The app displays `UltimatiumTube updated – version X is ready`.
+5. **Next-start activation:** The downloaded version becomes active the next time the app starts. Updates are never applied while the user is watching.
+6. **Automatic rollback:** If an updated script fails to start, it is discarded within approximately 30 seconds and the built-in version is restored.
+
+### Reliability and Fallback Protection
+
+The updater is designed to avoid leaving the application unusable after a failed update.
+
+- The original built-in script remains available as a fallback.
+- Incomplete or broken updates are discarded.
+- A failed startup automatically returns to the built-in version.
+- Updates are activated only on a subsequent app launch.
+- Automatic updates can be disabled under **Ultimate Dev Options → Automatic updates**.
+
+### Testing and Verification
+
+The self-updating mechanism was tested using the TV simulator.
+
+| Test | Result |
+|---|---|
+| Detect a newer GitHub version | Passed |
+| Download a newer script | Passed |
+| Activate update on next startup | Passed |
+| Reject a broken update | Passed |
+| Restore built-in script after failure | Passed |
+| Tizen 5.0 package update scenario | 22/22 passed |
+| Tizen 5.5 package update scenario | 22/22 passed |
+| Full application test suite | 527/527 passed |
+
+**Testing note:** These results are from simulator testing. The self-updating mechanism has not yet been verified on a physical Samsung TV.
+
+### What Can Be Updated?
+
+The self-updater supports changes to:
+
+- Application features and functionality
+- Settings and configuration logic
+- Welcome screen
+- Bug fixes and improvements
+
+Changes to the installed application itself, including permissions or the components responsible for launching YouTube, still require a new WGT installation.
+
+**Important:** Users must install version **1.16.0 or newer** manually once to receive self-updating functionality. Older versions do not contain the updater.
+
+---
+
+## ⚡ Playback Speed Up to 20×
+
+UltimatiumTube 1.16.0 also extends playback speed beyond YouTube's standard 2× limit.
+
+### Features
+
+- Playback speed selection up to **20×**.
+- Default playback speed setting supports the extended range.
+- Speeds above 2× are labelled **UltimatiumTube**.
+- The speed menu displays `UltimatiumTube · up to 20x`.
+
+### How 20× Playback Works
+
+The Samsung TV video player has a native playback speed limit of 16×.
+
+To support speeds above that limit, UltimatiumTube uses additional video-seeking operations to advance playback four times per second.
+
+**Limitation:** Above 16×, playback relies on repeated video skipping rather than native continuous playback. Audio may therefore become choppy at these speeds.
+
+---
+
+## Release Information
+
+- **Version:** 1.16.0
+- **Self-updating:** Introduced
+- **Maximum playback speed:** 20×
+- **Platforms:** Samsung Tizen 5.0 and 5.5
+- **Source changes:** Merged into [`main`](https://github.com/AdvaithAvinash/UltimatiumTube/pull/37)
+- **Release status:** No GitHub release was created for this version at the time of documentation.
+
+The self-updating system is designed to let UltimatiumTube evolve independently of its original WGT installation while retaining a built-in fallback for reliability.
+

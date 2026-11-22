@@ -4,7 +4,8 @@
 global.window = { location: { origin: 'http://192.168.1.5:8189' }, localStorage: {} };
 global.document = { addEventListener: () => undefined };
 
-const { writesFor, KEYS, PRESETS, SMARTTUBE, STOCK, ULTIMATIUMTUBE, MODES } = await import('../../mods/uiMode/index.js');
+const { writesFor, KEYS, PRESETS, SMARTTUBE, STOCK, ULTIMATIUMTUBE, MODES, smartTubeCss } = await import('../../mods/uiMode/index.js');
+const { themeCss } = await import('../../mods/theme/index.js');
 const { configDefaults } = await import('../../framework/index.js');
 
 const results = [];
@@ -45,6 +46,13 @@ check('back in UltimatiumTube mode your own setup is back exactly', store.uiMode
 const before = JSON.stringify(store);
 apply(writesFor(ULTIMATIUMTUBE, read, defaults));
 check('choosing UltimatiumTube mode while in it changes nothing', JSON.stringify(store) === before);
+
+const css = smartTubeCss();
+check('SmartTube style colours what YouTube focuses (a button, or its container) SmartTube red', /ytlr-button\.zylon-focus/.test(css)
+    && /yt-button-container\.zylon-focus/.test(css) && /#e53935/.test(css));
+check('and outranks YouTube\u2019s own important black page', /html body/.test(css));
+check('it is in the page only in SmartTube mode', /#e53935/.test(themeCss((key) => (key === 'uiMode' ? 'smarttube' : defaults[key])))
+    && !/#e53935/.test(themeCss((key) => (key === 'uiMode' ? 'stock' : defaults[key]))));
 
 const failed = results.filter((ok) => !ok).length;
 console.log(`\n${results.length - failed}/${results.length} checks passed.`);

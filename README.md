@@ -20,7 +20,8 @@ with YouTube's own TV interface left as it is.
   runs again. *Automatic updates* is under Ultimate Dev Options. (A new install file is still needed when
   the app's own package changes; the app says so in What's new.)
 - **Welcome to UltimatiumTube.** Every time it opens, the app greets you and offers **Stock YouTube UI**
-  (YouTube as it comes) or **SmartTube UI**; OK keeps the one you have. It is also under Settings >
+  (YouTube as it comes) or **SmartTube UI** (dark grey, with SmartTube red on whatever is focused); OK
+  keeps the one you have, and choosing the other loads YouTube afresh in it. It is also under Settings >
   UltimatiumTube > Interface mode.
 - **No ads.** Ads are removed from YouTube's responses before the player knows they exist.
 - **SponsorBlock, with more control.** Sponsor segments, intros, outros, subscribe reminders and

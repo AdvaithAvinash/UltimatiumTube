@@ -1,4 +1,5 @@
 import { configChangeEmitter, configRead, every, servicePath, stop } from '../../framework/index.js';
+import { smartTubeCss } from '../uiMode/index.js';
 
 // Customization: wallpaper, colours and font for YouTube's own screens, and the glow on the
 // UltimatiumTube rows.
@@ -136,6 +137,7 @@ const themeCss = (read) => {
     const parts = [glow(accent)];
 
     if (font) parts.push(`#container, #container * { font-family: ${font} !important; }`);
+    if (read('uiMode') === 'smarttube') parts.push(smartTubeCss());
 
     const own = String(read('customCss') || '');
     if (own.trim()) parts.push(own);
@@ -158,12 +160,27 @@ const remember = (element, values) => {
     element[KEPT] = kept;
 };
 
+// YouTube's own stylesheet marks the page's black as important (body{background-color:#000!important}),
+// which a plain style on the element loses to: the backdrop is painted as important too.
+const kebab = (name) => name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+
+const setStyle = (style, name, value, important) => {
+    style[name] = value;
+    if (typeof style.setProperty !== 'function') return;
+    try {
+        if (value && important) style.setProperty(kebab(name), value, 'important');
+        else if (!value && typeof style.removeProperty === 'function') style.removeProperty(kebab(name));
+    } catch (error) {
+        // The plain write stands.
+    }
+};
+
 const paint = (element, values) => {
     if (!element || !element.style) return;
 
     remember(element, values);
     Object.keys(values).forEach((name) => {
-        element.style[name] = values[name];
+        setStyle(element.style, name, values[name], true);
     });
 };
 
@@ -172,7 +189,7 @@ const unpaint = (element) => {
     if (!kept) return;
 
     Object.keys(kept).forEach((name) => {
-        element.style[name] = kept[name];
+        setStyle(element.style, name, kept[name], false);
     });
     element[KEPT] = null;
 };
@@ -306,7 +323,7 @@ const applySheet = () => {
 };
 
 const THEME_KEYS = ['themeWallpaperOn', 'themeWallpaper', 'themeWallpaperUrl', 'themeDim', 'themeBackground',
-    'themeAccent', 'themeFont', 'customCss'];
+    'themeAccent', 'themeFont', 'customCss', 'uiMode'];
 
 const BACKDROP_KEYS = ['themeWallpaperOn', 'themeWallpaper', 'themeWallpaperUrl', 'themeDim', 'themeBackground', 'themeShuffle'];
 

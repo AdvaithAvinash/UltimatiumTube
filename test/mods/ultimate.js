@@ -1,4 +1,4 @@
-// UltimatiumTube Ultimate Settings: the way in, its three sections, the theme, speed to 15x.
+// UltimatiumTube Ultimate Settings: the way in, its three sections, the theme, speed to 20x.
 
 import assert from 'assert';
 import fs from 'fs';
@@ -22,7 +22,7 @@ const { sectionFor } = await import('../../mods/settings/settingRows.js');
 const { openOptions } = await import('../../mods/settings/settingsOptions.js');
 const { phoneSchema } = await import('../../mods/settings/phoneSchema.js');
 const { themeCss, wallpaperOf, backdropOf, wallpaperOffNow, WALLPAPER_FILES, WALLPAPERS, start: startTheme } = await import('../../mods/theme/index.js');
-const { speedLadder } = await import('../../mods/player/speed.js');
+const { speedLadder, setSpeed } = await import('../../mods/player/speed.js');
 const { apiBase } = await import('../../mods/sponsorblock/segmentApi.js');
 const { styled } = await import('../../mods/settings/settingComponents.js');
 
@@ -572,10 +572,10 @@ check('its section opens the page and holds both lists', () => {
 
 // --- speed
 
-check('the speed menu reaches 15x', () => {
+check('the speed menu reaches 20x', () => {
     const ladder = speedLadder();
 
-    assert.strictEqual(ladder[ladder.length - 1], 15);
+    assert.strictEqual(ladder[ladder.length - 1], 20);
     assert.ok(ladder.indexOf(0.25) !== -1 && ladder.indexOf(4) !== -1 && ladder.indexOf(5) !== -1 && ladder.indexOf(10) !== -1);
 });
 
@@ -590,20 +590,48 @@ check('the step setting sets the fine rungs', () => {
     withConfig({ speedSettingsIncrement: 0.5 }, () => {
         const ladder = speedLadder();
         assert.deepStrictEqual(ladder.slice(0, 3), [0.5, 1, 1.5]);
-        assert.strictEqual(ladder[ladder.length - 1], 15);
+        assert.strictEqual(ladder[ladder.length - 1], 20);
     });
 });
 
-check('a default speed can be set to 15x in the settings, and is a choice of the Playback section', () => {
+check('a default speed can be set to 20x in the settings, and is a choice of the Playback section', () => {
     const playback = indexOfGroup('tube_playback');
     const at_ = GROUPS[playback].items.findIndex((item) => item.key === 'defaultPlaybackSpeed');
 
     assert.ok(at_ !== -1, 'defaultPlaybackSpeed is not in Playback');
 
     const labels = itemsOf(open([playback, at_])).map(titleOf);
-    assert.ok(labels.indexOf('15x') !== -1 && labels.indexOf('1x') !== -1);
+    assert.ok(labels.indexOf('20x') !== -1 && labels.indexOf('15x') !== -1 && labels.indexOf('1x') !== -1);
 
     assert.strictEqual(at([playback, at_]).key, 'defaultPlaybackSpeed');
+});
+
+check('past the engine\u2019s own top, 20x is made up by moving the video on, and stops with a new speed', () => {
+    const video = { _rate: 1, currentTime: 10, duration: 600, paused: false, seeking: false, readyState: 4 };
+    Object.defineProperty(video, 'playbackRate', {
+        get() { return this._rate; },
+        set(value) { if (value > 16) throw new Error('NotSupportedError'); this._rate = value; }
+    });
+    const timers = [];
+    const realEvery = global.setInterval;
+    const realClear = global.clearInterval;
+    global.setInterval = (run) => { timers.push({ run, on: true }); return timers.length; };
+    global.clearInterval = (id) => { if (timers[id - 1]) timers[id - 1].on = false; };
+    try {
+        setSpeed(video, 20);
+        assert.strictEqual(video.playbackRate, 16);
+        const tick = () => timers.filter((t) => t.on).forEach((t) => t.run());
+        tick();
+        tick();
+        assert.ok(Math.abs(video.currentTime - 12) < 0.01, `moved on to ${video.currentTime}`);
+        setSpeed(video, 2);
+        tick();
+        assert.ok(Math.abs(video.currentTime - 12) < 0.01, `still moved on to ${video.currentTime}`);
+        assert.strictEqual(video.playbackRate, 2);
+    } finally {
+        global.setInterval = realEvery;
+        global.clearInterval = realClear;
+    }
 });
 
 check('every setting these sections name is one the config knows', () => {

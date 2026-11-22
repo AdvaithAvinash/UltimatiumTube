@@ -14,6 +14,11 @@ with YouTube's own TV interface left as it is.
   (limited animation, scripts fetched in batches). UltimatiumTube asks for what Samsung's own YouTube
   engine gets: full animations, Shorts in their own player, search suggestions without the wait, and a
   remote that answers at once. *Full animations* can be switched off under Navigation for a slow TV.
+- **Self-updating.** Like youtube-dummy, which keeps TizenTube's script current, UltimatiumTube fetches
+  its newest version from this repository on GitHub while you watch, and the next time the app opens it
+  runs it: no reinstall for each release. A version that fails to start is dropped and the one installed
+  runs again. *Automatic updates* is under Ultimate Dev Options. (A new install file is still needed when
+  the app's own package changes; the app says so in What's new.)
 - **Welcome to UltimatiumTube.** Every time it opens, the app greets you and offers **Stock YouTube UI**
   (YouTube as it comes) or **SmartTube UI**; OK keeps the one you have. It is also under Settings >
   UltimatiumTube > Interface mode.
@@ -102,7 +107,9 @@ with YouTube's own TV interface left as it is.
   own picture by address; dimming; shuffle (each time the app opens, every 15 minutes or every hour);
   and **Themes** that set the wallpaper and the colours together: Ultimatium Blue Flame, Cyber Purple,
   AMOLED Black, Inferno, Holographic, Neon City and Deep Space.
-- **Speed up to 15x**, from the speed button in the player and as a default speed in the settings.
+- **Speed up to 20x**, from the speed button in the player and as a default speed in the settings. Speeds
+  beyond YouTube's own 2x carry an *UltimatiumTube* label beneath them in the menu; past what the TV's
+  video engine plays (16x in most), the rest is made up by moving the video on.
 - **The mods ship inside the app.** Nothing is downloaded at launch, so there is no "failed to load
   script" network error.
 
@@ -154,7 +161,7 @@ phone page.
 | Startup | The page to open, who's-watching prompts |
 | Channels and words | Hidden channels, hidden words, a speed for each channel, the phone page |
 | Feed, Sidebar, Navigation | Shorts, hide watched videos, thumbnails, sidebar sections, scroll speed |
-| Playback, Subtitles, Player controls | Quality, codec, video fit (original, zoom to fill, zoom 1.15x / 1.33x / 1.5x, stretch), default speed (up to 15x), remembered speed, subtitle tracks, extra player buttons |
+| Playback, Subtitles, Player controls | Quality, codec, video fit (original, zoom to fill, zoom 1.15x / 1.33x / 1.5x, stretch), default speed (up to 20x), remembered speed, subtitle tracks, extra player buttons |
 | Overlays and prompts | Shopping card, end screen cards, up next, "Are you still watching?", sign-in reminder |
 
 ### Interface modes

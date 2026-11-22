@@ -24,7 +24,7 @@ const DEV_SURFACES = [
     { what: 'the remote inspector', marker: /\/__tube\/chii\// }
 ];
 
-const REQUIRED = ['config.xml', 'icon.png', 'index.html', 'loader.js', 'userScript.js', 'service/dist/index.js',
+const REQUIRED = ['config.xml', 'icon.png', 'index.html', 'loader.js', 'userScript.js', 'build.json', 'service/dist/index.js',
     'stremio/index.html', 'stremio/core.js', 'stremio/grayjay.js', 'stremio/ui.js', 'stremio/style.css', 'stremio/hls.min.js',
     'wallpapers/blue-flames.jpg'];
 

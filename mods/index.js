@@ -75,3 +75,6 @@ register('json', 'intercept', interceptJson);
 
 // Must stay synchronous: the start page writes what kabuki's own script reads as it starts, which works only because ours is parser-inserted.
 boot();
+
+// Read by the app's loader: a script that got this far started, so an update that never does is dropped.
+window.__tubeStarted = true;

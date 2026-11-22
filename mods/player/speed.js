@@ -4,23 +4,69 @@ import { currentChannel, normal } from '../channels/index.js';
 // Blue is one of the remote buttons now (mods/remoteKeys), set to the speed menu unless changed.
 const SPEED_KEYS = [191];
 
-const MAX_SPEED = 15;
+const MAX_SPEED = 20;
 // The step setting decides the rungs up to here; beyond it each whole speed is one rung, so the
-// menu reaches 15x without being a hundred rows long.
+// menu reaches 20x without being a hundred rows long.
 const FINE_UNTIL = 4;
 const DEFAULT_INCREMENT = 0.25;
 const STUTTER_FIX = 1.0001;
 
 const round = (value) => Math.round(value * 100) / 100;
 
+// Above what YouTube's own menu offers, each speed carries UltimatiumTube's name beneath it.
+const YOUTUBE_TOP = 2;
+const LABEL = 'UltimatiumTube';
+
+// A video engine plays up to a top of its own (16x in Chromium, less in some); faster than that, the
+// video plays at the engine's top and is moved on by the rest four times a second.
+const BOOST_EVERY = 250;
+
+const stopBoost = (video) => {
+    if (video.__tubeBoost) clearInterval(video.__tubeBoost);
+    video.__tubeBoost = null;
+};
+
+const setSpeed = (video, speed) => {
+    if (!video) return;
+    const wanted = Number(speed) > 0 ? Number(speed) : 1;
+
+    stopBoost(video);
+    video.__tubeSpeed = wanted;
+    try {
+        video.playbackRate = wanted;
+    } catch (error) {
+        try {
+            video.playbackRate = 16;
+        } catch (again) {
+            // The rate it has stays.
+        }
+    }
+
+    const played = video.playbackRate || 1;
+    if (wanted <= played + 0.01) return;
+
+    video.__tubeBoost = setInterval(() => {
+        if (video.__tubeSpeed !== wanted) {
+            stopBoost(video);
+            return;
+        }
+        if (video.paused || video.seeking || video.readyState < 2) return;
+        const ahead = video.currentTime + (wanted - (video.playbackRate || 1)) * (BOOST_EVERY / 1000);
+        video.currentTime = video.duration > 0 ? Math.min(ahead, video.duration - 0.1) : ahead;
+    }, BOOST_EVERY);
+};
+
 const currentRate = () => {
+    /** @type {any} */
     const video = document.querySelector('video');
+    if (video && video.__tubeBoost && video.__tubeSpeed) return round(video.__tubeSpeed);
     if (video && video.playbackRate > 0) return round(video.playbackRate);
 
     return configRead('rememberPlaybackSpeed') ? configRead('videoSpeed') : 1;
 };
 
-const speedButton = (speed, title = `${speed}x`) => buttonItem({ title }, null, [
+const speedButton = (speed, title = `${speed}x`) => buttonItem(speed > YOUTUBE_TOP && title === `${speed}x`
+    ? { title, subtitle: LABEL } : { title }, null, [
     { signalAction: { signal: 'POPUP_BACK' } },
     {
         setClientSettingEndpoint: {
@@ -45,7 +91,7 @@ function openSpeedOptions() {
         .concat([speedButton(STUTTER_FIX, `Fix stuttering (${STUTTER_FIX}x)`)]);
 
     showModal(
-        'Playback Speed',
+        { title: 'Playback Speed', subtitle: `${LABEL} \u00b7 up to ${MAX_SPEED}x` },
         overlayPanelItemListRenderer(buttons, chosen === -1 ? 0 : chosen),
         'options-speed'
     );
@@ -79,18 +125,20 @@ const rememberSpeed = (video) => {
 
     video.addEventListener('loadstart', () => {
         held.defaulted = false;
+        stopBoost(video);
+        video.__tubeSpeed = undefined;
     });
 
     video.addEventListener('canplay', () => {
         const forChannel = configRead('rememberChannelSpeed') ? channelSpeed() : undefined;
 
         if (forChannel) {
-            video.playbackRate = forChannel;
+            setSpeed(video, forChannel);
             return;
         }
 
         if (configRead('rememberPlaybackSpeed')) {
-            video.playbackRate = configRead('videoSpeed');
+            setSpeed(video, configRead('videoSpeed'));
             return;
         }
 
@@ -98,7 +146,7 @@ const rememberSpeed = (video) => {
         if (held.defaulted || !wanted || wanted === 1) return;
 
         held.defaulted = true;
-        video.playbackRate = wanted;
+        setSpeed(video, wanted);
     });
 };
 
@@ -113,4 +161,4 @@ const start = () => {
     whenVideo('playback speed', rememberSpeed);
 };
 
-export { openSpeedOptions, rememberSpeedForChannel, speedLadder, start };
+export { openSpeedOptions, rememberSpeedForChannel, setSpeed, speedLadder, start, MAX_SPEED };

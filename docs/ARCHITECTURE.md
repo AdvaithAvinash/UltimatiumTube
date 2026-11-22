@@ -340,3 +340,14 @@ Two build-time gates, one per side.
   page (`TUNES` in `app/loader.js`; the animation ones are skipped when `fullAnimation` is off).
   `keyrouter.long.press`, which holds each key back to tell a long press, is no longer in config.xml.
   The welcome panel with the two interfaces shows every time the app opens.
+- **Self-updating (1.16.0):** `npm run package` writes the self-update channel to `updates/`
+  (`manifest.json` with the version, `protocol: 1` and each script's length, plus `userScript.js` and
+  `userScript.legacy.js`), committed with each version; each widget carries `build.json` (its version and
+  `flavor`). Twenty seconds after YouTube opens the loader asks
+  `raw.githubusercontent.com/AdvaithAvinash/UltimatiumTube/main/updates/manifest.json` (jsDelivr as a
+  fallback); a newer version of its protocol is downloaded, its length checked, and kept in
+  `localStorage` (`tube.update.<flavor>`), then used from the next start in place of the packaged script.
+  The prelude clears `__tubeStarted` and `mods/index.js` sets it once it has booted: a kept script that
+  has not set it 30 seconds after the page is written is dropped and the packaged one written again.
+  `protocol` changes only with a loader change that needs a reinstall. Speeds go to 20x; past the video
+  engine's own top the rest is made up by moving `currentTime` on four times a second (`setSpeed`).

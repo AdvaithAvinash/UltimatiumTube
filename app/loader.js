@@ -17,7 +17,22 @@ var KEYS = ['MediaPlayPause', 'MediaPlay', 'MediaPause', 'MediaStop', 'MediaFast
     'MediaTrackPrevious', 'MediaTrackNext', 'ColorF0Red', 'ColorF1Green', 'ColorF2Yellow', 'ColorF3Blue',
     'Exit', 'Info', 'Caption', 'Search', 'Guide'];
 
-var loader = { app: null, script: null, hash: '/', tries: 0, writing: false, written: false };
+var loader = { app: null, script: null, hash: '/', tries: 0, writing: false, written: false, writtenAt: 0,
+    bundled: null, build: { version: '0', flavor: 'modern' }, using: 'bundled', version: '0' };
+
+// Self-updating, as youtube-dummy keeps TizenTube's script current: UltimatiumTube's script is
+// published with each version under updates/ in its GitHub repository. Once YouTube is open, the app
+// asks for the newest; one newer than its own is kept on the TV and used from the next time the app
+// opens. A kept script that does not start is dropped, and the app's own is used again.
+var UPDATES = [
+    'https://raw.githubusercontent.com/AdvaithAvinash/UltimatiumTube/main/updates/',
+    'https://cdn.jsdelivr.net/gh/AdvaithAvinash/UltimatiumTube@main/updates/'
+];
+// What a published script expects of this loader; a script for another one is never taken.
+var PROTOCOL = 1;
+var CHECK_AFTER = 20000;
+var STARTS_WITHIN = 30000;
+var KEPT = 'tube.update.';
 
 var LOADING = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>UltimatiumTube</title></head>'
     + '<body style="margin:0;background:#000;color:#e8e8e8;font-family:Arial,sans-serif;overflow:hidden">'
@@ -116,6 +131,7 @@ function prelude(hash) {
     return POLYFILLS
         + 'history.replaceState({}, "", ' + JSON.stringify(YOUTUBE + '#' + hash) + ');'
         + 'window.__tubeHost = "wrt";'
+        + 'window.__tubeStarted = false;'
         + 'window.__tubeService = ' + JSON.stringify(SERVICE) + ';'
         + 'document.addEventListener("keydown", function (event) {'
         + '  if (event.keyCode === 10182) { try { window.opener.postMessage({ tube: "exit" }, "*"); } catch (e) {} }'
@@ -225,6 +241,7 @@ function load() {
         }
         loader.writing = false;
         loader.written = true;
+        loader.writtenAt = Date.now();
         say('UltimatiumTube', 'YouTube is open');
         return undefined;
     });
@@ -297,6 +314,115 @@ function openWindow() {
     return opened;
 }
 
+// Versions as numbers, part by part: 1.15.10 is newer than 1.15.9.
+function newer(one, other) {
+    var a = String(one || '0').split('.');
+    var b = String(other || '0').split('.');
+    for (var i = 0; i < Math.max(a.length, b.length); i += 1) {
+        var x = parseInt(a[i] || '0', 10) || 0;
+        var y = parseInt(b[i] || '0', 10) || 0;
+        if (x !== y) return x > y;
+    }
+    return false;
+}
+
+function keptUpdate(flavor) {
+    try {
+        var kept = JSON.parse(window.localStorage.getItem(KEPT + flavor) || 'null');
+        return kept && kept.protocol === PROTOCOL && typeof kept.script === 'string' && kept.version ? kept : null;
+    } catch (error) {
+        return null;
+    }
+}
+
+function dropUpdate(flavor) {
+    try {
+        window.localStorage.removeItem(KEPT + flavor);
+    } catch (error) {
+        // Nothing kept.
+    }
+}
+
+// The script to run: the app's own, or a newer one kept from an update.
+function chooseScript() {
+    var kept = keptUpdate(loader.build.flavor);
+    if (kept && newer(kept.version, loader.build.version)) {
+        loader.script = kept.script;
+        loader.using = 'update';
+        loader.version = kept.version;
+        return;
+    }
+    if (kept) dropUpdate(loader.build.flavor);
+    loader.script = loader.bundled;
+    loader.using = 'bundled';
+    loader.version = loader.build.version;
+}
+
+function tell(message) {
+    try {
+        if (loader.app && !loader.app.closed) loader.app.postMessage(message, '*');
+    } catch (error) {
+        // Said next time.
+    }
+}
+
+function fetchUpdate(at) {
+    if (at >= UPDATES.length) return;
+    var base = UPDATES[at];
+    get(base + 'manifest.json?t=' + Date.now(), function (text) {
+        var manifest = null;
+        try {
+            manifest = text ? JSON.parse(text) : null;
+        } catch (error) {
+            manifest = null;
+        }
+        if (!manifest) return fetchUpdate(at + 1);
+
+        var file = manifest.files && manifest.files[loader.build.flavor];
+        if (manifest.protocol !== PROTOCOL || !file || !file.path) return undefined;
+        if (!newer(manifest.version, loader.version)) return undefined;
+
+        get(base + file.path + '?v=' + encodeURIComponent(manifest.version), function (script) {
+            // A download cut short is not run.
+            if (!script || (file.length && script.length !== file.length)) return fetchUpdate(at + 1);
+            try {
+                window.localStorage.setItem(KEPT + loader.build.flavor, JSON.stringify({
+                    version: manifest.version, protocol: PROTOCOL, script: script, at: Date.now()
+                }));
+            } catch (error) {
+                return undefined;
+            }
+            tell({ tube: 'updated', version: manifest.version });
+            return undefined;
+        });
+        return undefined;
+    });
+}
+
+function checkForUpdate() {
+    if (settings().autoUpdate === false) return;
+    fetchUpdate(0);
+}
+
+// A kept script that never marked the page as started is dropped, and YouTube written again with the
+// app's own.
+function guardUpdate() {
+    var app = loader.app;
+    if (loader.using !== 'update' || !loader.written || !app || app.closed) return;
+    if (Date.now() - loader.writtenAt < STARTS_WITHIN) return;
+    var started = false;
+    try {
+        started = !!app.__tubeStarted;
+    } catch (error) {
+        started = true;
+    }
+    if (started) return;
+    dropUpdate(loader.build.flavor);
+    chooseScript();
+    loader.written = false;
+    load();
+}
+
 function start() {
     registerKeys();
     window.addEventListener('click', function opening() {
@@ -307,14 +433,25 @@ function start() {
         if (document.body) document.body.click();
     }, 50);
 
-    get('userScript.js', function (script) {
-        if (!script) {
-            say('UltimatiumTube is incomplete', 'Its script is missing from the package. Install it again.');
-            return;
+    get('build.json', function (text) {
+        try {
+            var build = JSON.parse(text || '{}');
+            if (build && build.version) loader.build = { version: String(build.version), flavor: build.flavor === 'legacy' ? 'legacy' : 'modern' };
+        } catch (error) {
+            // The defaults: any published script is newer.
         }
-        loader.script = script;
-        load();
-        setInterval(watch, WATCH_EVERY);
+        get('userScript.js', function (script) {
+            if (!script) {
+                say('UltimatiumTube is incomplete', 'Its script is missing from the package. Install it again.');
+                return;
+            }
+            loader.bundled = script;
+            chooseScript();
+            load();
+            setInterval(watch, WATCH_EVERY);
+            setInterval(guardUpdate, WATCH_EVERY);
+            setTimeout(checkForUpdate, CHECK_AFTER);
+        });
     });
 }
 

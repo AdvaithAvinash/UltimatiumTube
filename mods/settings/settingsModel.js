@@ -359,6 +359,9 @@ const GROUPS = [
       Switch('enableRapidPress', 'Rapid press',
         'Presses made faster than the feed can move are kept rather than dropped',
         CONTROLS),
+      Switch('fullAnimation', 'Full animations',
+        'Lists glide and Shorts play in their own player, as in YouTube\u2019s own TV app. Off if this TV is slow with them. '
+        + 'Takes effect the next time the app opens', SCREEN),
       Switch('enableSmoothNavigation', 'Smoother navigation',
         'Skips work YouTube does while you move; tiles stop sliding one by one', SCREEN)
     ]

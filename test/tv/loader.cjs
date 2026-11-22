@@ -31,7 +31,10 @@ const stand = (key, cert) => new Promise((resolve, reject) => {
         if (!youtube.up) { req.socket.destroy(); return; }
         if (req.url.split('?')[0] === '/tv') {
             res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'access-control-allow-origin': '*' });
-            res.end('<!DOCTYPE html><html><head><title>YouTube</title><script>window.__ytHeadRan = location.href;</script></head><body>'
+            // The flags YouTube gives the TV's web browser, and not Samsung's YouTube engine.
+            res.end('<!DOCTYPE html><html><head><title>YouTube</title><script>window.__ytHeadRan = location.href;'
+                + 'window.__ytCfg = {"LIVING_ROOM_APP_QUALITY":"TV_APP_QUALITY_LIMITED_ANIMATION","feature_switches":{"enable_animation":false},'
+                + '"is_limited_animation":true,"EXPERIMENT_FLAGS":{"enable_dynamic_import_batching":true}};</script></head><body>'
                 + '<div id="yt">stand-in youtube tv</div><script>window._yttv = {}; window.__ytBodySaw = location.href;</script></body></html>');
             return;
         }
@@ -61,6 +64,7 @@ const TIZEN = `(() => {
     execFileSync('unzip', ['-q', WGT, '-d', dir]);
     const config = fs.readFileSync(path.join(dir, 'config.xml'), 'utf8');
     check('the widget claims no Cobalt container', !/nativeID|native\.userdata/.test(config));
+    check('nor holds every key back to tell a long press (keyrouter.long.press)', !/keyrouter\.long\.press/.test(config));
     check('and opens the loader', /<content src="index\.html"\/>/.test(config) && fs.existsSync(path.join(dir, 'loader.js')) && fs.existsSync(path.join(dir, 'userScript.js')));
 
     // Straight to the stand-in: no proxy of this machine's in between.
@@ -100,6 +104,12 @@ const TIZEN = `(() => {
     check('the page reads as www.youtube.com/tv before YouTube\'s own scripts run', /^https:\/\/www\.youtube\.com\/tv#\//.test(seen.head || '') && /^https:\/\/www\.youtube\.com\/tv/.test(seen.body || ''), JSON.stringify(seen));
     check('it is told it runs in the TV\'s engine, and where the app\'s service is', seen.host === 'wrt' && seen.service === 'http://127.0.0.1:8189', JSON.stringify(seen));
     check('UltimatiumTube\'s script ran in it', seen.ours, JSON.stringify(seen));
+    const cfg = await app.evaluate(() => window.__ytCfg);
+    check('YouTube runs with full animation, as in its own TV app (the remote glides, Shorts get their player)',
+        cfg.LIVING_ROOM_APP_QUALITY === 'TV_APP_QUALITY_FULL_ANIMATION' && cfg.feature_switches.enable_animation === true
+        && cfg.is_limited_animation === false, JSON.stringify(cfg));
+    check('and fetches its scripts as needed, not batched later (search suggestions)',
+        cfg.EXPERIMENT_FLAGS.enable_dynamic_import_batching === false, JSON.stringify(cfg));
     const keysSeen = await loaderPage.evaluate(() => window.__tubeKeys);
     check('the remote\'s media and colour keys are asked for', ['MediaPlayPause', 'ColorF0Red', 'ColorF3Blue'].every((k) => keysSeen.indexOf(k) !== -1), JSON.stringify(keysSeen));
 
@@ -121,8 +131,21 @@ const TIZEN = `(() => {
     const shown = await ourWindow();
 
     const before = errors.length;
+    // Full animations switched off in the settings: the next load leaves YouTube's choice alone.
+    await loaderPage.evaluate(() => {
+        localStorage.setItem('tube.settings', JSON.stringify({ fullAnimation: false }));
+        window.postMessage({ tube: 'reload', hash: '/' }, '*');
+    });
+    const plain = async () => {
+        const win = await ourWindow();
+        return win ? win.evaluate(() => window.__ytCfg && window.__ytCfg.LIVING_ROOM_APP_QUALITY).catch(() => null) : null;
+    };
+    check('with Full animations off, YouTube keeps its own choice for the browser',
+        await until(async () => (await plain()) === 'TV_APP_QUALITY_LIMITED_ANIMATION', 15000), String(await plain()));
+    const again = await ourWindow();
+
     // The message the Exit key sends (Chromium ignores keyCode in a made-up key event).
-    await (shown || app).evaluate(() => window.opener.postMessage({ tube: 'exit' }, '*')).catch(() => undefined);
+    await (again || shown || app).evaluate(() => window.opener.postMessage({ tube: 'exit' }, '*')).catch(() => undefined);
     check('Exit leaves the app', await until(() => loaderPage.evaluate(() => window.__tubeExited === true), 5000));
     check('no script errors on the way', errors.length === 0 && before === 0, JSON.stringify(errors.slice(0, 3)));
 

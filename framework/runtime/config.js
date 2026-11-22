@@ -172,6 +172,9 @@ const defaultConfig = {
   // A rung such as '2', empty for YouTube's own pacing.
   scrollSpeed: '',
   enableRapidPress: true,
+  // In the TV's own web engine: YouTube's full animations, as its own TV app has (lists glide, Shorts have
+  // their own player). Read when the app opens.
+  fullAnimation: true,
   enableSmoothNavigation: false,
 };
 

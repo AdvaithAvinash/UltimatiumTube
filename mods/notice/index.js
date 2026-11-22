@@ -1,5 +1,5 @@
 import { VERSION, configDefaults, configRead, configWrite, every, findResolver, onKey, resolve, stop } from '../../framework/index.js';
-import { SMARTTUBE, STOCK, isStock, writesFor } from '../uiMode/index.js';
+import { SMARTTUBE, STOCK, uiMode, writesFor } from '../uiMode/index.js';
 
 // The welcome message the app opens with, and the "What's new" page, as a glass panel of our own drawn
 // over YouTube: a translucent dark pane with a glowing edge and its buttons in a row. Its keys are
@@ -17,6 +17,7 @@ const WELCOME = [
 ];
 
 const WHATS_NEW = [
+    ['Like YouTube\u2019s own TV app', 'Full animations, Shorts in their own player, quicker search suggestions and a remote that answers at once'],
     ['Loads YouTube straight', 'Like youtube-dummy: no Cobalt container and no service to wait on, so no more host errors. Tizen 3 and up'],
     ['Choose your interface', 'Stock YouTube UI or SmartTube UI, asked when the app first opens'],
     ['Interface modes', 'UltimatiumTube, SmartTube style, or YouTube as it comes (like youtube-dummy), in one press under Settings'],
@@ -122,7 +123,7 @@ const showWelcome = () => glass('UltimatiumTube', WELCOME, [
     { label: 'Don’t show again', run: () => configWrite('welcomeHidden', true) }
 ]);
 
-// The first thing the app asks: which interface. Back leaves it to be asked next time.
+// What the app opens with, every time: welcome, and which interface. Back keeps the one there is.
 const CHOOSER = [
     'Welcome to UltimatiumTube.',
     'Choose how YouTube looks and behaves on this TV. Adverts and sponsor segments are taken out in both.',
@@ -132,20 +133,28 @@ const CHOOSER = [
     'You can change it any time in Settings > UltimatiumTube > Interface mode.'
 ];
 
+// The mode already on is kept as it is (with whatever was changed in it since), not set again.
 const choose = (mode) => {
-    writesFor(mode, configRead, configDefaults()).forEach((write) => configWrite(write.key, write.value));
+    if (mode !== uiMode()) writesFor(mode, configRead, configDefaults()).forEach((write) => configWrite(write.key, write.value));
     configWrite('uiChosen', true);
 };
 
-const showChooser = () => glass('Welcome to UltimatiumTube', CHOOSER, [
-    { label: 'Stock YouTube UI', run: () => choose(STOCK) },
-    { label: 'SmartTube UI', run: () => choose(SMARTTUBE) }
-]);
+const CHOICES = [['Stock YouTube UI', STOCK], ['SmartTube UI', SMARTTUBE]];
+
+const showChooser = () => {
+    glass('Welcome to UltimatiumTube', CHOOSER, CHOICES.map(([label, mode]) => ({ label, run: () => choose(mode) })));
+    // The button of the interface already on is the one OK presses.
+    const on = CHOICES.map((choice) => choice[1]).indexOf(uiMode());
+    if (on > 0) {
+        state.index = on;
+        paint();
+    }
+};
 
 const NAME = 'startup notice';
 
-const firstPanel = () => (!configRead('uiChosen') ? showChooser
-    : configRead('welcomeHidden') || isStock() ? null : showWelcome);
+// Every time the app opens.
+const firstPanel = () => showChooser;
 
 const start = () => {
     onKey('glass panel', ALL_KEYS, keys);

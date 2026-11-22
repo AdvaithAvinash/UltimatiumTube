@@ -1,5 +1,4 @@
 import { configChangeEmitter, configRead, every, servicePath, stop } from '../../framework/index.js';
-import { smartTubeCss } from '../uiMode/index.js';
 
 // Customization: wallpaper, colours and font for YouTube's own screens, and the glow on the
 // UltimatiumTube rows.
@@ -137,7 +136,6 @@ const themeCss = (read) => {
     const parts = [glow(accent)];
 
     if (font) parts.push(`#container, #container * { font-family: ${font} !important; }`);
-    if (read('uiMode') === 'smarttube') parts.push(smartTubeCss());
 
     const own = String(read('customCss') || '');
     if (own.trim()) parts.push(own);
@@ -323,7 +321,7 @@ const applySheet = () => {
 };
 
 const THEME_KEYS = ['themeWallpaperOn', 'themeWallpaper', 'themeWallpaperUrl', 'themeDim', 'themeBackground',
-    'themeAccent', 'themeFont', 'customCss', 'uiMode'];
+    'themeAccent', 'themeFont', 'customCss'];
 
 const BACKDROP_KEYS = ['themeWallpaperOn', 'themeWallpaper', 'themeWallpaperUrl', 'themeDim', 'themeBackground', 'themeShuffle'];
 

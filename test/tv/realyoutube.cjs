@@ -1,6 +1,7 @@
 // The packaged app against the real www.youtube.com/tv (needs the network): the loader opens YouTube
 // with UltimatiumTube on it, the welcome panel offers the two interfaces, and choosing one loads
-// YouTube afresh in it. SmartTube style must show: the focused button turns SmartTube red.
+// YouTube afresh in it. SmartTube UI is UltimatiumTube's own home screen: a section of real videos,
+// one opened in YouTube's player, Back home again.
 //
 //   node test/tv/realyoutube.cjs release/UltimatiumTubetizen5.5.wgt
 'use strict';
@@ -63,35 +64,93 @@ const TIZEN = `window.tizen = { tvinputdevice: { registerKey: () => undefined },
     check('and SmartTube is the mode kept', mode === 'smarttube', String(mode));
 
     if (fresh) {
-        const red = await until(() => fresh.evaluate(() => {
-            const focused = Array.from(document.querySelectorAll('ytlr-button.zylon-focus, yt-button-container.zylon-focus'))
-                .filter((e) => !e.querySelector('.zylon-focus'));
-            return focused.length && focused.every((b) => getComputedStyle(b).backgroundColor === 'rgb(229, 57, 53)')
-                ? getComputedStyle(document.body).backgroundColor : false;
+        const home = await until(() => fresh.evaluate(() => {
+            const root = document.getElementById('tube-smart');
+            if (!root || root.style.display === 'none') return false;
+            const rect = root.getBoundingClientRect();
+            return rect.width > 1000 && /UltimatiumTube/.test(root.querySelector('.ust-logo').innerText.replace(/\s+/g, ''))
+                && root.querySelectorAll('.ust-item').length >= 10;
         }), 40000);
-        check('SmartTube style shows: the focused button is SmartTube red, on dark grey', red === 'rgb(18, 18, 18)', String(red));
-        await fresh.screenshot({ path: path.join(os.tmpdir(), 'smarttube.png') });
+        check('SmartTube UI: UltimatiumTube\u2019s own home screen, its name where SmartTube\u2019s would be, a side menu', !!home);
+        await sleep(3000);
+        await fresh.screenshot({ path: path.join(os.tmpdir(), 'smarttube-home.png') });
 
-        // Back to Stock YouTube UI: YouTube's own look again.
-        const panelAgain = await until(() => fresh.evaluate(() => !!document.getElementById('tube-glass')), 40000);
-        if (panelAgain) {
-            await fresh.bringToFront();
-            await fresh.keyboard.press('ArrowLeft');
-            await sleep(400);
-            await fresh.keyboard.press('Enter');
+        // The welcome panel opens over it every time; Back keeps the interface there is.
+        await fresh.bringToFront();
+        await until(() => fresh.evaluate(() => !!document.getElementById('tube-glass')), 20000);
+        await fresh.keyboard.press('Escape');
+        await sleep(600);
+        check('Back on the welcome panel leaves the UltimatiumTube home screen there', await fresh.evaluate(() => !document.getElementById('tube-glass')
+            && document.getElementById('tube-smart').style.display !== 'none'));
+
+        // Down the side menu to Gaming, which YouTube fills even without an account, and open it.
+        for (let i = 0; i < 5; i += 1) { await fresh.keyboard.press('ArrowDown'); await sleep(250); }
+        await fresh.keyboard.press('Enter');
+        const rows = await until(() => fresh.evaluate(() => {
+            const cards = document.querySelectorAll('#tube-smart .ust-card');
+            const title = document.querySelector('#tube-smart .ust-title');
+            return cards.length >= 5 && title && title.textContent === 'Gaming' ? cards.length : false;
+        }), 30000);
+        check('a section fills with rows of YouTube\u2019s own videos', !!rows, String(rows));
+
+        const readable = await fresh.evaluate(() => {
+            const focused = document.querySelector('#tube-smart .ust-card.ust-focus');
+            const label = document.querySelector('#tube-smart .ust-card-title');
+            const item = document.querySelector('#tube-smart .ust-item.ust-current .ust-label');
+            const lum = (rgb) => { const m = /(\d+), (\d+), (\d+)/.exec(rgb) || [0, 0, 0, 0]; return (+m[1] + +m[2] + +m[3]) / 3; };
+            return { focused: !!focused, ring: focused ? getComputedStyle(focused.querySelector('.ust-thumb')).boxShadow : '',
+                title: label ? lum(getComputedStyle(label).color) : 0, item: item ? lum(getComputedStyle(item).color) : 0 };
+        });
+        check('everything is readable: light text on the dark screen, the focused card ringed in red', readable.focused
+            && /229, 57, 53/.test(readable.ring) && readable.title > 180 && readable.item > 180, JSON.stringify(readable));
+        await sleep(2500);
+        await fresh.screenshot({ path: path.join(os.tmpdir(), 'smarttube-rows.png') });
+
+        // Down into a row of videos and open one: YouTube's own player, the home screen out of the way.
+        let video = false;
+        for (let tries = 0; tries < 4 && !video; tries += 1) {
+            video = await fresh.evaluate(() => {
+                const row = document.querySelector('#tube-smart .ust-row.ust-row-on');
+                return !!row && !/CHANNEL|PLAYLIST/.test(row.innerText.slice(0, 400));
+            });
+            if (!video) { await fresh.keyboard.press('ArrowDown'); await sleep(500); }
         }
+        await fresh.keyboard.press('Enter');
+        const playing = await until(() => fresh.evaluate(() => {
+            const root = document.getElementById('tube-smart');
+            return /watch|browse\?c=UC/.test(window.location.hash) && (!root || root.style.display === 'none') ? window.location.hash.slice(0, 40) : false;
+        }), 20000);
+        check('OK on a card opens it with YouTube\u2019s own command, in YouTube\u2019s own player', !!playing, String(playing));
+
+        await fresh.keyboard.press('Escape');
+        await sleep(1500);
+        await fresh.keyboard.press('Escape');
+        const back = await until(() => fresh.evaluate(() => {
+            const root = document.getElementById('tube-smart');
+            return !!root && root.style.display !== 'none';
+        }), 20000);
+        check('Back from the player comes back to the UltimatiumTube home screen', !!back);
+
+        // Back to Stock YouTube UI, from the welcome panel the next time; here from the settings it writes.
+        await loaderPage.evaluate(() => {
+            const kept = JSON.parse(localStorage.getItem('tube.settings') || '{}');
+            kept.uiMode = 'stock';
+            localStorage.setItem('tube.settings', JSON.stringify(kept));
+            window.postMessage({ tube: 'reload', hash: '/' }, '*');
+        });
         const stock = await until(async () => {
             const win = await youtubeWindow();
             return win && win !== fresh ? win : false;
         }, 60000);
-        check('choosing Stock YouTube UI loads YouTube afresh too', !!stock);
+        check('Stock YouTube UI loads YouTube afresh', !!stock);
         if (stock) {
             const plain = await until(() => stock.evaluate(() => {
+                const root = document.getElementById('tube-smart');
                 const focused = Array.from(document.querySelectorAll('ytlr-button.zylon-focus, yt-button-container.zylon-focus'))
                     .filter((e) => !e.querySelector('.zylon-focus'));
-                return focused.length ? getComputedStyle(focused[0]).backgroundColor : false;
+                return (!root || root.style.display === 'none') && focused.length ? getComputedStyle(focused[0]).backgroundColor : false;
             }), 40000);
-            check('and YouTube’s own look is back: the focused button is YouTube’s light grey', plain === 'rgb(241, 241, 241)', String(plain));
+            check('with YouTube\u2019s own screens and look: no UltimatiumTube home over them', plain === 'rgb(241, 241, 241)', String(plain));
         }
     }
 

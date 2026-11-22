@@ -17,6 +17,7 @@ const WELCOME = [
 ];
 
 const WHATS_NEW = [
+    ['SmartTube UI, for real', 'An UltimatiumTube home screen in SmartTube\u2019s manner: side menu, rows of your videos, red focus, clock; YouTube\u2019s player'],
     ['Interface modes that take', 'Choosing Stock YouTube UI or SmartTube UI loads YouTube afresh in it; SmartTube UI is dark grey with red focus'],
     ['Self-updating', 'New versions of UltimatiumTube arrive by themselves from GitHub, like youtube-dummy; no reinstall'],
     ['Speed up to 20x', 'With the UltimatiumTube label under the speeds YouTube does not offer'],
@@ -99,6 +100,8 @@ const glass = (title, lines, buttons) => {
 
 const keys = (event) => {
     if (!state.open) return false;
+    // Marked as taken, so what is drawn under the panel does not act on the same press.
+    event.__tubeGlass = true;
     if (event.type !== 'keydown') return true;
 
     const code = event.keyCode;
@@ -128,11 +131,10 @@ const showWelcome = () => glass('UltimatiumTube', WELCOME, [
 
 // What the app opens with, every time: welcome, and which interface. Back keeps the one there is.
 const CHOOSER = [
-    'Welcome to UltimatiumTube.',
     'Choose how YouTube looks and behaves on this TV. Adverts and sponsor segments are taken out in both.',
     ['Stock YouTube UI', 'YouTube\u2019s own TV app as it comes, like youtube-dummy: nothing added, nothing changed'],
-    ['SmartTube UI', 'SmartTube\u2019s look and habits: dark grey and red, segments skipped with a note, DeArrow, dislikes, '
-        + 'extra player buttons, no nags'],
+    ['SmartTube UI', 'An UltimatiumTube home screen in SmartTube\u2019s manner: a side menu, rows of your videos, red focus; '
+        + 'segments skipped with a note, DeArrow, dislikes, no nags'],
     'You can change it any time in Settings > UltimatiumTube > Interface mode.'
 ];
 

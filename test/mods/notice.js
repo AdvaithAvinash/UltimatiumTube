@@ -19,7 +19,6 @@ check('What\'s new names the features of this version', () => {
 });
 
 check('the app opens on Welcome to UltimatiumTube and a choice of two interfaces, Stock YouTube UI and SmartTube UI', () => {
-    assert.ok(/Welcome to UltimatiumTube/.test(CHOOSER[0]));
     const named = CHOOSER.filter(Array.isArray).map((row) => row[0]);
     assert.deepStrictEqual(named, ['Stock YouTube UI', 'SmartTube UI']);
     assert.strictEqual(configDefaults().uiChosen, false);

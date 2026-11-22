@@ -24,7 +24,7 @@ const DEV_SURFACES = [
     { what: 'the remote inspector', marker: /\/__tube\/chii\// }
 ];
 
-const REQUIRED = ['config.xml', 'icon.png', 'index.html', 'service/dist/index.js',
+const REQUIRED = ['config.xml', 'icon.png', 'index.html', 'loader.js', 'userScript.js', 'service/dist/index.js',
     'stremio/index.html', 'stremio/core.js', 'stremio/grayjay.js', 'stremio/ui.js', 'stremio/style.css', 'stremio/hls.min.js',
     'wallpapers/blue-flames.jpg'];
 
@@ -51,17 +51,15 @@ const commentFailures = (config) => (config.match(/<!--[\s\S]*?-->/g) || [])
 
 const manifestFailures = (config, ports) => [].concat(
     commentFailures(config),
-    unless(/nativeID/.test(config), 'config.xml no longer claims a container slot'),
+    // YouTube runs in the TV's own engine, loaded by index.html: a claimed container slot would start
+    // Cobalt instead, and the app would depend on its service answering again.
+    unless(!/nativeID|native\.userdata/.test(config), 'config.xml claims a Cobalt container slot again'),
+    unless(/<content src="index\.html"\/>/.test(config), 'config.xml does not open the loader'),
     unless(/multitasking\.support"\s+value="true"/.test(config),
         'multitasking.support is not true, so the app is killed on focus loss rather than hidden'),
     unless(!/use\.game\.mode"\s+value="true"/.test(config),
         'use.game.mode is on, which leaves the video element at networkState 0'),
-    // A --proxy names one fixed address, and the container cannot reach any address we can fix.
-    unless(!/--proxy=/.test(config),
-        'config.xml carries a --proxy switch, which no set the boot screen serves can reach'),
-    unless(config.indexOf(`--base_url=file:///ultimatiumtube/boot.html`) !== -1
-        || config.indexOf(`--base_url=http://`) !== -1,
-        'config.xml does not start the container on a page we serve')
+    unless(!/--proxy=|--base_url=/.test(config), 'config.xml carries Cobalt switches')
 );
 
 const audit = async (widget) => {

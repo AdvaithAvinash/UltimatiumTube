@@ -20,6 +20,9 @@ const WIDGET = [
     { from: 'app/config.xml', to: 'config.xml' },
     { from: 'app/icon.png', to: 'icon.png' },
     { from: 'app/index.html', to: 'index.html' },
+    // The loader: YouTube's TV page fetched and written into a window, with the script below on top.
+    { from: 'app/loader.js', to: 'loader.js' },
+    { from: 'dist/userScript.js', to: 'userScript.js' },
     { from: 'service/dist', to: 'service/dist' },
     // The Stremio page, served the same way (see service/lib/stremio.js).
     { from: 'stremio', to: 'stremio' },
@@ -30,7 +33,8 @@ const WIDGET = [
 // Staged at service/dist, where config.xml points for both widgets.
 const WIDGET_LEGACY = WIDGET.map((entry) => (entry.from === SERVICE_DIST
     ? { from: SERVICE_DIST_LEGACY, to: entry.to }
-    : entry));
+    : entry.from === 'dist/userScript.js' ? { from: 'dist/userScript.legacy.js', to: entry.to }
+        : entry));
 
 const ARTEFACTS = [DIST, SERVICE_DIST, SERVICE_DIST_LEGACY, RELEASE];
 

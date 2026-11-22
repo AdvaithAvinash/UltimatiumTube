@@ -15,15 +15,18 @@ const { commit, tree } = gitStamp();
 const ENGINE = 'Chrome 63';
 const ECMA = 2017;
 
-const babel = () => getBabelOutputPlugin({
+// Tizen 3 to 5 carry an older web engine than Cobalt's; the 5.0 widget's script is written for it.
+const LEGACY_ENGINE = 'Chrome 47';
+
+const babel = (targets) => getBabelOutputPlugin({
     babelHelpers: 'bundled',
-    presets: [['@babel/preset-env', { targets: ENGINE }]]
+    presets: [['@babel/preset-env', { targets: targets || ENGINE }]]
 });
 
-const userScript = {
+const userScriptFor = (file, targets, ecma) => ({
     input: 'mods/index.js',
     output: {
-        file: 'dist/userScript.js',
+        file,
         format: 'iife',
         banner: `/* tube ${version} */`
     },
@@ -42,15 +45,18 @@ const userScript = {
                 __TUBE_TREE__: process.env.ROLLUP_WATCH === 'true' ? 'watch' : tree
             }
         }),
-        babel(),
-        terser({ ecma: ECMA, mangle: true }),
+        babel(targets),
+        terser({ ecma, mangle: true }),
         replace({
             preventAssignment: false,
             delimiters: ['', ''],
             values: { '\uFFFF': '\u0000' }
         })
     ]
-};
+});
+
+const userScript = userScriptFor('dist/userScript.js', ENGINE, ECMA);
+const legacyUserScript = userScriptFor('dist/userScript.legacy.js', LEGACY_ENGINE, 5);
 
 // The boot screen's page, which the service writes into the container's content.
 const bootScreen = {
@@ -59,4 +65,4 @@ const bootScreen = {
     plugins: [babel(), terser({ ecma: ECMA, mangle: true })]
 };
 
-export default [userScript, bootScreen];
+export default [userScript, legacyUserScript, bootScreen];

@@ -1,5 +1,5 @@
 import { redrawSettingRows } from './settingComponents.js';
-import { COMMIT, TREE, VERSION, sourceOf } from '../../framework/index.js';
+import { COMMIT, TREE, VERSION, servicePath, sourceOf } from '../../framework/index.js';
 
 const PANEL = 'ytlr-setting-app-version';
 const STAMP = `${VERSION}-${COMMIT}-${TREE}`;
@@ -10,7 +10,7 @@ const RENDERS = 'this.template(';
 // since it never needs a fetch, everything else arrives once /__tube/facts answers.
 const extra = { rows: [{ key: 'Patch', value: STAMP }] };
 
-fetch('/__tube/facts')
+fetch(servicePath('/__tube/facts'))
     .then((res) => res.json())
     .then((rows) => {
         extra.rows = extra.rows.concat(rows);

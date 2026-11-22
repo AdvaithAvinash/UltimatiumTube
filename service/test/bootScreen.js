@@ -257,7 +257,10 @@ const checks = (script) => {
     const page = html(script);
     const config = fs.readFileSync(path.join(__dirname, '..', '..', 'app', 'config.xml'), 'utf8');
 
-    check('the widget starts the container on the boot screen', config.indexOf(`--base_url=${BOOT_URL}`) !== -1);
+    // The boot screen stays for a container started by hand; the widget itself loads YouTube in the
+    // TV's own engine (app/loader.js) and claims no container.
+    check('the widget claims no container and opens its loader', config.indexOf('native.userdata') === -1
+        && config.indexOf('nativeID') === -1 && config.indexOf('<content src="index.html"/>') !== -1 && !!BOOT_URL);
     check('and carries no --proxy',
         config.indexOf('--proxy=') === -1);
     check('its policy lets it reach the service and go to the page we serve',

@@ -1,4 +1,4 @@
-import { configChangeEmitter, configRead, every, stop } from '../../framework/index.js';
+import { configChangeEmitter, configRead, every, servicePath, stop } from '../../framework/index.js';
 
 // Customization: wallpaper, colours and font for YouTube's own screens, and the glow on the
 // UltimatiumTube rows.
@@ -32,7 +32,7 @@ const WALLPAPER_COLLECTIONS = [
     ['Ambient Worlds', ['rain']]
 ];
 
-const picture = (file) => `url("${PICTURES}${file}")`;
+const picture = (file) => `url("${servicePath(PICTURES)}${file}")`;
 
 // Each is one image, for the background-image of the page.
 const WALLPAPERS = {

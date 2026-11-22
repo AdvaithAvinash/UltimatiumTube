@@ -5,10 +5,13 @@
 Ad-free YouTube with SponsorBlock for **Samsung (Tizen) TVs** and **Android TV, Google TV and Fire TV**,
 with YouTube's own TV interface left as it is.
 
-- **The stock YouTube TV interface.** On a Samsung TV it runs inside the TV's own YouTube engine
-  (Cobalt), so you get the same interface, the same playback, and the same 4K, HDR and 60fps your TV
-  supports. On Android TV it is YouTube's TV page in a full-screen WebView. Neither is a different
-  skin.
+- **The stock YouTube TV interface, loaded straight.** On a Samsung TV the app fetches YouTube's own TV
+  page and opens it in the TV's own web engine with UltimatiumTube on top, the way
+  [youtube-dummy](https://github.com/no-cover/youtube-dummy) does. It does not start Samsung's Cobalt
+  container and does not wait on a service on the TV ("host"), so if YouTube answers, the app works.
+  On Android TV it is YouTube's TV page in a full-screen WebView. Neither is a different skin.
+- **Choose your interface.** The first time it opens, the app asks: **Stock YouTube UI** (YouTube as
+  it comes) or **SmartTube UI**. Change it any time under Settings > UltimatiumTube > Interface mode.
 - **No ads.** Ads are removed from YouTube's responses before the player knows they exist.
 - **SponsorBlock, with more control.** Sponsor segments, intros, outros, subscribe reminders and
   self-promotion are skipped automatically and drawn on YouTube's own progress bar. You can mute a
@@ -100,29 +103,36 @@ with YouTube's own TV interface left as it is.
 
 ## Install
 
-Pick the file for your TV from the [releases](https://github.com/AdvaithAvinash/UltimatiumTube/releases).
+**UltimatiumTube is supported on Tizen 3.0 and newer.** Choose the file by your TV's Tizen version:
+
+- **Tizen 5 or under** (Tizen 3.0, 4.0 and 5.0): choose **`UltimatiumTubetizen5.0.wgt`**.
+- **Tizen 5.5 or above** (Tizen 5.5, 6, 6.5, 7, 8, 9 and newer): choose **`UltimatiumTubetizen5.5.wgt`**.
+
+Pick the file from the [releases](https://github.com/AdvaithAvinash/UltimatiumTube/releases).
 [docs/INSTALL.md](docs/INSTALL.md) has the steps for each route.
 
 | File | For |
 | --- | --- |
-| `UltimatiumTubetizen5.5.wgt` | Samsung TVs on **Tizen 5.5 and newer** (2020 and later, including Tizen 6, 7, 8 and 9). Use this one if you are unsure. |
-| `UltimatiumTubetizen5.0.wgt` | Samsung TVs on **Tizen 5.0 and older** (2019 and earlier). It installs from Tizen 3.0 up; sets before 2019 have not been tried. |
+| `UltimatiumTubetizen5.5.wgt` | Samsung TVs on **Tizen 5.5 and above** (2020 and later, including Tizen 6, 7, 8 and 9) |
+| `UltimatiumTubetizen5.0.wgt` | Samsung TVs on **Tizen 5 and under** (Tizen 3.0 to 5.0, 2017 to 2019). Its script is written for those TVs' older web engine |
 | `UltimatiumTube.apk` | Android TV, Google TV, Fire TV, or an Android phone or tablet |
+
+Not sure of your version? On the TV: Settings > Support > About This TV. A 2020 or later TV is Tizen 5.5
+or above; 2017 to 2019 is Tizen 3 to 5.
 
 A Samsung TV installs only an app signed for that TV, so the `.wgt` files are unsigned and are signed
 while you install them: through [Apps2Samsung](https://github.com/Apps2Samsung/Apps2Samsung),
 [Tizen Homebrew](https://github.com/SushyDev/tizen-homebrew) or Tizen Studio.
 
-If something goes wrong on a Samsung TV, the boot screen shows an address you can open on a phone.
-That page says what failed. Please [open an issue](https://github.com/AdvaithAvinash/UltimatiumTube/issues)
-and include what it says.
+If YouTube cannot be reached, the app says so and tries again every few seconds. If something else goes
+wrong, please [open an issue](https://github.com/AdvaithAvinash/UltimatiumTube/issues).
 
 ### Alongside YouTube for Tizen and TizenTube
 
-UltimatiumTube uses its own service port, folder, boot page and package id, so installing it does not
-overwrite, or stop starting, YouTube for Tizen or TizenTube. One thing is shared: every one of these
-apps runs in Samsung's YouTube container, and a TV has one. Close the other app (or switch the TV off
-and on) before opening this one. [docs/UPSTREAM.md](docs/UPSTREAM.md) has the details.
+UltimatiumTube no longer runs in Samsung's YouTube container, so it does not compete with YouTube for
+Tizen, TizenTube Cobalt or the stock YouTube app for it, and its package id, folder and port are its own.
+The app's small service still runs for the extras (phone settings page, wallpapers, the Stremio page); the
+app works without it.
 
 ## Settings
 
@@ -242,9 +252,8 @@ Giving the TV a fixed address in your router (a DHCP reservation) avoids the cha
 ### What is not here
 
 Automatic frame-rate matching, which TizenTube Cobalt offers, is not in UltimatiumTube. It needs a
-function that exists only in that project's own modified Cobalt build. The Samsung TV's stock engine,
-which this app runs in, does not have it. Models that match frame rate for the stock YouTube app do
-so here too.
+function that exists only in that project's own modified Cobalt build, and the TV's own web engine,
+which this app runs in, does not have it.
 
 ## Building it yourself
 
@@ -272,8 +281,9 @@ GPL-3.0-only, see [LICENSE](LICENSE).
 UltimatiumTube is built on
 [YouTube for Tizen](https://github.com/SushyDev/tizen-youtube) by SushyDev, which was itself derived
 from [TizenTube](https://github.com/reisxd/TizenTube) and
-[youtube-webos](https://github.com/webosbrew/youtube-webos). The Cobalt-container approach, the
-service and the mod framework come from those projects.
+[youtube-webos](https://github.com/webosbrew/youtube-webos). The mod framework and the service come
+from those projects. The way the Samsung app loads YouTube (its TV page fetched and opened in the TV's
+own web engine) follows [youtube-dummy](https://github.com/no-cover/youtube-dummy).
 
 Sponsor segments, community titles and dislike counts come from
 [SponsorBlock](https://github.com/ajayyy/SponsorBlock),

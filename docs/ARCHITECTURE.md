@@ -320,3 +320,16 @@ Two build-time gates, one per side.
   those settings in `uiModeSaved`, and choosing it again writes them back. What has no setting of its own
   checks `isStock()`: the video fit player button, the long-press menu and the welcome panel are left out
   in YouTube as it comes.
+- **Loading YouTube straight (1.15.0):** the Samsung widgets no longer claim Samsung's Cobalt container.
+  `app/index.html` runs `app/loader.js`, which works the way youtube-dummy does: it fetches
+  `https://www.youtube.com/tv` in the TV's own web engine, puts two scripts at the top of its head (a
+  prelude that sets the page's address to www.youtube.com/tv, marks the page `__tubeHost = 'wrt'`, names
+  the service at `http://127.0.0.1:8189` and fills in what an older engine lacks; then the userscript,
+  packaged as `userScript.js`), and writes it into a window of the app. A window whose page lost the
+  mark (YouTube loaded a page of its own) is written again; a closed one is the app being left. Nothing
+  on the TV has to answer before YouTube shows. The service stays for the extras, which the page reaches
+  through `servicePath()`; the Stremio page opens in a window of its own over YouTube and closes back to
+  it with `postMessage`. The 5.0 widget's userscript is built for Chromium 47 (`dist/userScript.legacy.js`).
+  `test/tv/loader.cjs` runs the unpacked widget in Chromium against a stand-in YouTube.
+- **Choosing the interface:** until `uiChosen`, the app opens on a glass panel with two choices, Stock
+  YouTube UI and SmartTube UI (`mods/notice`), which apply the presets of `mods/uiMode`.

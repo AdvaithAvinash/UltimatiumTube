@@ -9,6 +9,8 @@ const defaultConfig = {
   // as it comes); and your own setup of what a mode changes, kept while another mode is on.
   uiMode: 'ultimatiumtube',
   uiModeSaved: {},
+  // Whether the interface was chosen at the start (Stock YouTube or SmartTube); until then it is asked.
+  uiChosen: false,
 
   enableAdBlock: true,
 

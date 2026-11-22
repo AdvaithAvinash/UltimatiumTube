@@ -4,10 +4,14 @@ import { resolve as resolveCommand } from "../../framework/index.js";
 window.isPipPlaying = false;
 let PlayerService = null;
 
+// YouTube's services are found once its page has loaded; a page without them leaves the mini player off.
 function pipLoad() {
-    const mappings = Object.values(window._yttv).find(a => a && a.mappings);
+    const found = Object.values(window._yttv || {}).find(a => a && a.mappings);
+    const mappings = found && typeof found.get === 'function' ? found : null;
+    if (!mappings) return;
     PlayerService = mappings.get('PlayerService');
     const PlaybackPreviewService = mappings.get('PlaybackPreviewService');
+    if (!PlaybackPreviewService) return;
     const PlaybackPreviewServiceStart = PlaybackPreviewService.start;
     const PlaybackPreviewServiceStop = PlaybackPreviewService.stop;
 

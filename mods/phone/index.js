@@ -1,4 +1,4 @@
-import { after, configAccepts, configRead, configSnapshot, configWrite } from '../../framework/index.js';
+import { after, configAccepts, configRead, configSnapshot, configWrite, servicePath } from '../../framework/index.js';
 
 // The TV's own settings page is a remote control away from awkward; the phone page is the same
 // settings with a keyboard. The two meet in the service: this side posts what it holds and takes
@@ -39,7 +39,7 @@ const exchange = (text) => {
     const bridge = nativeBridge();
     if (bridge) return new Promise((resolve) => resolve(JSON.parse(bridge.phoneSync(text))));
 
-    return fetch(ROUTE, {
+    return fetch(servicePath(ROUTE), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Tube': '1' },
         body: text

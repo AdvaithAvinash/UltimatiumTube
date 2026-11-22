@@ -206,8 +206,22 @@
 
   // --- leaving
 
+  // Opened over YouTube in a window of its own (the TV's own engine): back to YouTube is closing it,
+  // with what YouTube should show passed to the window below.
+  var toOpener = function (path) {
+    try {
+      if (!window.opener || window.opener.closed) return false;
+      if (path) window.opener.postMessage({ tube: 'youtube', path: path }, '*');
+      window.close();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  };
+
   var leave = function () {
     try { if (window.StremioNative && window.StremioNative.exit) { window.StremioNative.exit(); return; } } catch (e) { /* none */ }
+    if (toOpener(null)) return;
     window.location.replace('/tv');
   };
 
@@ -912,8 +926,7 @@
 
     if (st.kind === 'youtube') {
       var id = st.ytId;
-      if (!SX.origin) { toast('YouTube streams open only on a Samsung TV'); return; }
-      window.location.assign('/tv#/watch?v=' + encodeURIComponent(id));
+      openYouTubePath('/tv#/watch?v=' + encodeURIComponent(id));
       return;
     }
 
@@ -1058,6 +1071,7 @@
     try {
       if (window.StremioNative && window.StremioNative.openYouTube) { window.StremioNative.openYouTube(path); return; }
     } catch (e) { /* the page's own way below */ }
+    if (toOpener(path)) return;
     if (!SX.origin) { toast('Open YouTube from the app to play this'); return; }
     window.location.assign(path);
   };

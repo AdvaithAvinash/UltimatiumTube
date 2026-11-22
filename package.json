@@ -1,6 +1,6 @@
 {
   "name": "ultimatiumtube",
-  "version": "1.14.0",
+  "version": "1.15.0",
   "private": true,
   "description": "UltimatiumTube: the stock YouTube TV app on Samsung Tizen TVs, without ads, with SponsorBlock.",
   "license": "GPL-3.0-only",
@@ -35,7 +35,7 @@
     "probe:cobalt": "node tools/probe-cobalt.js",
     "doctor:tv": "node tools/doctor-tv.js",
     "test:cobalt": "node test/cobalt/run.js",
-    "test:tv": "node test/tv/sim.cjs release/UltimatiumTubetizen5.5.wgt && node test/tv/sim.cjs release/UltimatiumTubetizen5.0.wgt",
+    "test:tv": "node test/tv/loader.cjs release/UltimatiumTubetizen5.5.wgt && node test/tv/loader.cjs release/UltimatiumTubetizen5.0.wgt && node test/tv/sim.cjs release/UltimatiumTubetizen5.5.wgt && node test/tv/sim.cjs release/UltimatiumTubetizen5.0.wgt",
     "package:android": "node tools/build-apk.js"
   },
   "devDependencies": {

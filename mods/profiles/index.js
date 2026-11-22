@@ -45,7 +45,7 @@ const GUEST = 'Guest';
 const NAMES = ['Main', 'Person 2', 'Person 3', 'Person 4', GUEST];
 
 // Kept for the TV, not for a person.
-const DEVICE_KEYS = ['enablePhoneSync', 'phoneSyncSeconds', 'welcomeHidden', 'noticeSeen', 'channelIds', 'recentChannels',
+const DEVICE_KEYS = ['uiChosen', 'enablePhoneSync', 'phoneSyncSeconds', 'welcomeHidden', 'noticeSeen', 'channelIds', 'recentChannels',
     'adsBlockedCount', 'adRequestsBlocked', 'sponsorBlockServer', 'userProfile'];
 
 const readStore = () => {

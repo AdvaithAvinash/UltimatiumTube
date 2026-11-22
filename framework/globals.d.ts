@@ -36,6 +36,10 @@ interface Window {
     /** Dev builds only: JSON.parse/stringify as they were before we took them over. */
     __tubeNativeJSON?: { parse: typeof JSON.parse, stringify: typeof JSON.stringify };
 
+    /** Set by the app's loader in Samsung's web engine: 'wrt', and where the app's service is. */
+    __tubeHost?: string;
+    __tubeService?: string;
+
     /** Ours. */
     queuedVideos: QueuedVideos;
     sponsorblock?: SponsorBlockState;

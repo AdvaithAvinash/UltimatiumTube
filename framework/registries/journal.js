@@ -1,4 +1,6 @@
-// Relative: every route serves the page through the service.
+import { servicePath } from '../runtime/host.js';
+
+// The service's: relative where it serves the page, at its address where the TV's engine runs it.
 const ROUTE = '/__tube/journal';
 const MOST_SENT = 100;
 const LONGEST = 500;
@@ -22,7 +24,7 @@ const send = (text) => {
     state.count += 1;
 
     try {
-        if (window.Image) (new window.Image()).src = `${ROUTE}?m=${encodeURIComponent(cut)}`;
+        if (window.Image) (new window.Image()).src = `${servicePath(ROUTE)}?m=${encodeURIComponent(cut)}`;
     } catch (e) { /* the journal must never be a reason to fail */ }
 };
 

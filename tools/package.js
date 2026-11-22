@@ -20,7 +20,7 @@ const APPS = [
         output: paths.WGT_LEGACY,
         include: paths.WIDGET_LEGACY,
         requiredVersion: '3.0',
-        servedFrom: `http://127.0.0.2:${PROXY}/tv`,
+        servedFrom: null,
         // The same package as the 5.5 widget: a TV runs one of the two, and a store that lists both
         // must see one app.
         packageId: null

@@ -17,6 +17,7 @@ const WELCOME = [
 ];
 
 const WHATS_NEW = [
+    ['Interface modes that take', 'Choosing Stock YouTube UI or SmartTube UI loads YouTube afresh in it; SmartTube UI is dark grey with red focus'],
     ['Self-updating', 'New versions of UltimatiumTube arrive by themselves from GitHub, like youtube-dummy; no reinstall'],
     ['Speed up to 20x', 'With the UltimatiumTube label under the speeds YouTube does not offer'],
     ['Like YouTube\u2019s own TV app', 'Full animations, Shorts in their own player, quicker search suggestions and a remote that answers at once'],

@@ -1,15 +1,15 @@
 {
   "name": "UltimatiumTube",
-  "version": "1.16.0",
+  "version": "1.16.1",
   "protocol": 1,
   "files": {
     "modern": {
       "path": "userScript.js",
-      "length": 161588
+      "length": 163242
     },
     "legacy": {
       "path": "userScript.legacy.js",
-      "length": 167043
+      "length": 168694
     }
   }
 }

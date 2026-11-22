@@ -1,4 +1,4 @@
-import { configDefaults, configRead } from '../../framework/index.js';
+import { after, configChangeEmitter, configDefaults, configRead, reloadPage } from '../../framework/index.js';
 
 // Interface modes: the whole app in one press.
 //
@@ -100,4 +100,35 @@ const writesFor = (mode, read, defaults) => {
 // For the settings: each mode as the writes it makes.
 const modeChoices = () => MODES.map(([mode, label]) => ({ label, writes: writesFor(mode, configRead, configDefaults()) }));
 
-export { MODES, PRESETS, KEYS, ULTIMATIUMTUBE, SMARTTUBE, STOCK, uiMode, isStock, nameOf, modeChoices, writesFor };
+// SmartTube's look over YouTube's own screens: a dark grey app with red where the focus is. YouTube's
+// class names are scrambled with each release, so these hold on to what stays: its element names and
+// zylon-focus, the class every element on the focus path carries (the focused button turns light grey
+// in YouTube's own style, rgb(241, 241, 241)).
+const SMARTTUBE_RED = '#e53935';
+const FOCUSED = ['ytlr-button.zylon-focus', 'yt-button-container.zylon-focus'];
+const inside = (what) => FOCUSED.map((focused) => `${focused} ${what}`).join(', ');
+const smartTubeCss = () => [
+    // YouTube's own black is marked important on body; html body outranks it.
+    'html body, html body ytlr-app { background-color: #121212 !important; }',
+    `${FOCUSED.join(', ')} { background-color: ${SMARTTUBE_RED} !important; color: #ffffff !important; }`,
+    `${inside('yt-formatted-string')}, ${inside('yt-icon')} { color: #ffffff !important; }`,
+    `ytlr-tile-renderer.zylon-focus ytlr-thumbnail-details { box-shadow: 0 0 0 5px ${SMARTTUBE_RED}, 0 0 26px rgba(229, 57, 53, 0.65) !important; }`,
+    `ytlr-guide-entry-renderer.zylon-focus yt-icon, ytlr-guide-entry-renderer.zylon-focus yt-formatted-string { color: ${SMARTTUBE_RED} !important; }`,
+    `ytlr-search-bar ytlr-text-box.zylon-focus { box-shadow: 0 0 0 3px ${SMARTTUBE_RED} !important; }`,
+    `.ytLrProgressBarPlayed, .ytLrProgressBarPlayhead { background-color: ${SMARTTUBE_RED} !important; }`
+].join('\n');
+
+// A new mode is loaded afresh: much of what a mode changes is read as YouTube's screens are built.
+const RELOAD_AFTER = 700;
+
+const start = () => {
+    configChangeEmitter.addEventListener('configChange', (event) => {
+        if (event.detail.key !== 'uiMode') return;
+        after('interface mode reload', RELOAD_AFTER, reloadPage);
+    });
+};
+
+export {
+    MODES, PRESETS, KEYS, ULTIMATIUMTUBE, SMARTTUBE, STOCK, SMARTTUBE_RED, uiMode, isStock, nameOf, modeChoices, writesFor,
+    smartTubeCss, start
+};

@@ -17,7 +17,7 @@ var KEYS = ['MediaPlayPause', 'MediaPlay', 'MediaPause', 'MediaStop', 'MediaFast
     'MediaTrackPrevious', 'MediaTrackNext', 'ColorF0Red', 'ColorF1Green', 'ColorF2Yellow', 'ColorF3Blue',
     'Exit', 'Info', 'Caption', 'Search', 'Guide'];
 
-var loader = { app: null, script: null, hash: '/', tries: 0, writing: false, written: false, writtenAt: 0,
+var loader = { app: null, script: null, hash: '/', tries: 0, writing: false, written: false, writtenAt: 0, windows: 0,
     bundled: null, build: { version: '0', flavor: 'modern' }, using: 'bundled', version: '0' };
 
 // Self-updating, as youtube-dummy keeps TizenTube's script current: UltimatiumTube's script is
@@ -277,11 +277,49 @@ window.addEventListener('message', function (event) {
     var data = event && event.data;
     if (!data || typeof data !== 'object') return;
     if (data.tube === 'exit' || data.action === 'exit') exitApp();
-    if (data.tube === 'reload') {
-        loader.hash = typeof data.hash === 'string' ? data.hash : '/';
-        load();
-    }
+    if (data.tube === 'reload') reopen(typeof data.hash === 'string' ? data.hash : '/');
 });
+
+// A window let go of: emptied first, since YouTube's page may ask to stay when it is closed, then
+// closed, and closed again a moment later in case it would not go the first time.
+function retire(old) {
+    if (!old) return;
+    try {
+        if (old.closed) return;
+        old.onbeforeunload = null;
+        old.document.open();
+        old.document.write('<!DOCTYPE html><html><body style="background:#000"></body></html>');
+        old.document.close();
+    } catch (error) {
+        // Not ours to empty: closed below all the same.
+    }
+    try {
+        old.close();
+    } catch (error) {
+        // Gone already.
+    }
+    setTimeout(function () {
+        try {
+            if (!old.closed) old.close();
+        } catch (error) {
+            // Gone.
+        }
+    }, 1000);
+}
+
+// YouTube loaded afresh (an interface mode chosen, say), as youtube-dummy reloads it: its window is
+// closed and a fresh one written, so nothing of the page before stays behind.
+function reopen(hash) {
+    loader.hash = hash || '/';
+    var old = loader.app;
+    loader.app = null;
+    loader.written = false;
+    loader.writing = false;
+    retire(old);
+    if (document.body) document.body.click();
+    if (!loader.app) openWindow();
+    load();
+}
 
 // A press of the app's icon while it runs brings YouTube back to the front.
 document.addEventListener('visibilitychange', function () {
@@ -298,7 +336,9 @@ document.addEventListener('visibilitychange', function () {
 function openWindow() {
     var opened = null;
     try {
-        opened = window.open('about:blank', 'app', 'scrollbars=no,resizable=no,status=no,location=no,toolbar=no,menubar=no');
+        // A new name each time: a window still closing must not be handed back.
+        loader.windows += 1;
+        opened = window.open('about:blank', 'app' + loader.windows, 'scrollbars=no,resizable=no,status=no,location=no,toolbar=no,menubar=no');
     } catch (error) {
         opened = null;
     }
@@ -425,9 +465,8 @@ function guardUpdate() {
 
 function start() {
     registerKeys();
-    window.addEventListener('click', function opening() {
-        window.removeEventListener('click', opening);
-        if (!loader.app) openWindow();
+    window.addEventListener('click', function () {
+        if (!loader.app || loader.app.closed) openWindow();
     });
     setTimeout(function () {
         if (document.body) document.body.click();

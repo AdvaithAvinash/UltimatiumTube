@@ -351,3 +351,10 @@ Two build-time gates, one per side.
   has not set it 30 seconds after the page is written is dropped and the packaged one written again.
   `protocol` changes only with a loader change that needs a reinstall. Speeds go to 20x; past the video
   engine's own top the rest is made up by moving `currentTime` on four times a second (`setSpeed`).
+- **Interface modes that take (1.16.1):** a change of `uiMode` reloads YouTube (`reloadPage()`; in the TV's
+  engine the loader closes the window, after emptying it, since YouTube's page may refuse to unload,
+  and writes YouTube into a fresh one under a new name). SmartTube style is CSS on what stays stable in
+  YouTube's scrambled markup: element names and `zylon-focus` on the focus path (the focused leaf is a
+  `ytlr-button` or `yt-button-container`). YouTube's own `body{background-color:#000!important}` is why the
+  backdrop is now painted with `!important`. `test/tv/realyoutube.cjs` (`npm run test:real`) checks all of
+  this against the real www.youtube.com/tv.

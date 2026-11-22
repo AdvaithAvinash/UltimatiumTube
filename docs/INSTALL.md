@@ -42,47 +42,37 @@ needs only one of them.
 Add a Samsung certificate profile that includes your TV's DUID, then **Device Manager** > connect the
 TV > install the `.wgt`; or `tizen install -n UltimatiumTubetizen5.5.wgt -t <your TV>`.
 
+### Which file
+
+**UltimatiumTube is supported on Tizen 3.0 and newer.** Tizen 5 or under (3.0, 4.0, 5.0): install
+`UltimatiumTubetizen5.0.wgt`. Tizen 5.5 or above: install `UltimatiumTubetizen5.5.wgt`.
+
 ### First start
 
-The first launch shows a short boot log while the app prepares its certificate. Then YouTube's home
-screen opens. If it stays on the log, the page names what it waits on, with an address to open on a
-phone that says what failed.
+The app shows *Loading YouTube...*, then YouTube's home screen with a welcome panel that asks which
+interface you want: **Stock YouTube UI** or **SmartTube UI**. Change it later under Settings >
+UltimatiumTube > Interface mode.
 
-### "A network error has occurred", or the app never gets past the boot log
+The app loads YouTube's TV page itself and opens it in the TV's own web engine (the way youtube-dummy
+does), so it does not depend on Samsung's Cobalt container or on a service on the TV answering.
 
-This means the YouTube engine on the TV cannot reach UltimatiumTube's own service, which runs on the
-TV and is what serves YouTube to it. In order of how often it is the cause:
+### "Cannot reach YouTube"
 
-1. **The service is not running.** The TV starts it at boot and after an install, not when you press
-   the icon. Switch the TV off at the remote and on again (not standby), wait a minute, then open the
-   app. This is the usual fix after installing or updating. (Before version 1.3.1 the service ended
-   itself on any error it did not expect, and a TV does not start an ended service again, which is why
-   only a reinstall brought it back. It now notes the error and carries on, and looks every twenty
-   seconds that it is still listening and that the boot page has this TV's current address. What it
-   survived is in the log at `/__tube/log`, as `survived:` lines.)
-2. **The app was not signed as a service.** The service needs a Samsung certificate with the
-   partner level. In Apps2Samsung turn on both **Force Samsung Certificate** and **Partner Signing**,
-   then install again. A widget signed without them installs but its service never starts.
-3. **Another YouTube app has the container.** YouTube for Tizen, TizenTube and this app share the
-   TV's one YouTube container. Close the other app, or switch the TV off and on, then open this one.
-4. **A VPN, a guest network or a router that isolates devices.** The TV talks to itself over its own
-   network address, and some routers block that.
-5. **Version 1.8.2.** It made a second copy of the service, which some TVs run, take the port from
-   the first and end it; the TV then started it again, and the two kept ending each other, so the app
-   opened on a network error. Install 1.8.3 or later, then switch the TV off at the plug for 30 seconds.
+The TV could not fetch YouTube's TV page: check that the TV is online (another app streams), that a
+VPN, DNS filter or router does not block www.youtube.com, and wait: the app tries again every few
+seconds on its own.
 
-Changing the app's name or icon in Apps2Samsung changes only `<name>` in `config.xml` and the
-`icon.png` file. The service reads neither: a package renamed to "Youtube" with another icon was run
-and serves exactly as the original.
+### The extras: phone settings, wallpapers, Stremio
 
-If it still fails, the boot screen shows an address to open on a phone, and that page says what
-failed.
+These come from the app's small service on the TV. The TV starts it at boot and after an install, not
+when you press the icon: if they do not work, switch the TV off at the remote and on again (not
+standby). The service needs the app signed with a Samsung certificate at the partner level (in
+Apps2Samsung, **Force Samsung Certificate** and **Partner Signing**). YouTube itself works without it.
 
 ### Other YouTube apps on the same TV
 
-UltimatiumTube does not clash with YouTube for Tizen or TizenTube over ports, folders or package ids.
-They do all run in the TV's one YouTube container, so close the other app, or switch the TV off and
-on, before opening this one.
+UltimatiumTube no longer runs in the TV's one YouTube container, so it does not compete with YouTube for
+Tizen, TizenTube Cobalt or the stock YouTube app, and its ports, folders and package id are its own.
 
 ## Android TV, Google TV, Fire TV
 

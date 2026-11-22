@@ -1,5 +1,5 @@
-import { VERSION, configRead, configWrite, every, findResolver, onKey, resolve, stop } from '../../framework/index.js';
-import { isStock } from '../uiMode/index.js';
+import { VERSION, configDefaults, configRead, configWrite, every, findResolver, onKey, resolve, stop } from '../../framework/index.js';
+import { SMARTTUBE, STOCK, isStock, writesFor } from '../uiMode/index.js';
 
 // The welcome message the app opens with, and the "What's new" page, as a glass panel of our own drawn
 // over YouTube: a translucent dark pane with a glowing edge and its buttons in a row. Its keys are
@@ -17,6 +17,8 @@ const WELCOME = [
 ];
 
 const WHATS_NEW = [
+    ['Loads YouTube straight', 'Like youtube-dummy: no Cobalt container and no service to wait on, so no more host errors. Tizen 3 and up'],
+    ['Choose your interface', 'Stock YouTube UI or SmartTube UI, asked when the app first opens'],
     ['Interface modes', 'UltimatiumTube, SmartTube style, or YouTube as it comes (like youtube-dummy), in one press under Settings'],
     ['Starts reliably', 'The app no longer stays on the start screen when the TV answers on another address, and keeps loading after the router gives the TV a new one'],
     ['Stay signed in', 'A new network address for the TV no longer signs every account out'],
@@ -120,18 +122,42 @@ const showWelcome = () => glass('UltimatiumTube', WELCOME, [
     { label: 'Don’t show again', run: () => configWrite('welcomeHidden', true) }
 ]);
 
+// The first thing the app asks: which interface. Back leaves it to be asked next time.
+const CHOOSER = [
+    'Welcome to UltimatiumTube.',
+    'Choose how YouTube looks and behaves on this TV. Adverts and sponsor segments are taken out in both.',
+    ['Stock YouTube UI', 'YouTube\u2019s own TV app as it comes, like youtube-dummy: nothing added, nothing changed'],
+    ['SmartTube UI', 'SmartTube\u2019s look and habits: dark grey and red, segments skipped with a note, DeArrow, dislikes, '
+        + 'extra player buttons, no nags'],
+    'You can change it any time in Settings > UltimatiumTube > Interface mode.'
+];
+
+const choose = (mode) => {
+    writesFor(mode, configRead, configDefaults()).forEach((write) => configWrite(write.key, write.value));
+    configWrite('uiChosen', true);
+};
+
+const showChooser = () => glass('Welcome to UltimatiumTube', CHOOSER, [
+    { label: 'Stock YouTube UI', run: () => choose(STOCK) },
+    { label: 'SmartTube UI', run: () => choose(SMARTTUBE) }
+]);
+
 const NAME = 'startup notice';
+
+const firstPanel = () => (!configRead('uiChosen') ? showChooser
+    : configRead('welcomeHidden') || isStock() ? null : showWelcome);
 
 const start = () => {
     onKey('glass panel', ALL_KEYS, keys);
-    if (configRead('welcomeHidden') || isStock()) return;
+    if (!firstPanel()) return;
 
     // The page is not ready for a panel until YouTube's own commands can be sent.
     every(NAME, 1500, () => {
         if (!findResolver()) return;
         stop(NAME);
-        setTimeout(showWelcome, 1200);
+        const panel = firstPanel();
+        if (panel) setTimeout(panel, 1200);
     });
 };
 
-export { start, showWelcome, showWhatsNew, glass, close, WELCOME, WHATS_NEW };
+export { start, showWelcome, showWhatsNew, showChooser, choose, glass, close, WELCOME, WHATS_NEW, CHOOSER };

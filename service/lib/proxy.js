@@ -84,6 +84,8 @@ const create = () => {
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
         res.setHeader('Access-Control-Allow-Headers', req.get('access-control-request-headers') || '*');
         res.setHeader('Access-Control-Max-Age', '86400');
+        // YouTube's page in the TV's own engine reads as www.youtube.com, and asks the service on loopback.
+        if (req.get('access-control-request-private-network')) res.setHeader('Access-Control-Allow-Private-Network', 'true');
 
         return res.status(200).end();
     });

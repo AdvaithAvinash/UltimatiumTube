@@ -358,3 +358,13 @@ Two build-time gates, one per side.
   `ytlr-button` or `yt-button-container`). YouTube's own `body{background-color:#000!important}` is why the
   backdrop is now painted with `!important`. `test/tv/realyoutube.cjs` (`npm run test:real`) checks all of
   this against the real www.youtube.com/tv.
+- **SmartTube UI (1.17.0):** `mods/smartTube` draws UltimatiumTube's own home screen over YouTube's home
+  (only there: away from it YouTube's own screens show) while `uiMode` is `smarttube`. Each section asks
+  `/youtubei/v1/browse` for its browseId as YouTube does, with the client context YouTube last sent
+  (`onRequest`) and its sign-in headers (noted from its own XHR and fetch calls), so the rows are the
+  account's; `data.js` reads shelves and grids of `tileRenderer` into rows of cards, with continuations
+  for more rows. A card opens with its own `onSelectCommand` through YouTube's resolver. The earlier
+  recolouring of YouTube's screens is gone: it left a label white on YouTube's light focused button.
+  Keys are its own while it shows; the glass panel marks a key it took (`__tubeGlass`).
+- **Releases:** a `stable-v*` tag runs `.github/workflows/release.yaml`, which publishes the packages
+  committed under `release/` in the tagged commit (so the APK keeps its signing key).

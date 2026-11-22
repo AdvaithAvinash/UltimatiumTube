@@ -20,8 +20,15 @@ with YouTube's own TV interface left as it is.
   runs again. *Automatic updates* is under Ultimate Dev Options. (A new install file is still needed when
   the app's own package changes; the app says so in What's new.)
 - **Welcome to UltimatiumTube.** Every time it opens, the app greets you and offers **Stock YouTube UI**
-  (YouTube as it comes) or **SmartTube UI** (dark grey, with SmartTube red on whatever is focused); OK
-  keeps the one you have, and choosing the other loads YouTube afresh in it. It is also under Settings >
+  (YouTube as it comes) or **SmartTube UI**; OK keeps the one you have, and choosing the other loads
+  YouTube afresh in it.
+- **SmartTube UI.** A home screen of UltimatiumTube's own in the manner of
+  [SmartTube](https://github.com/yuliskov/smarttube) on Android TV, with UltimatiumTube's name and mark
+  where SmartTube's would be: a side menu (Home, Subscriptions, Library, History, Music, Gaming, News,
+  Sports, Live, Podcasts, Movies & TV, Search, Stremio & Grayjay, Classic YouTube, Settings), rows of
+  video cards with their length and views, red focus and a clock. The rows are YouTube's own for your
+  account; a card plays in YouTube's own player, and Back comes home again. *Classic YouTube* shows
+  YouTube's own home until the app is opened again (to sign in, for one). It is also under Settings >
   UltimatiumTube > Interface mode.
 - **No ads.** Ads are removed from YouTube's responses before the player knows they exist.
 - **SponsorBlock, with more control.** Sponsor segments, intros, outros, subscribe reminders and

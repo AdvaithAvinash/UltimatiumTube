@@ -287,9 +287,16 @@ module.exports = [
     },
     {
         files: ['mods/**/*.js'],
-        ignores: UNSTYLED.concat(['mods/feed/index.js']),
+        ignores: UNSTYLED.concat(['mods/feed/index.js', 'mods/smartTube/data.js']),
         rules: {
             'no-restricted-syntax': ['error'].concat(BROWSER_SYNTAX, [NOT_THE_FEEDS_KEEPER])
+        }
+    },
+    // The SmartTube UI reads answers it asked for itself, not YouTube's feed on its way to the page.
+    {
+        files: ['mods/smartTube/data.js'],
+        rules: {
+            'no-restricted-syntax': ['error'].concat(BROWSER_SYNTAX)
         }
     },
     // A style exemption is not an engine exemption.

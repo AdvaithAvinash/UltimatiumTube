@@ -39,6 +39,7 @@ interface Window {
     /** Set by the app's loader in Samsung's web engine: 'wrt', and where the app's service is. */
     __tubeHost?: string;
     __tubeService?: string;
+    __tubeStarted?: boolean;
 
     /** Ours. */
     queuedVideos: QueuedVideos;

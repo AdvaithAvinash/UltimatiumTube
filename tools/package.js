@@ -12,7 +12,7 @@ const { PROXY, DEV } = require('../service/lib/ports.js');
 
 // Cobalt 20 cannot trust our CA, so the 5.0+ widget loads the page from the service instead.
 const APPS = [
-    { label: 'UltimatiumTube 5.5+', output: paths.WGT, include: paths.WIDGET, requiredVersion: null, servedFrom: null, packageId: null },
+    { label: 'UltimatiumTube 5.5+', output: paths.WGT, include: paths.WIDGET, requiredVersion: null, servedFrom: null, packageId: null, flavor: 'modern' },
     {
         // Tizen 5.0 and older: it installs from Tizen 3.0 (2017) up, and runs its service on the old
         // Node those sets carry. Sets before 2019 are untested.
@@ -21,6 +21,7 @@ const APPS = [
         include: paths.WIDGET_LEGACY,
         requiredVersion: '3.0',
         servedFrom: null,
+        flavor: 'legacy',
         // The same package as the 5.5 widget: a TV runs one of the two, and a store that lists both
         // must see one app.
         packageId: null
@@ -208,6 +209,33 @@ async function writeWidget(staging, outPath) {
     writeFileSync(outPath, await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' }));
 }
 
+// What the loader reads to know which published script is its kind, and whether one is newer.
+function writeBuild(staging, config, app) {
+    writeFileSync(join(staging, 'build.json'), JSON.stringify({ version: config.version, flavor: app.flavor }));
+}
+
+// The self-update channel: the scripts of this version and a manifest, under updates/, committed with
+// each version so the loader finds them on GitHub. A length lets the loader tell a download cut short.
+const UPDATE_PROTOCOL = 1;
+const UPDATE_FILES = { modern: ['dist/userScript.js', 'userScript.js'], legacy: ['dist/userScript.legacy.js', 'userScript.legacy.js'] };
+
+function publishUpdate(config) {
+    const folder = join(ROOT, 'updates');
+    mkdirSync(folder, { recursive: true });
+
+    const files = Object.keys(UPDATE_FILES).reduce((listed, flavor) => {
+        const [from, name] = UPDATE_FILES[flavor];
+        const text = readFileSync(join(ROOT, from), 'utf8');
+        writeFileSync(join(folder, name), text);
+        listed[flavor] = { path: name, length: text.length };
+        return listed;
+    }, {});
+
+    writeFileSync(join(folder, 'manifest.json'), `${JSON.stringify({
+        name: 'UltimatiumTube', version: config.version, protocol: UPDATE_PROTOCOL, files
+    }, null, 2)}\n`);
+}
+
 async function packageApp(config, app) {
     const staging = join(ROOT, '.package');
     const outPath = join(ROOT, app.output);
@@ -221,6 +249,7 @@ async function packageApp(config, app) {
         stageContents(staging, app);
         if (app.requiredVersion) setRequiredVersion(staging, app.requiredVersion);
         if (app.packageId) setPackageId(staging, app.packageId);
+        writeBuild(staging, config, app);
         if (app.servedFrom) servePage(staging, app.servedFrom);
         addCobaltProfile(staging);
         checkThePortsAgree(staging, config.ports);
@@ -248,6 +277,8 @@ async function main() {
         Promise.resolve([])
     );
     results.forEach((result) => ui.ok(result.label, `${ui.bytes(result.size)} · ${result.path}`, result.ms));
+    publishUpdate(config);
+    ui.ok('self-update channel', `updates/ at ${config.version}`);
 
     ui.blank();
     ui.note('Packaged, signed by nobody.');

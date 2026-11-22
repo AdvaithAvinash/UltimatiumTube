@@ -16,7 +16,7 @@ import {
 } from '../collections/index.js';
 import { EXIT_CONFIRMED, interpretExit, leaveConfirmed, leaveOrAsk } from '../exitConfirm/index.js';
 import { wallpaperOffNow } from '../theme/index.js';
-import { rememberSpeedForChannel } from '../player/speed.js';
+import { rememberSpeedForChannel, setSpeed } from '../player/speed.js';
 
 
 const APP_NAME = 'YouTube';
@@ -50,8 +50,8 @@ const ACTIONS = {
         const video = document.querySelector('video');
         if (!video) return;
 
-        video.playbackRate = Number(parameters);
-        rememberSpeedForChannel(video.playbackRate);
+        setSpeed(video, Number(parameters));
+        rememberSpeedForChannel(Number(parameters));
     },
 
     ENTER_MP: () => enterMiniPlayer(),

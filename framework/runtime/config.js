@@ -52,7 +52,7 @@ const defaultConfig = {
   videoPreferredCodec: 'any',
   enableDevBridge: DEV_TOOLS,
   videoSpeed: 1,
-  // The speed every video starts at, up to 15x; a remembered or per-channel speed wins over it.
+  // The speed every video starts at, up to 20x; a remembered or per-channel speed wins over it.
   defaultPlaybackSpeed: 1,
   rememberPlaybackSpeed: false,
   rememberChannelSpeed: false,
@@ -175,6 +175,8 @@ const defaultConfig = {
   // In the TV's own web engine: YouTube's full animations, as its own TV app has (lists glide, Shorts have
   // their own player). Read when the app opens.
   fullAnimation: true,
+  // Self-updating: a newer UltimatiumTube script is fetched from GitHub and used from the next start.
+  autoUpdate: true,
   enableSmoothNavigation: false,
 };
 

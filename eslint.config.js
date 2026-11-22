@@ -167,6 +167,8 @@ module.exports = [
             '**/.dev/**',
             '**/release/**',
             '**/.package/**',
+            // The self-update channel: built scripts, published as they are.
+            'updates/**',
             'framework/vendor/tiny-sha256.js'
         ]
     },

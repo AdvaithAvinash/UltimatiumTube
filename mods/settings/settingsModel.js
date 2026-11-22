@@ -159,8 +159,8 @@ const SEGMENT_VALUES = SEGMENTS.filter((segment) => segment.key !== 'enableSpons
     .toLowerCase()
 }));
 
-// Up to 15x, the same top as the player's own speed menu.
-const SPEED_CHOICES = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+// Up to 20x, the same top as the player's own speed menu.
+const SPEED_CHOICES = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
   .map((speed) => ({ label: `${speed}x`, value: speed }));
 
 const VIDEO_FITS = [
@@ -383,7 +383,7 @@ const GROUPS = [
         + 'screen without cropping. The Yellow button changes it while a video plays',
         SCREEN, VIDEO_FITS, 'Fit'),
       Choice('defaultPlaybackSpeed', 'Speed',
-        'The speed every video starts at, up to 15x. Pick another while one plays, from the speed button',
+        'The speed every video starts at, up to 20x. Pick another while one plays, from the speed button',
         SKIPPING, SPEED_CHOICES, 'Speed'),
       Switch('rememberPlaybackSpeed', 'Remember playback speed',
         'The speed you chose carries into the next video, which YouTube otherwise starts '
@@ -653,6 +653,9 @@ const ULTIMATE = [
         () => `${adSummary()}; SponsorBlock: ${savedTimeSummary()}`,
         [{ label: 'Start counting again', writes: [{ key: 'adsBlockedCount', value: 0 }, { key: 'adRequestsBlocked', value: 0 },
           { key: 'sponsorBlockSavedSeconds', value: 0 }, { key: 'sponsorBlockSkipCount', value: 0 }] }]),
+      Switch('autoUpdate', 'Automatic updates',
+        'A newer UltimatiumTube is fetched from GitHub while you watch and used from the next time the app opens, '
+        + 'as youtube-dummy keeps TizenTube up to date', RESTART),
       Switch('enablePhoneSync', 'Phone settings page',
         'Lets the page on your phone read and change these settings. Off also stops the page working', CONTROLS),
       Choice('phoneSyncSeconds', 'Phone page refresh', 'How often the TV asks whether the phone changed something',

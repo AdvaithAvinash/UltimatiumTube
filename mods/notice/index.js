@@ -1,4 +1,4 @@
-import { VERSION, configDefaults, configRead, configWrite, every, findResolver, onKey, resolve, stop } from '../../framework/index.js';
+import { VERSION, configDefaults, configRead, configWrite, every, findResolver, onKey, resolve, showToast, stop } from '../../framework/index.js';
 import { SMARTTUBE, STOCK, uiMode, writesFor } from '../uiMode/index.js';
 
 // The welcome message the app opens with, and the "What's new" page, as a glass panel of our own drawn
@@ -17,6 +17,8 @@ const WELCOME = [
 ];
 
 const WHATS_NEW = [
+    ['Self-updating', 'New versions of UltimatiumTube arrive by themselves from GitHub, like youtube-dummy; no reinstall'],
+    ['Speed up to 20x', 'With the UltimatiumTube label under the speeds YouTube does not offer'],
     ['Like YouTube\u2019s own TV app', 'Full animations, Shorts in their own player, quicker search suggestions and a remote that answers at once'],
     ['Loads YouTube straight', 'Like youtube-dummy: no Cobalt container and no service to wait on, so no more host errors. Tizen 3 and up'],
     ['Choose your interface', 'Stock YouTube UI or SmartTube UI, asked when the app first opens'],
@@ -156,7 +158,15 @@ const NAME = 'startup notice';
 // Every time the app opens.
 const firstPanel = () => showChooser;
 
+// The app's loader says so when it has kept a newer version of UltimatiumTube for the next start.
+const heardUpdate = (event) => {
+    const data = event && event.data;
+    if (!data || data.tube !== 'updated' || typeof data.version !== 'string') return;
+    showToast('UltimatiumTube updated', `Version ${data.version} is ready. It starts the next time you open the app`);
+};
+
 const start = () => {
+    if (window.addEventListener) window.addEventListener('message', heardUpdate);
     onKey('glass panel', ALL_KEYS, keys);
     if (!firstPanel()) return;
 

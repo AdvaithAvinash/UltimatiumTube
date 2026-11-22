@@ -23,10 +23,30 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const results = [];
 const check = (label, ok, detail) => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${label}${ok ? '' : `  <- ${detail || ''}`}`); results.push(!!ok); };
 
-const youtube = { up: false, asked: [] };
+const youtube = { up: false, asked: [], update: 'none', updates: [] };
+
+// The self-update channel on GitHub: a newer version that starts, or one that never does.
+const UPDATE = {
+    good: "window.__tubeStarted = true; window.__tubeUpdated = '99.0.0';",
+    bad: "window.__tubeUpdated = 'bad';"
+};
+const channel = (req, res) => {
+    youtube.updates.push(req.url);
+    if (youtube.update === 'none') { res.writeHead(404); res.end(); return; }
+    const script = UPDATE[youtube.update];
+    if (/manifest\.json/.test(req.url)) {
+        res.writeHead(200, { 'content-type': 'application/json', 'access-control-allow-origin': '*' });
+        res.end(JSON.stringify({ name: 'UltimatiumTube', version: youtube.update === 'good' ? '99.0.0' : '98.0.0', protocol: 1,
+            files: { modern: { path: 'userScript.js', length: script.length }, legacy: { path: 'userScript.legacy.js', length: script.length } } }));
+        return;
+    }
+    res.writeHead(200, { 'content-type': 'text/plain', 'access-control-allow-origin': '*' });
+    res.end(script);
+};
 
 const stand = (key, cert) => new Promise((resolve, reject) => {
     const server = https.createServer({ key, cert }, (req, res) => {
+        if (/raw\.githubusercontent\.com|cdn\.jsdelivr\.net/.test(String(req.headers.host))) { channel(req, res); return; }
         youtube.asked.push(req.url);
         if (!youtube.up) { req.socket.destroy(); return; }
         if (req.url.split('?')[0] === '/tv') {
@@ -63,6 +83,8 @@ const TIZEN = `(() => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loaderwgt-'));
     execFileSync('unzip', ['-q', WGT, '-d', dir]);
     const config = fs.readFileSync(path.join(dir, 'config.xml'), 'utf8');
+    check('the widget says which version and which kind of script it carries, for the self-update',
+        /"version":"\d+\.\d+\.\d+"/.test(fs.readFileSync(path.join(dir, 'build.json'), 'utf8')));
     check('the widget claims no Cobalt container', !/nativeID|native\.userdata/.test(config));
     check('nor holds every key back to tell a long press (keyrouter.long.press)', !/keyrouter\.long\.press/.test(config));
     check('and opens the loader', /<content src="index\.html"\/>/.test(config) && fs.existsSync(path.join(dir, 'loader.js')) && fs.existsSync(path.join(dir, 'userScript.js')));
@@ -72,7 +94,7 @@ const TIZEN = `(() => {
     ['HTTPS_PROXY', 'https_proxy', 'HTTP_PROXY', 'http_proxy', 'ALL_PROXY', 'all_proxy'].forEach((name) => delete env[name]);
     const browser = await chromium.launch({
         env,
-        args: ['--host-resolver-rules=MAP www.youtube.com 127.0.0.1', '--ignore-certificate-errors', '--disable-web-security',
+        args: ['--host-resolver-rules=MAP www.youtube.com 127.0.0.1, MAP raw.githubusercontent.com 127.0.0.1, MAP cdn.jsdelivr.net 127.0.0.1', '--ignore-certificate-errors', '--disable-web-security',
             '--allow-file-access-from-files', '--disable-popup-blocking', '--no-proxy-server',
             '--disable-features=IsolateOrigins,site-per-process']
     });
@@ -147,6 +169,44 @@ const TIZEN = `(() => {
     // The message the Exit key sends (Chromium ignores keyCode in a made-up key event).
     await (again || shown || app).evaluate(() => window.opener.postMessage({ tube: 'exit' }, '*')).catch(() => undefined);
     check('Exit leaves the app', await until(() => loaderPage.evaluate(() => window.__tubeExited === true), 5000));
+
+    // Self-updating. The app is opened again; a newer version is on GitHub.
+    youtube.update = 'good';
+    await loaderPage.evaluate(() => localStorage.setItem('tube.settings', '{}'));
+    const reopened = context.waitForEvent('page', { timeout: 15000 }).catch(() => null);
+    await loaderPage.reload();
+    await reopened;
+    const kept = async () => loaderPage.evaluate(() => {
+        const one = JSON.parse(localStorage.getItem('tube.update.modern') || localStorage.getItem('tube.update.legacy') || 'null');
+        return one && one.version;
+    }).catch(() => null);
+    check('once YouTube is open, a newer UltimatiumTube on GitHub is fetched and kept for the next start', await until(async () => (await kept()) === '99.0.0', 35000),
+        `${String(await kept())} after ${JSON.stringify(youtube.updates.slice(-4))}`);
+    check('the version already running is not swapped under the viewer', await until(async () => !!(await ourWindow()), 3000));
+
+    const next = context.waitForEvent('page', { timeout: 15000 }).catch(() => null);
+    await loaderPage.reload();
+    await next;
+    const updated = async () => {
+        const pages = context.pages().filter((p) => p !== loaderPage && !p.isClosed());
+        const marks = await Promise.all(pages.map((p) => p.evaluate(() => window.__tubeUpdated).catch(() => null)));
+        return marks.filter(Boolean)[0] || null;
+    };
+    check('the next time the app opens, the update is what runs', await until(async () => (await updated()) === '99.0.0', 15000), String(await updated()));
+
+    // A kept version that never starts is dropped, and the app's own runs again.
+    const flavor = JSON.parse(fs.readFileSync(path.join(dir, 'build.json'), 'utf8')).flavor;
+    await loaderPage.evaluate((kind) => localStorage.setItem(`tube.update.${kind}`,
+        JSON.stringify({ version: '98.0.0', protocol: 1, script: "window.__tubeUpdated = 'bad';", at: Date.now() })), flavor);
+    youtube.update = 'none';
+    const broken = context.waitForEvent('page', { timeout: 15000 }).catch(() => null);
+    await loaderPage.reload();
+    await broken;
+    check('an update that does not start is dropped, and the app\u2019s own script runs again', await until(async () => {
+        const back = await ourWindow();
+        const dropped = await loaderPage.evaluate((kind) => !localStorage.getItem(`tube.update.${kind}`), flavor).catch(() => false);
+        return !!back && dropped;
+    }, 50000));
     check('no script errors on the way', errors.length === 0 && before === 0, JSON.stringify(errors.slice(0, 3)));
 
     await browser.close();

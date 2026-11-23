@@ -51,6 +51,20 @@ const CSS = `
 #tube-smart .ust-card.ust-focus { transform: scale(1.07); }
 #tube-smart .ust-card.ust-focus .ust-thumb { box-shadow: 0 0 0 5px ${RED}, 0 10px 34px rgba(229, 57, 53, 0.45); }
 #tube-smart .ust-card.ust-focus .ust-card-title { color: #ffffff; }
+#tube-smart .ust-view.ust-below { top: 600px; }
+#tube-smart .ust-search { display: none; position: absolute; left: 70px; right: 70px; top: 128px; height: 460px; }
+#tube-smart .ust-query { height: 72px; line-height: 72px; padding: 0 26px; border-radius: 14px; background-color: #1e1e23;
+  font-size: 40px; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border: 2px solid rgba(255, 255, 255, 0.08); }
+#tube-smart .ust-query.ust-empty { color: #8a8a90; }
+#tube-smart .ust-keys { position: absolute; left: 0; top: 96px; width: 742px; }
+#tube-smart .ust-key { display: inline-block; vertical-align: top; width: 94px; height: 58px; line-height: 58px; margin: 0 12px 12px 0;
+  border-radius: 12px; background-color: #222227; color: #e6e6ea; font-size: 28px; text-align: center; text-transform: uppercase; }
+#tube-smart .ust-key-go { background-color: ${RED}; color: #ffffff; text-transform: none; font-weight: bold; }
+#tube-smart .ust-key.ust-focus { background-color: #ffffff; color: #0f0f10; transform: scale(1.08); }
+#tube-smart .ust-hints { position: absolute; left: 800px; right: 0; top: 96px; }
+#tube-smart .ust-hint { height: 48px; line-height: 48px; padding: 0 20px; margin-bottom: 4px; border-radius: 10px; font-size: 27px; color: #d6d6db;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#tube-smart .ust-hint.ust-focus { background-color: #ffffff; color: #0f0f10; }
 #tube-smart .ust-message { display: none; position: absolute; left: 28px; right: 70px; top: 30px; font-size: 30px; line-height: 44px; color: #cfcfd4; }
 `;
 

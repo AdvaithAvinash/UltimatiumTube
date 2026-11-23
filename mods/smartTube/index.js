@@ -5,6 +5,7 @@ import { glass } from '../notice/index.js';
 import { leaveConfirmed } from '../exitConfirm/index.js';
 import { openStremio } from '../stremio/index.js';
 import { pageOf } from './data.js';
+import { COLUMNS, KEYBOARD, SEARCH, labelOf, step, suggestUrl, suggestionsOf, typed } from './search.js';
 import { CSS, ICONS, LOGO } from './look.js';
 
 // SmartTube UI: a home screen of UltimatiumTube's own, in the manner of SmartTube on Android TV, drawn
@@ -30,7 +31,7 @@ const SECTIONS = [
     { label: 'Live', browse: 'FEtopics_live', icon: 'live' },
     { label: 'Podcasts', browse: 'FEtopics_podcasts', icon: 'mic' },
     { label: 'Movies & TV', browse: 'FEtopics_movies', icon: 'film' },
-    { label: 'Search', action: 'search', icon: 'search' },
+    { label: 'Search', search: true, icon: 'search' },
     { label: 'Stremio & Grayjay', action: 'stremio', icon: 'stremio' },
     { label: 'Classic YouTube', action: 'classic', icon: 'yt' },
     { label: 'Settings', action: 'settings', icon: 'gear' }
@@ -45,8 +46,12 @@ const SEEN_WIDTH = 1920 - 360 - 70 - 28;
 const state = {
     root: null, shown: false, suppressed: false, zone: 'rail', rail: 0, section: 0,
     rows: [], row: 0, cards: {}, more: null, loading: false, asked: 0, message: '',
-    headers: {}, context: null
+    headers: {}, context: null,
+    // The search screen: what is typed, the key and suggestion in focus, YouTube's suggestions.
+    query: '', key: 0, hint: 0, hints: [], hinted: 0
 };
+
+const searching = () => !!SECTIONS[state.section].search;
 
 const wanted = () => configRead('uiMode') === 'smarttube';
 
@@ -108,7 +113,7 @@ const contextNow = () => state.context
     || (window.yt && window.yt.config_ && window.yt.config_.INNERTUBE_CONTEXT)
     || { client: { clientName: 'TVHTML5', clientVersion: '7.20250101.00.00', hl: 'en' } };
 
-const browse = (body) => window.fetch('/youtubei/v1/browse?prettyPrint=false', {
+const ask = (endpoint, body) => window.fetch(`/youtubei/v1/${endpoint}?prettyPrint=false`, {
     method: 'POST',
     credentials: 'include',
     headers: Object.assign({ 'Content-Type': 'application/json' }, state.headers),
@@ -117,6 +122,8 @@ const browse = (body) => window.fetch('/youtubei/v1/browse?prettyPrint=false', {
     if (!response.ok) throw new Error(`status ${response.status}`);
     return response.json();
 });
+
+const browse = (body) => ask('browse', body);
 
 // --- drawing
 
@@ -184,6 +191,13 @@ const build = () => {
     top.appendChild(element('div', 'ust-title', ''));
     top.appendChild(element('div', 'ust-clock', ''));
     main.appendChild(top);
+    const finder = element('div', 'ust-search');
+    finder.appendChild(element('div', 'ust-query', ''));
+    const pad = element('div', 'ust-keys');
+    KEYBOARD.forEach((key) => pad.appendChild(element('div', key === SEARCH ? 'ust-key ust-key-go' : 'ust-key', labelOf(key))));
+    finder.appendChild(pad);
+    finder.appendChild(element('div', 'ust-hints'));
+    main.appendChild(finder);
     const view = element('div', 'ust-view');
     view.appendChild(element('div', 'ust-rows'));
     view.appendChild(element('div', 'ust-message', ''));
@@ -235,6 +249,22 @@ const showPictures = () => {
     });
 };
 
+const paintSearch = () => {
+    const finder = part('.ust-search');
+    const on = searching() && state.zone !== 'rows';
+    finder.style.display = on ? 'block' : 'none';
+    part('.ust-view').className = on ? 'ust-view ust-below' : 'ust-view';
+    if (!on) return;
+    part('.ust-query').textContent = state.query ? `${state.query}\u2502` : 'Type to search YouTube\u2026';
+    part('.ust-query').className = state.query ? 'ust-query' : 'ust-query ust-empty';
+    Array.prototype.forEach.call(finder.querySelectorAll('.ust-key'), (key, at) => {
+        key.className = `ust-key${KEYBOARD[at] === SEARCH ? ' ust-key-go' : ''}${state.zone === 'keys' && at === state.key ? ' ust-focus' : ''}`;
+    });
+    const hints = part('.ust-hints');
+    hints.innerHTML = '';
+    state.hints.forEach((hint, at) => hints.appendChild(element('div', `ust-hint${state.zone === 'hints' && at === state.hint ? ' ust-focus' : ''}`, hint)));
+};
+
 // What is focused and where everything sits, drawn from the state.
 const paint = () => {
     if (!state.root) return;
@@ -259,6 +289,7 @@ const paint = () => {
     part('.ust-message').textContent = state.message;
     part('.ust-message').style.display = state.message ? 'block' : 'none';
     part('.ust-title').textContent = SECTIONS[state.section].label;
+    paintSearch();
     showPictures();
 };
 
@@ -318,11 +349,125 @@ const loadMore = () => {
     });
 };
 
+// --- searching
+
+const language = () => (contextNow().client && contextNow().client.hl) || 'en';
+
+const suggest = () => {
+    state.hinted += 1;
+    const asked = state.hinted;
+    const query = state.query.trim();
+    if (!query) {
+        state.hints = [];
+        paint();
+        return;
+    }
+    setTimeout(() => {
+        if (asked !== state.hinted) return;
+        window.fetch(suggestUrl(query, language()), { credentials: 'include' })
+            .then((response) => response.text())
+            .then((text) => {
+                if (asked !== state.hinted) return;
+                state.hints = suggestionsOf(text);
+                state.hint = Math.min(state.hint, Math.max(0, state.hints.length - 1));
+                paint();
+            })
+            .catch(() => undefined);
+    }, 150);
+};
+
+const runSearch = (query) => {
+    const words = String(query || '').trim();
+    if (!words) return;
+    state.query = words;
+    state.rows = [];
+    state.row = 0;
+    state.cards = {};
+    state.more = null;
+    state.asked += 1;
+    const asked = state.asked;
+    part('.ust-rows').innerHTML = '';
+    state.message = 'Searching\u2026';
+    state.zone = 'rows';
+    paint();
+    ask('search', { query: words }).then((answer) => {
+        if (asked !== state.asked) return;
+        const page = pageOf(answer);
+        state.more = null;
+        addRows(page.rows.map((row) => ({ title: row.title || `Results for \u201c${words}\u201d`, cards: row.cards })));
+        state.message = page.rows.length ? '' : `Nothing found for \u201c${words}\u201d.`;
+        if (!page.rows.length) state.zone = 'keys';
+        paint();
+    }).catch(() => {
+        if (asked !== state.asked) return;
+        state.message = 'YouTube did not answer. Press OK to try again.';
+        state.zone = 'keys';
+        paint();
+    });
+};
+
+const enterSearch = (at) => {
+    state.section = at;
+    state.zone = 'keys';
+    state.rows = [];
+    state.row = 0;
+    state.message = '';
+    part('.ust-rows').innerHTML = '';
+    paint();
+};
+
+const pressKey = () => {
+    const key = KEYBOARD[state.key];
+    if (key === SEARCH) {
+        runSearch(state.query);
+        return;
+    }
+    state.query = typed(state.query, key);
+    paint();
+    suggest();
+};
+
+const moveInSearch = (code) => {
+    if (state.zone === 'keys') {
+        const next = step(state.key, code);
+        if (next !== -1) state.key = next;
+        else if (code === 37) {
+            state.zone = 'rail';
+            state.rail = state.section;
+        } else if (code === 39 && state.hints.length) state.zone = 'hints';
+        else if (code === 40 && state.rows.length) state.zone = 'rows';
+        paint();
+        return true;
+    }
+    if (state.zone === 'hints') {
+        if (code === 38) state.hint = Math.max(0, state.hint - 1);
+        if (code === 40) state.hint = Math.min(state.hints.length - 1, state.hint + 1);
+        if (code === 37) {
+            state.zone = 'keys';
+            state.key = Math.min(KEYBOARD.length - 1, Math.floor(state.key / COLUMNS) * COLUMNS + COLUMNS - 1);
+        }
+        paint();
+        return true;
+    }
+    // In the results: Up from the first row goes back to the keyboard.
+    if (state.zone === 'rows' && code === 38 && state.row === 0) {
+        state.zone = 'keys';
+        paint();
+        return true;
+    }
+    return false;
+};
+
 // --- showing it over YouTube's home, and only there
 
 const HOME_PAGES = ['', 'default', 'FEtopics', 'FEwhat_to_watch'];
 
+// YouTube's screens that keep the home's address: the Shorts player is one. The screen stays out of
+// their way.
+const OVER_HOME = ['ytlr-shorts-page', 'ytlr-reel-player-overlay-renderer'];
+
 const onYouTubeHome = () => {
+    if (OVER_HOME.some((tag) => document.querySelector(tag))) return false;
     const hash = String(window.location.hash || '').replace(/^#/, '');
     if (hash === '' || hash === '/') return true;
     const browsing = /^\/browse(\?|$)/.exec(hash);
@@ -368,18 +513,6 @@ const goTo = (hash) => {
 };
 
 const act = (section) => {
-    if (section.action === 'search') {
-        hide();
-        try {
-            resolve({ searchEndpoint: { query: '' } });
-        } catch (error) {
-            goTo('/search');
-        }
-        setTimeout(() => {
-            if (onYouTubeHome()) goTo('/search');
-        }, 800);
-        return;
-    }
     if (section.action === 'settings') {
         goTo('/settings');
         return;
@@ -400,10 +533,22 @@ const askToLeave = () => glass('Exit UltimatiumTube?', ['Exit leaves the app. St
 ]);
 
 const pressOk = () => {
+    if (state.zone === 'keys') {
+        pressKey();
+        return;
+    }
+    if (state.zone === 'hints') {
+        runSearch(state.hints[state.hint]);
+        return;
+    }
     if (state.zone === 'rail') {
         const section = SECTIONS[state.rail];
         if (section.action) {
             act(section);
+            return;
+        }
+        if (section.search) {
+            enterSearch(state.rail);
             return;
         }
         load(state.rail);
@@ -414,6 +559,7 @@ const pressOk = () => {
     const row = state.rows[state.row];
     const card = row && row.cards[state.cards[state.row] || 0];
     if (card) open(card);
+    else if (searching()) state.zone = 'keys';
     else if (state.message) load(state.section);
 };
 
@@ -421,10 +567,12 @@ const move = (code) => {
     if (state.zone === 'rail') {
         if (code === 38) state.rail = Math.max(0, state.rail - 1);
         if (code === 40) state.rail = Math.min(SECTIONS.length - 1, state.rail + 1);
-        if (code === 39 && state.rows.length) state.zone = 'rows';
+        if (code === 39 && searching() && state.rail === state.section) state.zone = 'keys';
+        else if (code === 39 && state.rows.length) state.zone = 'rows';
         paint();
         return;
     }
+    if (searching() && moveInSearch(code)) return;
     const count = (state.rows[state.row] && state.rows[state.row].cards.length) || 0;
     const chosen = state.cards[state.row] || 0;
     if (code === 37) {
@@ -448,11 +596,15 @@ const keys = (event) => {
 
     const code = event.keyCode;
     if (BACK_KEYS.indexOf(code) !== -1) {
-        if (state.zone === 'rows') {
+        if (state.zone === 'rows' && searching()) state.zone = 'keys';
+        else if (state.zone !== 'rail') {
             state.zone = 'rail';
             state.rail = state.section;
-            paint();
-        } else askToLeave();
+        } else {
+            askToLeave();
+            return true;
+        }
+        paint();
         return true;
     }
     if (code === 13) pressOk();

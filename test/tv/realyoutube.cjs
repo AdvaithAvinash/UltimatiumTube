@@ -131,6 +131,75 @@ const TIZEN = `window.tizen = { tvinputdevice: { registerKey: () => undefined },
         }), 20000);
         check('Back from the player comes back to the UltimatiumTube home screen', !!back);
 
+        // Search, the SmartTube UI's own: its keyboard, YouTube's suggestions as you type, results as rows.
+        // Settled, and nothing asked: the exit question from a Back too many is answered Stay.
+        await sleep(1500);
+        if (await fresh.evaluate(() => !!document.getElementById('tube-glass'))) {
+            await fresh.keyboard.press('Escape');
+            await sleep(600);
+        }
+        // To the side menu: Back from the rows (Back on the menu itself asks whether to leave).
+        if (await fresh.evaluate(() => document.getElementById('tube-smart').className !== 'ust-in-rail')) {
+            await fresh.keyboard.press('Escape');
+            await sleep(400);
+        }
+        const railAt = await fresh.evaluate(() => Array.prototype.findIndex.call(document.querySelectorAll('#tube-smart .ust-item'), (item) => /ust-focus/.test(item.className)));
+        const searchAt = await fresh.evaluate(() => Array.prototype.findIndex.call(document.querySelectorAll('#tube-smart .ust-item'), (item) => /Search/.test(item.innerText)));
+        for (let i = railAt; i < searchAt; i += 1) { await fresh.keyboard.press('ArrowDown'); await sleep(150); }
+        await fresh.keyboard.press('Enter');
+        const keysShown = await until(() => fresh.evaluate(() => getComputedStyle(document.querySelector('#tube-smart .ust-search')).display !== 'none'
+            && document.querySelectorAll('#tube-smart .ust-key').length >= 40 && /ust-focus/.test(document.querySelector('#tube-smart .ust-key').className)), 4000);
+        check('Search opens the UltimatiumTube keyboard', keysShown, await fresh.evaluate(() => JSON.stringify({
+            title: document.querySelector('#tube-smart .ust-title').textContent, cls: document.getElementById('tube-smart').className,
+            shown: document.getElementById('tube-smart').style.display, focus: (document.querySelector('#tube-smart .ust-item.ust-focus') || {}).textContent,
+            hash: location.hash, glass: !!document.getElementById('tube-glass') })).catch((e) => e.message));
+
+        // c (2), a (0), t (19): Right Right OK, Left Left OK, Down Down Right x5 OK.
+        const typeKeys = ['ArrowRight', 'ArrowRight', 'Enter', 'ArrowLeft', 'ArrowLeft', 'Enter', 'ArrowDown', 'ArrowDown',
+            'ArrowRight', 'ArrowRight', 'ArrowRight', 'ArrowRight', 'ArrowRight', 'Enter'];
+        for (const key of typeKeys) { await fresh.keyboard.press(key); await sleep(200); }
+        const typedAt = Date.now();
+        const hints = await until(() => fresh.evaluate(() => {
+            const query = document.querySelector('#tube-smart .ust-query').textContent;
+            const shown = document.querySelectorAll('#tube-smart .ust-hint').length;
+            return /^cat/.test(query) && shown >= 3 ? shown : false;
+        }), 10000);
+        check(`typing shows YouTube\u2019s suggestions at once (${Date.now() - typedAt} ms)`, !!hints && Date.now() - typedAt < 5000, String(hints));
+
+        await fresh.keyboard.press('ArrowRight');
+        await sleep(150);
+        await fresh.keyboard.press('ArrowRight');
+        await sleep(150);
+        const chosen = await fresh.evaluate(() => (document.querySelector('#tube-smart .ust-hint.ust-focus') || {}).textContent || '');
+        const askedAt = Date.now();
+        await fresh.keyboard.press('Enter');
+        const results = await until(() => fresh.evaluate(() => {
+            const cards = document.querySelectorAll('#tube-smart .ust-card').length;
+            const title = document.querySelector('#tube-smart .ust-row-title');
+            return cards >= 5 && document.querySelector('#tube-smart .ust-title').textContent === 'Search'
+                && !/Searching/.test(document.querySelector('#tube-smart .ust-message').textContent) ? `${cards} cards, first row \u201c${title && title.textContent}\u201d` : false;
+        }), 15000);
+        check(`a suggestion searches YouTube, and the results come as rows of cards (${Date.now() - askedAt} ms, \u201c${chosen}\u201d)`, !!results, String(results));
+        await sleep(2000);
+        await fresh.screenshot({ path: path.join(os.tmpdir(), 'smarttube-search.png') });
+
+        // A Short from the results opens in YouTube's own Shorts player, as in YouTube's own TV app.
+        const shortsRow = await fresh.evaluate(() => Array.prototype.findIndex.call(document.querySelectorAll('#tube-smart .ust-row'),
+            (row) => /SHORT/.test(row.innerText)));
+        if (shortsRow > 0) {
+            for (let i = 0; i < shortsRow; i += 1) { await fresh.keyboard.press('ArrowDown'); await sleep(250); }
+            const onShort = await fresh.evaluate(() => /SHORT/.test((document.querySelector('#tube-smart .ust-card.ust-focus') || {}).innerText || ''));
+            await fresh.keyboard.press('Enter');
+            const reel = await until(() => fresh.evaluate(() => !!document.querySelector('ytlr-shorts-page')
+                && (!document.getElementById('tube-smart') || document.getElementById('tube-smart').style.display === 'none')), 20000);
+            check('a Short opens in YouTube\u2019s own Shorts player, with nothing of ours over it', onShort && !!reel);
+            await fresh.keyboard.press('Escape');
+            await sleep(1500);
+            await until(() => fresh.evaluate(() => document.getElementById('tube-smart').style.display !== 'none'), 15000);
+        } else {
+            check('a Short opens in YouTube\u2019s own Shorts player, with nothing of ours over it', false, 'no row of Shorts in the results');
+        }
+
         // Back to Stock YouTube UI, from the welcome panel the next time; here from the settings it writes.
         await loaderPage.evaluate(() => {
             const kept = JSON.parse(localStorage.getItem('tube.settings') || '{}');
@@ -146,11 +215,11 @@ const TIZEN = `window.tizen = { tvinputdevice: { registerKey: () => undefined },
         if (stock) {
             const plain = await until(() => stock.evaluate(() => {
                 const root = document.getElementById('tube-smart');
-                const focused = Array.from(document.querySelectorAll('ytlr-button.zylon-focus, yt-button-container.zylon-focus'))
-                    .filter((e) => !e.querySelector('.zylon-focus'));
-                return (!root || root.style.display === 'none') && focused.length ? getComputedStyle(focused[0]).backgroundColor : false;
+                const focused = Array.from(document.querySelectorAll('.zylon-focus')).filter((e) => !e.querySelector('.zylon-focus'));
+                const red = focused.some((e) => getComputedStyle(e).backgroundColor === 'rgb(229, 57, 53)');
+                return (!root || root.style.display === 'none') && focused.length && !red ? 'YouTube\u2019s own' : false;
             }), 40000);
-            check('with YouTube\u2019s own screens and look: no UltimatiumTube home over them', plain === 'rgb(241, 241, 241)', String(plain));
+            check('with YouTube\u2019s own screens and look: no UltimatiumTube home or colours over them', !!plain, String(plain));
         }
     }
 

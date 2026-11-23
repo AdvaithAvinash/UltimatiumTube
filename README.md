@@ -38,8 +38,14 @@ with YouTube's own TV interface left as it is.
   where SmartTube's would be: a side menu (Home, Subscriptions, Library, History, Music, Gaming, News,
   Sports, Live, Podcasts, Movies & TV, Search, Stremio & Grayjay, Classic YouTube, Settings), rows of
   video cards with their length and views, red focus and a clock. The rows are YouTube's own for your
-  account; a card plays in YouTube's own player, and Back comes home again. *Classic YouTube* shows
-  YouTube's own home until the app is opened again (to sign in, for one). It is also under Settings >
+  account; a card plays in YouTube's own player, and Back comes home again. *Search* is a light screen
+  of its own: a keyboard, YouTube's suggestions as you type (from the same address YouTube's own TV app
+  asks) and the results as rows. *Classic YouTube* shows YouTube's own home until the app is opened again
+  (to sign in, for one).
+- **Shorts as in YouTube's own TV app.** YouTube hands a TV's web browser (what youtube-dummy and this app
+  load YouTube in) each Short as an ordinary video, so it opened in the 16:9 player; Samsung's own YouTube
+  engine gets the Shorts player. UltimatiumTube gives every Short the Shorts player's command, so they
+  open full height with Up and Down between them, in either interface. It is also under Settings >
   UltimatiumTube > Interface mode.
 - **No ads.** Ads are removed from YouTube's responses before the player knows they exist.
 - **SponsorBlock, with more control.** Sponsor segments, intros, outros, subscribe reminders and

@@ -58,14 +58,52 @@ const cardOf = (tile) => {
     };
 };
 
+// YouTube's newer cards (search results, and more of its pages as it moves to them).
+const LOCKUP_KINDS = {
+    LOCKUP_CONTENT_TYPE_VIDEO: 'video', LOCKUP_CONTENT_TYPE_SHORT: 'short', LOCKUP_CONTENT_TYPE_PLAYLIST: 'playlist',
+    LOCKUP_CONTENT_TYPE_CHANNEL: 'channel', LOCKUP_CONTENT_TYPE_PODCAST: 'playlist'
+};
+
+const content = (node) => (node && typeof node.content === 'string' ? node.content : text(node));
+
+const lockupOf = (lockup) => {
+    const context = lockup && lockup.rendererContext && lockup.rendererContext.commandContext;
+    const command = context && context.onTap && context.onTap.innertubeCommand;
+    const metadata = lockup && lockup.metadata && lockup.metadata.lockupMetadataViewModel;
+    const title = content(metadata && metadata.title);
+    if (!command || !title) return null;
+
+    const details = metadata.metadata && metadata.metadata.contentMetadataViewModel;
+    const lines = ((details && details.metadataRows) || []).map((row) => (row.metadataParts || [])
+        .map((part) => content(part.text)).filter(Boolean).join(' \u2022 ')).filter(Boolean);
+    const image = lockup.contentImage && (lockup.contentImage.thumbnailViewModel || lockup.contentImage.collectionThumbnailViewModel
+        && lockup.contentImage.collectionThumbnailViewModel.primaryThumbnail && lockup.contentImage.collectionThumbnailViewModel.primaryThumbnail.thumbnailViewModel);
+    const overlays = (image && image.overlays) || [];
+    const badge = overlays.map((overlay) => {
+        const bottom = overlay.thumbnailBottomOverlayViewModel;
+        const first = bottom && bottom.badges && bottom.badges[0] && bottom.badges[0].thumbnailBadgeViewModel;
+        return first && first.text;
+    }).filter(Boolean)[0] || '';
+
+    return {
+        id: lockup.contentId || '',
+        kind: LOCKUP_KINDS[lockup.contentType] || 'video',
+        title,
+        lines,
+        picture: pictureOf(image && image.image && image.image.sources),
+        badge,
+        command
+    };
+};
+
 const tilesIn = (node, out) => {
     if (!node || typeof node !== 'object') return out;
     if (Array.isArray(node)) {
         node.forEach((one) => tilesIn(one, out));
         return out;
     }
-    if (node.tileRenderer) {
-        const card = cardOf(node.tileRenderer);
+    if (node.tileRenderer || node.lockupViewModel) {
+        const card = node.tileRenderer ? cardOf(node.tileRenderer) : lockupOf(node.lockupViewModel);
         if (card) out.push(card);
         return out;
     }
@@ -124,4 +162,4 @@ const continuationOf = (answer) => {
 
 const pageOf = (answer) => ({ rows: rowsIn(answer, []), more: continuationOf(answer) });
 
-export { pageOf, rowsIn, cardOf, continuationOf, text, GRID_ROW };
+export { pageOf, rowsIn, cardOf, lockupOf, continuationOf, text, GRID_ROW };

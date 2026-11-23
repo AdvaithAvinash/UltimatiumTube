@@ -17,6 +17,8 @@ const WELCOME = [
 ];
 
 const WHATS_NEW = [
+    ['Shorts like YouTube\u2019s own TV app', 'Every Short opens in YouTube\u2019s own Shorts player, not as an ordinary video'],
+    ['Quick search in SmartTube UI', 'A keyboard of its own, suggestions as you type, results as rows of cards'],
     ['SmartTube UI, for real', 'An UltimatiumTube home screen in SmartTube\u2019s manner: side menu, rows of your videos, red focus, clock; YouTube\u2019s player'],
     ['Interface modes that take', 'Choosing Stock YouTube UI or SmartTube UI loads YouTube afresh in it; SmartTube UI is dark grey with red focus'],
     ['Self-updating', 'New versions of UltimatiumTube arrive by themselves from GitHub, like youtube-dummy; no reinstall'],

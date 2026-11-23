@@ -30,6 +30,7 @@ import './thumbnails/index.js';
 import './longPressMenu/index.js';
 import './hideWatched/index.js';
 import './shorts/index.js';
+import './shorts/reel.js';
 import './signinReminder/index.js';
 import './endScreen/index.js';
 import './paidPromotion/index.js';

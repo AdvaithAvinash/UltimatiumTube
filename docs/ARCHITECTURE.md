@@ -368,3 +368,14 @@ Two build-time gates, one per side.
   Keys are its own while it shows; the glass panel marks a key it took (`__tubeGlass`).
 - **Releases:** a `stable-v*` tag runs `.github/workflows/release.yaml`, which publishes the packages
   committed under `release/` in the tagged commit (so the APK keeps its signing key).
+- **Shorts and search (1.17.1):** YouTube decides from the device that first loads `/tv` whether a Short
+  opens with `reelWatchEndpoint` (Cobalt) or a plain `watchEndpoint` (a TV browser); neither the request
+  body's client context nor a later User-Agent changes it. The browser's page has the Shorts player
+  (`ytlr-shorts-page`) all the same, so `mods/shorts/reel.js` rewrites each Short's command (lockups of
+  `LOCKUP_CONTENT_TYPE_SHORT`, Shorts tiles) to a `reelWatchEndpoint` with
+  `REEL_WATCH_SEQUENCE_PROVIDER_RPC` and `sequenceParams` of the video's id. The SmartTube screen steps
+  aside for the Shorts player, which keeps the home's `#/`. Search was measured: UltimatiumTube adds
+  under 3 ms to parsing a search answer and about 1 ms to a key press, so the SmartTube UI has a light
+  search of its own (`mods/smartTube/search.js`): suggestions from `/complete/search?client=youtube-lr`
+  (YouTube's TV app's own) and results from `/youtubei/v1/search`, including the newer `lockupViewModel`
+  cards, which `data.js` now reads.

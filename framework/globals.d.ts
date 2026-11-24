@@ -40,6 +40,8 @@ interface Window {
     __tubeHost?: string;
     __tubeService?: string;
     __tubeStarted?: boolean;
+    __tubeFlavour?: string;
+    __tubeFirstLoad?: boolean;
 
     /** Ours. */
     queuedVideos: QueuedVideos;

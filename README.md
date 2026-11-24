@@ -16,37 +16,37 @@
 Ad-free YouTube with SponsorBlock for **Samsung (Tizen) TVs** and **Android TV, Google TV and Fire TV**,
 with YouTube's own TV interface left as it is.
 
-- **The stock YouTube TV interface, loaded straight.** On a Samsung TV the app fetches YouTube's own TV
-  page and opens it in the TV's own web engine with UltimatiumTube on top, the way
-  [youtube-dummy](https://github.com/no-cover/youtube-dummy) does. It does not start Samsung's Cobalt
-  container and does not wait on a service on the TV ("host"), so if YouTube answers, the app works.
-  On Android TV it is YouTube's TV page in a full-screen WebView. Neither is a different skin.
-- **Like YouTube's own TV app.** YouTube gives a TV's web browser a cut-down version of its TV app
-  (limited animation, scripts fetched in batches). UltimatiumTube asks for what Samsung's own YouTube
-  engine gets: full animations, Shorts in their own player, search suggestions without the wait, and a
-  remote that answers at once. *Full animations* can be switched off under Navigation for a slow TV.
+- **Three modes, offered each time the app opens** (and under Settings > UltimatiumTube > Interface mode):
+
+  | Mode | What it is |
+  |---|---|
+  | **UltimatiumTube** | The YouTube app as YouTube gives it to **Samsung's own YouTube app**: Shorts in the Shorts player, one after another; search, results and everything else as in the app; with everything UltimatiumTube adds. |
+  | **SmartTube UI** | A home screen of UltimatiumTube's own in the manner of [SmartTube](https://github.com/yuliskov/smarttube), over that same app (below). |
+  | **YT Dummy** | YouTube exactly as [youtube-dummy](https://github.com/no-cover/youtube-dummy) loads it, untouched; only adverts and sponsor segments go. |
+
+  YouTube decides which TV app it serves from the first load of its TV page: Samsung's own YouTube app
+  gets the full one, a TV's web browser a cut-down one (Shorts as ordinary videos, search like a
+  browser). The app runs in the TV's web browser, the way youtube-dummy does, and cannot say it is
+  anything else, so in UltimatiumTube and SmartTube UI the app's small service on the TV asks YouTube
+  for the page as Samsung's YouTube app does. Nothing waits on it: if the service does not answer within
+  a few seconds, YouTube is loaded directly. There is no Cobalt container and no "host" to fail.
+- **Like YouTube's own TV app, in every mode.** Full animations, Shorts in their own player, search
+  suggestions without the wait and a remote that answers at once, even where YouTube serves the browser's
+  page. *Full animations* can be switched off under Navigation for a slow TV.
 - **Self-updating.** Like youtube-dummy, which keeps TizenTube's script current, UltimatiumTube fetches
   its newest version from this repository on GitHub while you watch, and the next time the app opens it
   runs it: no reinstall for each release. A version that fails to start is dropped and the one installed
   runs again. *Automatic updates* is under Ultimate Dev Options. (A new install file is still needed when
   the app's own package changes; the app says so in What's new.)
-- **Welcome to UltimatiumTube.** Every time it opens, the app greets you and offers **Stock YouTube UI**
-  (YouTube as it comes) or **SmartTube UI**; OK keeps the one you have, and choosing the other loads
-  YouTube afresh in it.
-- **SmartTube UI.** A home screen of UltimatiumTube's own in the manner of
-  [SmartTube](https://github.com/yuliskov/smarttube) on Android TV, with UltimatiumTube's name and mark
-  where SmartTube's would be: a side menu (Home, Subscriptions, Library, History, Music, Gaming, News,
-  Sports, Live, Podcasts, Movies & TV, Search, Stremio & Grayjay, Classic YouTube, Settings), rows of
-  video cards with their length and views, red focus and a clock. The rows are YouTube's own for your
-  account; a card plays in YouTube's own player, and Back comes home again. *Search* is a light screen
-  of its own: a keyboard, YouTube's suggestions as you type (from the same address YouTube's own TV app
-  asks) and the results as rows. *Classic YouTube* shows YouTube's own home until the app is opened again
-  (to sign in, for one).
-- **Shorts as in YouTube's own TV app.** YouTube hands a TV's web browser (what youtube-dummy and this app
-  load YouTube in) each Short as an ordinary video, so it opened in the 16:9 player; Samsung's own YouTube
-  engine gets the Shorts player. UltimatiumTube gives every Short the Shorts player's command, so they
-  open full height with Up and Down between them, in either interface. It is also under Settings >
-  UltimatiumTube > Interface mode.
+- **SmartTube UI.** A home screen of UltimatiumTube's own in the manner of SmartTube on Android TV, with
+  UltimatiumTube's name and mark where SmartTube's would be: a side menu (Home, Subscriptions, Library,
+  History, Music, Gaming, News, Sports, Live, Podcasts, Movies & TV, Search, Stremio & Grayjay, Classic
+  YouTube, Settings), rows of video cards with their length and views, red focus and a clock. The rows
+  are YouTube's own for your account; a card plays in YouTube's own player (a Short in the Shorts
+  player), and Back comes home again. *Search* is a quick screen of its own: a keyboard, YouTube's
+  suggestions as you type and the results as rows. *Classic YouTube* shows YouTube's own home until the
+  app is opened again (to sign in, for one).
+- **On Android TV** it is YouTube's TV page in a full-screen WebView.
 - **No ads.** Ads are removed from YouTube's responses before the player knows they exist.
 - **SponsorBlock, with more control.** Sponsor segments, intros, outros, subscribe reminders and
   self-promotion are skipped automatically and drawn on YouTube's own progress bar. You can mute a

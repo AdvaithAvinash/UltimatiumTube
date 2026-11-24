@@ -30,6 +30,7 @@ const pluginFetch = require('./lib/pluginFetch.js');
 const launchApp = require('./lib/launchApp.js');
 const youtubePlaylist = require('./lib/youtubePlaylist.js');
 const keep = require('./lib/keep.js');
+const tvPage = require('./lib/tvPage.js');
 const wallpapers = require('./lib/wallpapers.js');
 const routeErrors = require('./lib/routeErrors.js');
 const dev = require('./dev/index.js');
@@ -111,6 +112,7 @@ pluginFetch.attach(app);
 launchApp.attach(app);
 youtubePlaylist.attach(app);
 keep.attach(app);
+tvPage.attach(app);
 
 // What the engine refused under the policy above: one line in the log for each, so a navigation that
 // was kept on this service shows up in /__tube/log.

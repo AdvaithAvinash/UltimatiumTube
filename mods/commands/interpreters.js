@@ -10,7 +10,7 @@ import { addBookmark, openBookmarks, openBookmark, removeBookmark, clearBookmark
 import { openChannelQuality, setChannelQuality } from '../quality/index.js';
 import { openProfiles, switchProfile } from '../profiles/index.js';
 import { abPress } from '../abRepeat/index.js';
-import { showWhatsNew, showWelcome } from '../notice/index.js';
+import { showWhatsNew, showChooser } from '../notice/index.js';
 import {
     chooseCollection, addToCollection, openCollections, openCollection, removeFromCollection, deleteCollection
 } from '../collections/index.js';
@@ -70,7 +70,7 @@ const ACTIONS = {
     SWITCH_PROFILE: (parameters) => switchProfile(parameters),
     AB_REPEAT: () => abPress(),
     OPEN_WHATS_NEW: () => showWhatsNew(),
-    OPEN_WELCOME: () => showWelcome(),
+    OPEN_WELCOME: () => showChooser(),
 
     CHOOSE_COLLECTION: () => chooseCollection(),
     ADD_TO_COLLECTION: (parameters) => addToCollection(parameters),

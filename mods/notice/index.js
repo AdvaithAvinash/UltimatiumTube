@@ -17,6 +17,7 @@ const WELCOME = [
 ];
 
 const WHATS_NEW = [
+    ['Welcome with Close', 'The welcome has Close and Don\u2019t show again; it is under Settings all the same'],
     ['The YouTube app, for real', 'UltimatiumTube mode loads YouTube as Samsung\u2019s own YouTube app gets it: Shorts one after another in the Shorts player, search as in the app'],
     ['Three modes', 'UltimatiumTube, SmartTube UI and YT Dummy, offered every time the app opens'],
     ['Shorts like YouTube\u2019s own TV app', 'Every Short opens in YouTube\u2019s own Shorts player, not as an ordinary video'],
@@ -65,10 +66,14 @@ const STYLE = {
 
 const escape = (text) => String(text).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+// More than three buttons are drawn smaller, so the row fits the panel.
+const COMPACT = 'padding:12px 22px;margin-left:12px;margin-top:10px;font-size:24px;';
+
 const paint = () => {
     const nodes = state.open ? state.open.querySelectorAll('[data-glass-button]') : [];
+    const compact = nodes.length > 3 ? COMPACT : '';
     Array.prototype.forEach.call(nodes, (node, i) => {
-        node.style.cssText = i === state.index ? STYLE.focused : STYLE.button;
+        node.style.cssText = (i === state.index ? STYLE.focused : STYLE.button) + compact;
     });
 };
 
@@ -148,8 +153,13 @@ const choose = (mode) => {
 
 const CHOICES = [['UltimatiumTube', ULTIMATIUMTUBE], ['SmartTube UI', SMARTTUBE], ['YT Dummy', STOCK]];
 
+// The welcome is closed with Close (or Back), and kept from opening again with Don't show again; it
+// is under Settings > UltimatiumTube > Profiles and what's new all the same.
 const showChooser = () => {
-    glass('Welcome to UltimatiumTube', CHOOSER, CHOICES.map(([label, mode]) => ({ label, run: () => choose(mode) })));
+    glass('Welcome to UltimatiumTube', CHOOSER, CHOICES.map(([label, mode]) => ({ label, run: () => choose(mode) })).concat([
+        { label: 'Close', run: () => undefined },
+        { label: 'Don\u2019t show again', run: () => configWrite('welcomeHidden', true) }
+    ]));
     // The button of the interface already on is the one OK presses.
     const on = CHOICES.map((choice) => choice[1]).indexOf(uiMode());
     if (on >= 0) {
@@ -163,7 +173,7 @@ const NAME = 'startup notice';
 // Every time the app opens: on its first page, not again when YouTube reloads itself (after a sign-in)
 // or a mode just chosen loads it afresh. The loader says which page is the first; elsewhere every
 // page is.
-const firstPanel = () => (window.__tubeFirstLoad === false ? null : showChooser);
+const firstPanel = () => (window.__tubeFirstLoad === false || configRead('welcomeHidden') ? null : showChooser);
 
 // The app's loader says so when it has kept a newer version of UltimatiumTube for the next start.
 const heardUpdate = (event) => {
@@ -186,4 +196,4 @@ const start = () => {
     });
 };
 
-export { start, showWelcome, showWhatsNew, showChooser, choose, glass, close, WELCOME, WHATS_NEW, CHOOSER };
+export { start, showWelcome, showWhatsNew, showChooser, choose, glass, close, firstPanel, state, WELCOME, WHATS_NEW, CHOOSER };

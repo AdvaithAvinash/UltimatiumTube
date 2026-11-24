@@ -81,9 +81,10 @@ const TIZEN = `window.tizen = { tvinputdevice: { registerKey: () => undefined },
     const panel = await until(() => first.evaluate(() => {
         const glass = document.getElementById('tube-glass');
         return glass && /Welcome to UltimatiumTube/.test(glass.innerText) && /UltimatiumTube/.test(glass.innerText)
-            && /SmartTube UI/.test(glass.innerText) && /YT Dummy/.test(glass.innerText);
+            && /SmartTube UI/.test(glass.innerText) && /YT Dummy/.test(glass.innerText)
+            && /Close/.test(glass.innerText) && /show again/.test(glass.innerText);
     }), 40000);
-    check('the welcome panel offers the three modes: UltimatiumTube, SmartTube UI, YT Dummy', !!panel);
+    check('the welcome panel offers the three modes, Close and Don\u2019t show again', !!panel);
 
     await first.bringToFront();
     await first.keyboard.press('ArrowRight');

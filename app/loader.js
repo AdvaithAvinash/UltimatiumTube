@@ -18,7 +18,7 @@ var KEYS = ['MediaPlayPause', 'MediaPlay', 'MediaPause', 'MediaStop', 'MediaFast
     'Exit', 'Info', 'Caption', 'Search', 'Guide'];
 
 var loader = { app: null, script: null, hash: '/', tries: 0, writing: false, written: false, writtenAt: 0, windows: 0,
-    bundled: null, build: { version: '0', flavor: 'modern' }, using: 'bundled', version: '0' };
+    bundled: null, build: { version: '0', flavor: 'modern' }, flavour: 'browser', loads: 0, using: 'bundled', version: '0' };
 
 // Self-updating, as youtube-dummy keeps TizenTube's script current: UltimatiumTube's script is
 // published with each version under updates/ in its GitHub repository. Once YouTube is open, the app
@@ -86,7 +86,7 @@ function exitApp() {
 }
 
 // A file of the app itself. An engine answers status 0 for a packaged file, with the text.
-function get(url, done) {
+function get(url, done, within) {
     var request = new XMLHttpRequest();
     var answered = false;
     var answer = function (text) {
@@ -101,7 +101,7 @@ function get(url, done) {
         answer(ok ? request.responseText : null);
     };
     request.onerror = function () { answer(null); };
-    request.timeout = 20000;
+    request.timeout = within || 20000;
     request.ontimeout = function () { answer(null); };
 
     try {
@@ -131,6 +131,8 @@ function prelude(hash) {
     return POLYFILLS
         + 'history.replaceState({}, "", ' + JSON.stringify(YOUTUBE + '#' + hash) + ');'
         + 'window.__tubeHost = "wrt";'
+        + 'window.__tubeFlavour = ' + JSON.stringify(loader.flavour) + ';'
+        + 'window.__tubeFirstLoad = ' + (loader.loads === 1 ? 'true' : 'false') + ';'
         + 'window.__tubeStarted = false;'
         + 'window.__tubeService = ' + JSON.stringify(SERVICE) + ';'
         + 'document.addEventListener("keydown", function (event) {'
@@ -201,14 +203,46 @@ function retry(why, title) {
     setTimeout(load, title ? 300 : RETRY_AFTER);
 }
 
+// Which TV app YouTube serves. YouTube decides from the first load of /tv: Samsung's own YouTube app
+// gets the full one (Shorts in the Shorts player, one after another; search as in the app), a TV's
+// web browser a cut-down one. This page can only ask as the browser it is, so the app's service on the
+// TV asks for it as Samsung's YouTube app does. In YT Dummy mode, or when the service does not answer
+// at once, YouTube is asked directly, as youtube-dummy asks it.
+var APP_PAGE = SERVICE + '/__tube/tvpage';
+var SERVICE_WITHIN = 4000;
+
+function looksLikeYouTube(html) {
+    return !!html && html.indexOf('<html') !== -1;
+}
+
+function fetchPage(done) {
+    if (settings().uiMode === 'stock') {
+        loader.flavour = 'browser';
+        get(YOUTUBE, done);
+        return;
+    }
+    get(APP_PAGE, function (html) {
+        if (looksLikeYouTube(html)) {
+            loader.flavour = 'app';
+            done(html);
+            return;
+        }
+        loader.flavour = 'browser';
+        get(YOUTUBE, done);
+    }, SERVICE_WITHIN);
+}
+
 function load() {
     if (loader.writing) return;
     loader.writing = true;
     loader.tries += 1;
     say('UltimatiumTube', loader.tries > 1 ? 'Loading YouTube (try ' + loader.tries + ')...' : 'Loading YouTube...');
 
-    get(YOUTUBE, function (html) {
-        if (!html || html.indexOf('<html') === -1) return retry('Check that the TV is connected to the internet.');
+    fetchPage(function (html) {
+        if (!looksLikeYouTube(html)) return retry('Check that the TV is connected to the internet.');
+        // The first page of this opening of the app; later ones (YouTube reloading itself after a sign-in,
+        // a mode chosen) are told so, and the welcome is not shown again on them.
+        loader.loads += 1;
 
         var page;
         try {

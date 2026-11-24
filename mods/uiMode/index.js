@@ -2,13 +2,14 @@ import { after, configChangeEmitter, configDefaults, configRead, reloadPage } fr
 
 // Interface modes: the whole app in one press.
 //
-//  - UltimatiumTube: everything this app adds, as you set it up.
-//  - SmartTube style: the look and the habits of SmartTube (the Android TV app), over YouTube's own TV
-//    screens: dark grey with red, segments skipped with a note, DeArrow titles, dislikes, the player's
-//    extra buttons, no nags or overlays, a speed remembered per channel.
-//  - YouTube as it comes ("dummy"): YouTube's own TV app untouched, the way the youtube-dummy loader
-//    shows it: no theme, no extra buttons, menus, panels or tricks. Only adverts and sponsor segments
-//    go, quietly.
+//  - UltimatiumTube: the TV app YouTube serves Samsung's own YouTube app (Shorts in the Shorts player,
+//    one after another; search as in the app), asked for by the app's service, with everything
+//    UltimatiumTube adds, as you set it up.
+//  - SmartTube UI: UltimatiumTube's own home screen in SmartTube's manner over that same app, with
+//    SmartTube's habits: segments skipped with a note, DeArrow titles, dislikes, the player's extra
+//    buttons, no nags, a speed remembered per channel.
+//  - YT Dummy: YouTube's TV page as a TV's web browser gets it, loaded as youtube-dummy loads it,
+//    untouched: no theme, no extra buttons, menus or panels. Only adverts and sponsor segments go.
 //
 // Leaving UltimatiumTube mode keeps your own setup of everything a mode changes, and coming back puts
 // it back exactly.
@@ -19,11 +20,11 @@ const STOCK = 'stock';
 
 /** @type {Array<[string, string, string]>} */
 const MODES = [
-    [ULTIMATIUMTUBE, 'UltimatiumTube', 'Everything UltimatiumTube adds, as you set it up'],
-    [SMARTTUBE, 'SmartTube style', 'SmartTube’s look and habits over YouTube’s screens: dark grey and red, segments skipped '
-        + 'with a note, DeArrow, dislikes, extra player buttons, no nags'],
-    [STOCK, 'YouTube as it comes (dummy)', 'YouTube’s own TV app untouched, like youtube-dummy: only adverts and sponsor '
-        + 'segments go, quietly']
+    [ULTIMATIUMTUBE, 'UltimatiumTube', 'The YouTube app as Samsung\u2019s own YouTube app gets it (Shorts and search as in the app), '
+        + 'with everything UltimatiumTube adds'],
+    [SMARTTUBE, 'SmartTube UI', 'UltimatiumTube\u2019s own home screen in SmartTube\u2019s manner: a side menu, rows of your videos, '
+        + 'its own quick search; segments skipped with a note, DeArrow, dislikes, no nags'],
+    [STOCK, 'YT Dummy', 'YouTube as youtube-dummy loads it, untouched: only adverts and sponsor segments go']
 ];
 
 /** @type {Record<string, Record<string, any>>} */

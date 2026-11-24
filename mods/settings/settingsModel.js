@@ -222,8 +222,8 @@ const GROUPS = [
     title: 'Interface mode',
     items: [
       Panel('uiMode', 'Interface mode',
-        'UltimatiumTube, SmartTube style, or YouTube as it comes (like youtube-dummy). Your own setup is kept and comes back '
-        + 'with UltimatiumTube mode', SCREEN, () => nameOf(uiMode()), modeChoices)
+        'UltimatiumTube (the YouTube app as Samsung\u2019s own gets it), SmartTube UI, or YT Dummy (as youtube-dummy loads it). '
+        + 'Your own setup is kept and comes back with UltimatiumTube mode', SCREEN, () => nameOf(uiMode()), modeChoices)
     ]
   },
   {

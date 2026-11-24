@@ -96,7 +96,7 @@ const TIZEN = `(() => {
         env,
         args: ['--host-resolver-rules=MAP www.youtube.com 127.0.0.1, MAP raw.githubusercontent.com 127.0.0.1, MAP cdn.jsdelivr.net 127.0.0.1', '--ignore-certificate-errors', '--disable-web-security',
             '--allow-file-access-from-files', '--disable-popup-blocking', '--no-proxy-server',
-            '--disable-features=IsolateOrigins,site-per-process']
+            '--disable-features=IsolateOrigins,site-per-process,LocalNetworkAccessChecks,BlockInsecurePrivateNetworkRequests,PrivateNetworkAccessSendPreflights']
     });
     const context = await browser.newContext({ userAgent: AGENT, viewport: { width: 1920, height: 1080 }, ignoreHTTPSErrors: true });
     await context.addInitScript(TIZEN);
@@ -153,6 +153,29 @@ const TIZEN = `(() => {
     const shown = await ourWindow();
 
     const before = errors.length;
+    // The page as Samsung's YouTube app gets it, from the app's service: used when the service answers.
+    check('with no service answering, YouTube was loaded directly, as a TV browser', (await (await ourWindow()).evaluate(() => window.__tubeFlavour)) === 'browser');
+    const service = await new Promise((resolve) => {
+        const fake = require('http').createServer((req, res) => {
+            if (req.url.indexOf('/__tube/tvpage') !== 0) { res.writeHead(404); res.end(); return; }
+            res.writeHead(200, { 'content-type': 'text/html', 'access-control-allow-origin': '*' });
+            res.end('<!DOCTYPE html><html><head><title>YouTube</title><script>window.__ytApp = "samsung app";</script></head><body>'
+                + '<div id="yt">stand-in youtube tv</div><script>window._yttv = {};</script></body></html>');
+        });
+        fake.listen(8189, '127.0.0.1', () => resolve(fake));
+    });
+    await loaderPage.evaluate(() => window.postMessage({ tube: 'reload', hash: '/' }, '*'));
+    const appPage = async () => { const win = await ourWindow(); return win ? win.evaluate(() => `${window.__ytApp || ''}|${window.__tubeFlavour}`).catch(() => '') : ''; };
+    check('in UltimatiumTube mode the page is the one YouTube gives Samsung\'s YouTube app, from the service',
+        await until(async () => (await appPage()) === 'samsung app|app', 15000), await appPage());
+    await loaderPage.evaluate(() => {
+        localStorage.setItem('tube.settings', JSON.stringify({ uiMode: 'stock' }));
+        window.postMessage({ tube: 'reload', hash: '/' }, '*');
+    });
+    check('in YT Dummy mode YouTube is loaded directly, as youtube-dummy loads it',
+        await until(async () => (await appPage()) === '|browser', 15000), await appPage());
+    await new Promise((resolve) => service.close(resolve));
+
     // Full animations switched off in the settings: the next load leaves YouTube's choice alone.
     await loaderPage.evaluate(() => {
         localStorage.setItem('tube.settings', JSON.stringify({ fullAnimation: false }));

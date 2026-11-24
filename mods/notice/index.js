@@ -1,5 +1,5 @@
 import { VERSION, configDefaults, configRead, configWrite, every, findResolver, onKey, resolve, showToast, stop } from '../../framework/index.js';
-import { SMARTTUBE, STOCK, uiMode, writesFor } from '../uiMode/index.js';
+import { SMARTTUBE, STOCK, ULTIMATIUMTUBE, uiMode, writesFor } from '../uiMode/index.js';
 
 // The welcome message the app opens with, and the "What's new" page, as a glass panel of our own drawn
 // over YouTube: a translucent dark pane with a glowing edge and its buttons in a row. Its keys are
@@ -17,16 +17,15 @@ const WELCOME = [
 ];
 
 const WHATS_NEW = [
+    ['The YouTube app, for real', 'UltimatiumTube mode loads YouTube as Samsung\u2019s own YouTube app gets it: Shorts one after another in the Shorts player, search as in the app'],
+    ['Three modes', 'UltimatiumTube, SmartTube UI and YT Dummy, offered every time the app opens'],
     ['Shorts like YouTube\u2019s own TV app', 'Every Short opens in YouTube\u2019s own Shorts player, not as an ordinary video'],
     ['Quick search in SmartTube UI', 'A keyboard of its own, suggestions as you type, results as rows of cards'],
     ['SmartTube UI, for real', 'An UltimatiumTube home screen in SmartTube\u2019s manner: side menu, rows of your videos, red focus, clock; YouTube\u2019s player'],
-    ['Interface modes that take', 'Choosing Stock YouTube UI or SmartTube UI loads YouTube afresh in it; SmartTube UI is dark grey with red focus'],
     ['Self-updating', 'New versions of UltimatiumTube arrive by themselves from GitHub, like youtube-dummy; no reinstall'],
     ['Speed up to 20x', 'With the UltimatiumTube label under the speeds YouTube does not offer'],
     ['Like YouTube\u2019s own TV app', 'Full animations, Shorts in their own player, quicker search suggestions and a remote that answers at once'],
     ['Loads YouTube straight', 'Like youtube-dummy: no Cobalt container and no service to wait on, so no more host errors. Tizen 3 and up'],
-    ['Choose your interface', 'Stock YouTube UI or SmartTube UI, asked when the app first opens'],
-    ['Interface modes', 'UltimatiumTube, SmartTube style, or YouTube as it comes (like youtube-dummy), in one press under Settings'],
     ['Starts reliably', 'The app no longer stays on the start screen when the TV answers on another address, and keeps loading after the router gives the TV a new one'],
     ['Stay signed in', 'A new network address for the TV no longer signs every account out'],
     ['Universal Media Control Center', 'One place for YouTube, Stremio, Grayjay and AniUltimatium: continue watching, favourites, feeds, search'],
@@ -133,10 +132,11 @@ const showWelcome = () => glass('UltimatiumTube', WELCOME, [
 
 // What the app opens with, every time: welcome, and which interface. Back keeps the one there is.
 const CHOOSER = [
-    'Choose how YouTube looks and behaves on this TV. Adverts and sponsor segments are taken out in both.',
-    ['Stock YouTube UI', 'YouTube\u2019s own TV app as it comes, like youtube-dummy: nothing added, nothing changed'],
-    ['SmartTube UI', 'An UltimatiumTube home screen in SmartTube\u2019s manner: a side menu, rows of your videos, red focus; '
-        + 'segments skipped with a note, DeArrow, dislikes, no nags'],
+    'Choose how YouTube looks and behaves on this TV. Adverts and sponsor segments are taken out in all three.',
+    ['UltimatiumTube', 'The YouTube app as Samsung\u2019s own YouTube app gets it: Shorts in the Shorts player, search as in the app, '
+        + 'with everything UltimatiumTube adds'],
+    ['SmartTube UI', 'An UltimatiumTube home screen in SmartTube\u2019s manner: a side menu, rows of your videos, quick search, red focus'],
+    ['YT Dummy', 'YouTube as youtube-dummy loads it, untouched'],
     'You can change it any time in Settings > UltimatiumTube > Interface mode.'
 ];
 
@@ -146,13 +146,13 @@ const choose = (mode) => {
     configWrite('uiChosen', true);
 };
 
-const CHOICES = [['Stock YouTube UI', STOCK], ['SmartTube UI', SMARTTUBE]];
+const CHOICES = [['UltimatiumTube', ULTIMATIUMTUBE], ['SmartTube UI', SMARTTUBE], ['YT Dummy', STOCK]];
 
 const showChooser = () => {
     glass('Welcome to UltimatiumTube', CHOOSER, CHOICES.map(([label, mode]) => ({ label, run: () => choose(mode) })));
     // The button of the interface already on is the one OK presses.
     const on = CHOICES.map((choice) => choice[1]).indexOf(uiMode());
-    if (on > 0) {
+    if (on >= 0) {
         state.index = on;
         paint();
     }
@@ -160,8 +160,10 @@ const showChooser = () => {
 
 const NAME = 'startup notice';
 
-// Every time the app opens.
-const firstPanel = () => showChooser;
+// Every time the app opens: on its first page, not again when YouTube reloads itself (after a sign-in)
+// or a mode just chosen loads it afresh. The loader says which page is the first; elsewhere every
+// page is.
+const firstPanel = () => (window.__tubeFirstLoad === false ? null : showChooser);
 
 // The app's loader says so when it has kept a newer version of UltimatiumTube for the next start.
 const heardUpdate = (event) => {

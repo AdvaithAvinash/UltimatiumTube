@@ -1,5 +1,5 @@
 // The packaged app against the real www.youtube.com/tv (needs the network): the loader opens YouTube
-// with UltimatiumTube on it, the welcome panel offers the two interfaces, and choosing one loads
+// with UltimatiumTube on it, the welcome panel offers the three modes, and choosing one loads
 // YouTube afresh in it. SmartTube UI is UltimatiumTube's own home screen: a section of real videos,
 // one opened in YouTube's player, Back home again.
 //
@@ -25,10 +25,42 @@ const TIZEN = `window.tizen = { tvinputdevice: { registerKey: () => undefined },
     const proxy = process.env.HTTPS_PROXY || process.env.https_proxy;
     const browser = await chromium.launch(Object.assign({
         args: ['--disable-web-security', '--allow-file-access-from-files', '--disable-popup-blocking', '--ignore-certificate-errors',
-            '--disable-features=IsolateOrigins,site-per-process']
-    }, proxy ? { proxy: { server: proxy } } : {}));
+            '--disable-features=IsolateOrigins,site-per-process,LocalNetworkAccessChecks,BlockInsecurePrivateNetworkRequests,PrivateNetworkAccessSendPreflights']
+    }, proxy ? { proxy: { server: proxy, bypass: '127.0.0.1,localhost' } } : {}));
     const context = await browser.newContext({ userAgent: AGENT, viewport: { width: 1920, height: 1080 }, ignoreHTTPSErrors: true });
     await context.addInitScript(TIZEN);
+
+    // The app's service on the TV, as far as the loader can tell: it asks YouTube for the TV page as
+    // Samsung's YouTube app does (service/lib/tvPage.js, tested on its own in service/test/tvPage.js).
+    // A real server on the service's port, since intercepting requests in the browser stops pages
+    // written with document.write from loading their scripts. curl goes out through this machine's proxy.
+    const APP_AGENT = require(path.join(__dirname, '..', '..', 'service', 'lib', 'tvPage.js')).APP_AGENT;
+    const served = { pages: 0 };
+    const standIn = await new Promise((resolve) => {
+        const server = require('http').createServer((req, res) => {
+            if (process.env.TUBE_DEBUG) console.log('stand-in asked', req.url);
+            if (req.url.indexOf('/__tube/tvpage') !== 0) { res.writeHead(404); res.end(); return; }
+            require('child_process').execFile('curl', ['-sS', '-m', '20', '--compressed', '-A', APP_AGENT, '-H', 'Accept-Language: en-US',
+                'https://www.youtube.com/tv'], { maxBuffer: 8 * 1024 * 1024 }, (error, body) => {
+                if (error || !/<html/i.test(body)) { res.writeHead(502); res.end(); return; }
+                served.pages += 1;
+                res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'access-control-allow-origin': '*' });
+                res.end(body);
+            });
+        });
+        server.listen(8189, '127.0.0.1', () => resolve(server));
+    });
+    const shortsSeen = { app: 0, plain: 0 };
+    context.on('response', async (response) => {
+        if (!/\/youtubei\/v1\/search/.test(response.url())) return;
+        try {
+            const text = (await response.text()).replace(/\s+/g, '');
+            shortsSeen.app += (text.match(/"reelWatchEndpoint"/g) || []).length;
+            shortsSeen.plain += (text.match(/"LOCKUP_CONTENT_TYPE_SHORT"/g) || []).length;
+        } catch (error) {
+            // Not ours to read.
+        }
+    });
     const loaderPage = await context.newPage();
 
     const until = async (test, ms) => { const end = Date.now() + ms; while (Date.now() < end) { const ok = await test().catch(() => false); if (ok) return ok; await sleep(500); } return false; };
@@ -43,12 +75,15 @@ const TIZEN = `window.tizen = { tvinputdevice: { registerKey: () => undefined },
     const first = await until(youtubeWindow, 60000);
     check('real YouTube opens with UltimatiumTube on it', !!first);
     if (!first) throw new Error('YouTube did not open');
+    check('UltimatiumTube mode: the TV app as YouTube gives Samsung\u2019s own YouTube app, through the app\u2019s service',
+        served.pages >= 1 && (await first.evaluate(() => window.__tubeFlavour)) === 'app', `${served.pages} ${await first.evaluate(() => window.__tubeFlavour)}`);
 
     const panel = await until(() => first.evaluate(() => {
         const glass = document.getElementById('tube-glass');
-        return glass && /Welcome to UltimatiumTube/.test(glass.innerText) && /Stock YouTube UI/.test(glass.innerText) && /SmartTube UI/.test(glass.innerText);
+        return glass && /Welcome to UltimatiumTube/.test(glass.innerText) && /UltimatiumTube/.test(glass.innerText)
+            && /SmartTube UI/.test(glass.innerText) && /YT Dummy/.test(glass.innerText);
     }), 40000);
-    check('the welcome panel offers Stock YouTube UI and SmartTube UI', !!panel);
+    check('the welcome panel offers the three modes: UltimatiumTube, SmartTube UI, YT Dummy', !!panel);
 
     await first.bringToFront();
     await first.keyboard.press('ArrowRight');
@@ -72,16 +107,11 @@ const TIZEN = `window.tizen = { tvinputdevice: { registerKey: () => undefined },
                 && root.querySelectorAll('.ust-item').length >= 10;
         }), 40000);
         check('SmartTube UI: UltimatiumTube\u2019s own home screen, its name where SmartTube\u2019s would be, a side menu', !!home);
-        await sleep(3000);
+        await sleep(6000);
+        check('the welcome shows once each time the app opens, not again when YouTube is loaded afresh',
+            await fresh.evaluate(() => !document.getElementById('tube-glass')));
         await fresh.screenshot({ path: path.join(os.tmpdir(), 'smarttube-home.png') });
-
-        // The welcome panel opens over it every time; Back keeps the interface there is.
         await fresh.bringToFront();
-        await until(() => fresh.evaluate(() => !!document.getElementById('tube-glass')), 20000);
-        await fresh.keyboard.press('Escape');
-        await sleep(600);
-        check('Back on the welcome panel leaves the UltimatiumTube home screen there', await fresh.evaluate(() => !document.getElementById('tube-glass')
-            && document.getElementById('tube-smart').style.display !== 'none'));
 
         // Down the side menu to Gaming, which YouTube fills even without an account, and open it.
         for (let i = 0; i < 5; i += 1) { await fresh.keyboard.press('ArrowDown'); await sleep(250); }
@@ -200,7 +230,33 @@ const TIZEN = `window.tizen = { tvinputdevice: { registerKey: () => undefined },
             check('a Short opens in YouTube\u2019s own Shorts player, with nothing of ours over it', false, 'no row of Shorts in the results');
         }
 
-        // Back to Stock YouTube UI, from the welcome panel the next time; here from the settings it writes.
+        // Back to UltimatiumTube mode (from the settings it writes): Shorts come from YouTube itself with the
+        // Shorts player's command, each with its sequence, as in Samsung's own YouTube app.
+        await loaderPage.evaluate(() => {
+            const kept = JSON.parse(localStorage.getItem('tube.settings') || '{}');
+            kept.uiMode = 'ultimatiumtube';
+            localStorage.setItem('tube.settings', JSON.stringify(kept));
+            window.postMessage({ tube: 'reload', hash: '/' }, '*');
+        });
+        await sleep(4000);
+        const pressIn = async (key, wait) => {
+            const win = await until(youtubeWindow, 30000);
+            await win.bringToFront();
+            await win.keyboard.press(key).catch(() => undefined);
+            await sleep(wait);
+        };
+        for (const key of ['Enter', 'ArrowDown', 'ArrowDown', 'Enter']) await pressIn(key, 2000);
+        await sleep(4000);
+        const searcher = await until(youtubeWindow, 30000);
+        check('UltimatiumTube mode is the page YouTube gives Samsung\u2019s own YouTube app again', (await searcher.evaluate(() => window.__tubeFlavour)) === 'app');
+        shortsSeen.app = 0;
+        shortsSeen.plain = 0;
+        await searcher.evaluate(() => { const r = Object.values(window._yttv || {}).find((v) => v && v.instance && typeof v.instance.resolveCommand === 'function'); r.instance.resolveCommand({ searchEndpoint: { query: 'funny cat shorts' } }); });
+        await until(async () => shortsSeen.plain > 0, 20000);
+        check(`its Shorts come from YouTube with the Shorts player\u2019s command, as in YouTube\u2019s own app (${shortsSeen.app} of ${shortsSeen.plain})`,
+            shortsSeen.plain > 0 && shortsSeen.app >= shortsSeen.plain, `${shortsSeen.app} reel / ${shortsSeen.plain} shorts`);
+
+        // Over to YT Dummy, from the welcome panel the next time; here from the settings it writes.
         await loaderPage.evaluate(() => {
             const kept = JSON.parse(localStorage.getItem('tube.settings') || '{}');
             kept.uiMode = 'stock';
@@ -209,9 +265,10 @@ const TIZEN = `window.tizen = { tvinputdevice: { registerKey: () => undefined },
         });
         const stock = await until(async () => {
             const win = await youtubeWindow();
-            return win && win !== fresh ? win : false;
+            return win && win !== fresh && win !== searcher && (await win.evaluate(() => window.__tubeFlavour)) === 'browser' ? win : false;
         }, 60000);
-        check('Stock YouTube UI loads YouTube afresh', !!stock);
+        check('YT Dummy loads YouTube afresh, directly, as youtube-dummy does', !!stock
+            && (await stock.evaluate(() => window.__tubeFlavour)) === 'browser');
         if (stock) {
             const plain = await until(() => stock.evaluate(() => {
                 const root = document.getElementById('tube-smart');
@@ -224,6 +281,7 @@ const TIZEN = `window.tizen = { tvinputdevice: { registerKey: () => undefined },
     }
 
     await browser.close();
+    standIn.close();
     const failed = results.filter((ok) => !ok).length;
     console.log(`\n${results.length - failed}/${results.length} checks passed.`);
     process.exit(failed ? 1 : 0);

@@ -1,4 +1,4 @@
-// Interface modes: UltimatiumTube, SmartTube style and YouTube as it comes, each in one press, with your
+// Interface modes: UltimatiumTube, SmartTube UI and YT Dummy, each in one press, with your
 // own setup kept and put back.
 
 global.window = { location: { origin: 'http://192.168.1.5:8189' }, localStorage: {} };
@@ -34,7 +34,7 @@ check('your own setup is kept', store.uiModeSaved.themeWallpaperOn === true && s
     && store.uiModeSaved.keyGreen === 'bookmark', JSON.stringify(store.uiModeSaved).slice(0, 120));
 
 apply(writesFor(SMARTTUBE, read, defaults));
-check('SmartTube style: dark grey with red', store.uiMode === SMARTTUBE && store.themeBackground === 'graphite' && store.themeAccent === 'red');
+check('SmartTube UI: dark grey with red', store.uiMode === SMARTTUBE && store.themeBackground === 'graphite' && store.themeAccent === 'red');
 check('segments skipped with a note, DeArrow and dislikes on', store.enableSponsorBlockToasts === true && store.enableDeArrow === true
     && store.enableReturnDislike === true);
 check('a mode to another mode keeps the setup from UltimatiumTube mode', store.uiModeSaved.themeAccent === 'pink');

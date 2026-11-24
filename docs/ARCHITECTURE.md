@@ -379,3 +379,15 @@ Two build-time gates, one per side.
   search of its own (`mods/smartTube/search.js`): suggestions from `/complete/search?client=youtube-lr`
   (YouTube's TV app's own) and results from `/youtubei/v1/search`, including the newer `lockupViewModel`
   cards, which `data.js` now reads.
+- **The YouTube app's page (1.18.0):** in UltimatiumTube and SmartTube UI modes the loader asks the
+  service for `/__tube/tvpage` first (`service/lib/tvPage.js`), which fetches `/tv` with a Samsung Cobalt
+  user agent: YouTube then serves the full TV app (Shorts with `reelWatchEndpoint` and a server-made
+  sequence, 128 of 128 in a search; the app's search). This holds whether or not the browser has
+  YouTube's cookies from that fetch (checked). The loader waits for it at most four seconds and otherwise
+  loads `/tv` directly; YT Dummy always loads directly. The prelude sets `__tubeFlavour` (`app` or
+  `browser`) and `__tubeFirstLoad`; the welcome shows on the first page of each opening only, not when
+  YouTube reloads itself after a sign-in or a mode loads afresh.
+  Tests with Chromium 158: request interception in the browser stops pages written with document.write
+  from loading their scripts, and Local Network Access blocks a file page asking 127.0.0.1, so
+  `realyoutube.cjs` runs a real stand-in service (curl) and turns that check off; TV engines (up to
+  Chromium 120) have neither.

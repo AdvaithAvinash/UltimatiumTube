@@ -1,9 +1,20 @@
 import assert from 'assert';
 import { check, finish } from '../harness.js';
 
-global.document = { querySelector: () => null, addEventListener: () => undefined };
+const made = [];
+const fakeElement = () => {
+    const node = { style: {}, innerHTML: '', parentNode: null, querySelectorAll: () => [], removeChild: () => undefined };
+    made.push(node);
+    return node;
+};
+global.document = {
+    querySelector: () => null, addEventListener: () => undefined, getElementById: () => null,
+    createElement: fakeElement,
+    body: { appendChild: (node) => { node.parentNode = global.document.body; }, removeChild: () => undefined }
+};
+global.window = global.window || { addEventListener: () => undefined };
 
-const { WELCOME, WHATS_NEW, CHOOSER, choose } = await import('../../mods/notice/index.js');
+const { WELCOME, WHATS_NEW, CHOOSER, choose, showChooser, firstPanel, state } = await import('../../mods/notice/index.js');
 const { configDefaults, configRead, configWrite } = await import('../../framework/runtime/config.js');
 
 check('the welcome message is the developer\'s, and shows until "Don\'t show again"', () => {
@@ -42,6 +53,23 @@ check('choosing the interface already on keeps it as it is, with what was change
     configWrite('themeAccent', 'green');
     choose('stock');
     assert.strictEqual(configRead('themeAccent'), 'green');
+});
+
+check('the welcome can be closed: Close, and Don\u2019t show again, beside the three modes', () => {
+    showChooser();
+    assert.deepStrictEqual(state.buttons.map((b) => b.label), ['UltimatiumTube', 'SmartTube UI', 'YT Dummy', 'Close', 'Don\u2019t show again']);
+    assert.ok(state.open, 'the panel is open');
+});
+
+check('Don\u2019t show again keeps it from opening when the app opens, until switched back on in the settings', () => {
+    configWrite('welcomeHidden', false);
+    assert.ok(firstPanel(), 'shown while not hidden');
+    const dont = state.buttons.filter((b) => /show again/.test(b.label))[0];
+    dont.run();
+    assert.strictEqual(configRead('welcomeHidden'), true);
+    assert.strictEqual(firstPanel(), null);
+    configWrite('welcomeHidden', false);
+    assert.ok(firstPanel());
 });
 
 finish();

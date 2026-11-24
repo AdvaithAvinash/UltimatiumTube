@@ -450,8 +450,8 @@ const GROUPS = [
       Action('openProfiles', 'Who is watching', 'Each person their own settings, bookmarks, themes and filters; Guest keeps nothing',
         CONTROLS, 'OPEN_PROFILES'),
       Action('openWhatsNew', 'What\u2019s new', 'What this version brings', MESSAGE, 'OPEN_WHATS_NEW'),
-      Action('openWelcome', 'The welcome message', 'Shows it again', MESSAGE, 'OPEN_WELCOME'),
-      Switch('welcomeHidden', 'Hide the welcome message', 'On after "Don\u2019t show again"', MESSAGE, false)
+      Action('openWelcome', 'Welcome to UltimatiumTube', 'Shows it now: the three modes, Close and Don\u2019t show again', MESSAGE, 'OPEN_WELCOME'),
+      Switch('welcomeHidden', 'Don\u2019t show the welcome when the app opens', 'On after \u201cDon\u2019t show again\u201d; off shows it again', MESSAGE, false)
     ]
   },
   {

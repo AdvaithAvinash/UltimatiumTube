@@ -47,7 +47,10 @@ with YouTube's own TV interface left as it is.
   suggestions as you type and the results as rows. *Classic YouTube* shows YouTube's own home until the
   app is opened again (to sign in, for one).
 - **On Android TV** it is YouTube's TV page in a full-screen WebView.
-- **No ads.** Ads are removed from YouTube's responses before the player knows they exist.
+- **No ads.** Ads are removed from YouTube's responses before the player knows they exist, whichever way
+  YouTube's TV app reads them. YouTube now also cuts some ads on TVs straight into the video stream
+  (server-stitched), where there is nothing to remove: while one plays it is muted, run at the fastest
+  speed the TV plays, and skipped the moment Skip is offered; sound and speed come back after it.
 - **SponsorBlock, with more control.** Sponsor segments, intros, outros, subscribe reminders and
   self-promotion are skipped automatically and drawn on YouTube's own progress bar. You can mute a
   kind of segment instead of skipping it, ignore short segments, switch it off on channels you want

@@ -391,3 +391,15 @@ Two build-time gates, one per side.
   from loading their scripts, and Local Network Access blocks a file page asking 127.0.0.1, so
   `realyoutube.cjs` runs a real stand-in service (curl) and turns that check off; TV engines (up to
   Chromium 120) have neither.
+- **Ads, wallpapers, the service (1.18.2):** YouTube's TV app reads some answers with `Response.json()`,
+  which never reached the readers (hooked on `JSON.parse`); `framework/registries/json.js` routes it
+  through `JSON.parse`. Server-stitched adverts (player answers with `adBreakHeartbeatParams` and no
+  `adPlacements`) cannot be taken out of any answer, so `mods/adblock/skipper.js` watches the player
+  (`ad-showing`/`ad-interrupting`, `getAdState()`, an advert's label or Skip on the screen) and mutes,
+  plays at 16x and presses Skip, restoring sound and speed after. Wallpapers come from the package:
+  the loader's `window.tubeAsset()` reads `wallpapers/*.jpg` as a blob and hands the page an address of
+  the same origin. The loader starts the app's own service at every opening
+  (`launchAppControl(.../operation/service, <package>.UltimatiumTubeService)`); when the page Samsung's
+  app gets is not there, it waits up to eight seconds for the service (once per opening) before loading
+  YouTube directly, and the page shows a notice (`__tubeServiceDown`). Smart search rewrites only
+  requests and questions.

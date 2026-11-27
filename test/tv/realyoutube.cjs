@@ -236,6 +236,8 @@ const TIZEN = `window.tizen = { tvinputdevice: { registerKey: () => undefined },
         await loaderPage.evaluate(() => {
             const kept = JSON.parse(localStorage.getItem('tube.settings') || '{}');
             kept.uiMode = 'ultimatiumtube';
+            kept.themeWallpaperOn = true;
+            kept.themeWallpaper = 'flames';
             localStorage.setItem('tube.settings', JSON.stringify(kept));
             window.postMessage({ tube: 'reload', hash: '/' }, '*');
         });
@@ -250,6 +252,16 @@ const TIZEN = `window.tizen = { tvinputdevice: { registerKey: () => undefined },
         await sleep(4000);
         const searcher = await until(youtubeWindow, 30000);
         check('UltimatiumTube mode is the page YouTube gives Samsung\u2019s own YouTube app again', (await searcher.evaluate(() => window.__tubeFlavour)) === 'app');
+        const wallpaper = await until(() => searcher.evaluate(() => new Promise((resolve) => {
+            const image = String(document.body.style.backgroundImage || '');
+            const address = (/url\("?(blob:[^")]+)/.exec(image) || [])[1];
+            if (!address) { resolve(false); return; }
+            const picture = new Image();
+            picture.onload = () => resolve(`${picture.naturalWidth}x${picture.naturalHeight}`);
+            picture.onerror = () => resolve(false);
+            picture.src = address;
+        })), 15000);
+        check('the wallpaper shows, from the app\u2019s own files (no service needed)', !!wallpaper, String(wallpaper));
         shortsSeen.app = 0;
         shortsSeen.plain = 0;
         await searcher.evaluate(() => { const r = Object.values(window._yttv || {}).find((v) => v && v.instance && typeof v.instance.resolveCommand === 'function'); r.instance.resolveCommand({ searchEndpoint: { query: 'funny cat shorts' } }); });

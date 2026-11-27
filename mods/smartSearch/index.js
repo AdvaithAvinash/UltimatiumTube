@@ -16,8 +16,10 @@ const OPENERS = [
 const PLAIN = /\b(in\s+simple\s+terms|simply|in\s+an?\s+easy\s+way|easily|eli5|like\s+i'?m\s+five)\b/gi;
 const FILLER = /\b(please|thanks|thank you|really|actually|basically|kind of|sort of)\b/gi;
 
-const looksLikeASentence = (text) => text.split(/\s+/).length >= 5
-    || OPENERS.some((opener) => opener.test(text));
+// Only what reads as a request is rewritten ("find videos about ...", "can you show me ...", a question
+// with a question mark): an ordinary search, however long, is searched exactly as typed.
+const looksLikeASentence = (text) => OPENERS.some((opener) => opener.test(text))
+    || (/\?\s*$/.test(text) && text.split(/\s+/).length >= 4);
 
 const smarten = (query) => {
     const original = String(query || '').trim();

@@ -17,6 +17,10 @@ const WELCOME = [
 ];
 
 const WHATS_NEW = [
+    ['Ads, again', 'Ads YouTube now cuts into the video itself are muted, sped through and skipped; answers read another way are cleaned too'],
+    ['Wallpapers', 'Come from the app itself, so they show without the app\u2019s service'],
+    ['The service starts with the app', 'So UltimatiumTube mode gets the real YouTube app page; if it cannot, a notice says why'],
+    ['Search as you type it', 'Smart search only rewrites clear requests and questions, not ordinary long searches'],
     ['Welcome with Close', 'The welcome has Close and Don\u2019t show again; it is under Settings all the same'],
     ['The YouTube app, for real', 'UltimatiumTube mode loads YouTube as Samsung\u2019s own YouTube app gets it: Shorts one after another in the Shorts player, search as in the app'],
     ['Three modes', 'UltimatiumTube, SmartTube UI and YT Dummy, offered every time the app opens'],
@@ -182,9 +186,22 @@ const heardUpdate = (event) => {
     showToast('UltimatiumTube updated', `Version ${data.version} is ready. It starts the next time you open the app`);
 };
 
+// The app's loader could not get the page Samsung's own YouTube app gets, because the app's service
+// did not start: YouTube's browser page is on, and the viewer is told why and what brings it back.
+const SERVICE_DOWN = 'service notice';
+const tellServiceDown = () => showToast('UltimatiumTube\u2019s service did not start',
+    'YouTube\u2019s browser version is on (Shorts and search like a browser). Switch the TV off and on with the power button');
+
 const start = () => {
     if (window.addEventListener) window.addEventListener('message', heardUpdate);
     onKey('glass panel', ALL_KEYS, keys);
+    if (window.__tubeServiceDown === true && window.__tubeFirstLoad !== false) {
+        every(SERVICE_DOWN, 1500, () => {
+            if (!findResolver()) return;
+            stop(SERVICE_DOWN);
+            setTimeout(tellServiceDown, 6000);
+        });
+    }
     if (!firstPanel()) return;
 
     // The page is not ready for a panel until YouTube's own commands can be sent.

@@ -109,6 +109,25 @@ const keepAdopting = (forMs) => {
 
 const state = { intercepted: false };
 
+// YouTube's TV app reads some answers with Response.json(), which parses them without JSON.parse, so
+// no reader would ever see them (an advert among them would play). Such a body is read as text and
+// parsed here, through JSON.parse and so through the readers; a body that is not JSON fails the same
+// way Response.json() does.
+const readThroughParse = () => {
+    const ResponseType = typeof window !== 'undefined' && window.Response;
+    if (!ResponseType || !ResponseType.prototype || typeof ResponseType.prototype.text !== 'function') return;
+    /** @type {any} */
+    const native = ResponseType.prototype.json;
+    if (typeof native !== 'function' || native.__tubeRead) return;
+
+    /** @type {any} */
+    const json = function json() {
+        return this.text().then((text) => JSON.parse(text));
+    };
+    json.__tubeRead = true;
+    ResponseType.prototype.json = json;
+};
+
 const interceptJson = () => {
     if (state.intercepted) return;
     state.intercepted = true;
@@ -133,6 +152,8 @@ const interceptJson = () => {
 
         return original.stringify.call(this, rewritten, replacer, space);
     };
+
+    readThroughParse();
 
     keepAdopting(ADOPTION_WINDOW);
 

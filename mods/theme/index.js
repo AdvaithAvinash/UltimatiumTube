@@ -93,6 +93,35 @@ const shuffled = (read) => {
 
 const SHUFFLE_EVERY = { '15': 15 * 60000, '60': 60 * 60000 };
 
+// In the TV's own engine the pictures come from the app's own files, through the app's loader (the
+// page cannot reach them itself, and the app's service may not be running): it hands back an address
+// of the picture this page can show. Asked once per picture; the backdrop is painted again when it
+// arrives. Elsewhere (the service serves the page) the service's address is used as before.
+const ASSETS = { got: Object.create(null), asked: Object.create(null) };
+
+const loaderAssets = () => {
+    try {
+        return window.opener && typeof window.opener.tubeAsset === 'function' ? window.opener : null;
+    } catch (error) {
+        return null;
+    }
+};
+
+const packaged = (file) => {
+    const loader = loaderAssets();
+    if (!loader) return picture(file);
+    if (ASSETS.got[file]) return `url("${ASSETS.got[file]}")`;
+    if (!ASSETS.asked[file]) {
+        ASSETS.asked[file] = true;
+        loader.tubeAsset(`wallpapers/${file}`, (address) => {
+            if (!address) return;
+            ASSETS.got[file] = address;
+            setTimeout(() => applyBackdrop(false), 0);
+        });
+    }
+    return null;
+};
+
 // The wallpaper's image, or null while it is off or its picture is not a usable one. An address the
 // viewer typed is used only as an image, and only if it is a plain http(s) one.
 const wallpaperOf = (read) => {
@@ -105,6 +134,7 @@ const wallpaperOf = (read) => {
         return /^https?:\/\/[^\s"'()\\]+$/.test(url) ? `url("${url}")` : null;
     }
 
+    if (Object.prototype.hasOwnProperty.call(WALLPAPER_FILES, chosen)) return packaged(WALLPAPER_FILES[chosen]);
     return Object.prototype.hasOwnProperty.call(WALLPAPERS, chosen) ? WALLPAPERS[chosen] : null;
 };
 

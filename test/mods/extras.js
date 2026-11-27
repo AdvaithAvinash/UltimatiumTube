@@ -93,6 +93,9 @@ check('smart search turns a sentence into the words that find it, and leaves a p
     assert.strictEqual(smarten('can you find tutorials on python for beginners?'), 'python for beginners');
     assert.strictEqual(smarten('minecraft'), 'minecraft');
     assert.strictEqual(smarten('lofi hip hop radio'), 'lofi hip hop radio');
+    // A long ordinary search is left exactly as typed.
+    assert.strictEqual(smarten('minecraft but every time i die the world gets bigger'), 'minecraft but every time i die the world gets bigger');
+    assert.strictEqual(smarten('best budget gaming laptop 2026 review'), 'best budget gaming laptop 2026 review');
 });
 
 check('the Shorts filter passes over by length, and by the hidden channels and words', () => {

@@ -18,7 +18,7 @@ var KEYS = ['MediaPlayPause', 'MediaPlay', 'MediaPause', 'MediaStop', 'MediaFast
     'Exit', 'Info', 'Caption', 'Search', 'Guide'];
 
 var loader = { app: null, script: null, hash: '/', tries: 0, writing: false, written: false, writtenAt: 0, windows: 0,
-    bundled: null, build: { version: '0', flavor: 'modern' }, flavour: 'browser', loads: 0, using: 'bundled', version: '0' };
+    bundled: null, build: { version: '0', flavor: 'modern' }, flavour: 'browser', loads: 0, serviceDown: false, woke: '', using: 'bundled', version: '0' };
 
 // Self-updating, as youtube-dummy keeps TizenTube's script current: UltimatiumTube's script is
 // published with each version under updates/ in its GitHub repository. Once YouTube is open, the app
@@ -133,6 +133,7 @@ function prelude(hash) {
         + 'window.__tubeHost = "wrt";'
         + 'window.__tubeFlavour = ' + JSON.stringify(loader.flavour) + ';'
         + 'window.__tubeFirstLoad = ' + (loader.loads === 1 ? 'true' : 'false') + ';'
+        + 'window.__tubeServiceDown = ' + (loader.serviceDown ? 'true' : 'false') + ';'
         + 'window.__tubeStarted = false;'
         + 'window.__tubeService = ' + JSON.stringify(SERVICE) + ';'
         + 'document.addEventListener("keydown", function (event) {'
@@ -215,20 +216,100 @@ function looksLikeYouTube(html) {
     return !!html && html.indexOf('<html') !== -1;
 }
 
+// The app's service is started by the TV when it boots or the app is installed, not when the app is
+// opened, and a TV may never have started it. The app starts it itself, as a Tizen app starts its
+// own service, at every opening.
+var SERVICE_NAME = 'UltimatiumTubeService';
+var SERVICE_STARTS_WITHIN = 8000;
+
+function wakeService() {
+    try {
+        if (typeof tizen === 'undefined' || !tizen.application || !tizen.ApplicationControl) return;
+        var id = tizen.application.getCurrentApplication().appInfo.packageId + '.' + SERVICE_NAME;
+        tizen.application.launchAppControl(new tizen.ApplicationControl('http://tizen.org/appcontrol/operation/service'), id,
+            function () { loader.woke = 'started'; }, function (error) { loader.woke = 'refused: ' + (error && error.message); });
+    } catch (error) {
+        loader.woke = 'refused: ' + (error && error.message);
+    }
+}
+
+// Whether the service answers at all (it answers its ping with 204 and nothing).
+function ping(done) {
+    var request = new XMLHttpRequest();
+    var answered = false;
+    var answer = function (alive) {
+        if (answered) return;
+        answered = true;
+        done(alive);
+    };
+    request.onreadystatechange = function () {
+        if (request.readyState === 4) answer(request.status === 204 || request.status === 200);
+    };
+    request.onerror = function () { answer(false); };
+    request.timeout = 1500;
+    request.ontimeout = function () { answer(false); };
+    try {
+        request.open('GET', SERVICE + '/__tube/ping', true);
+        request.send();
+    } catch (error) {
+        answer(false);
+    }
+}
+
+function untilServiceAnswers(done) {
+    var started = Date.now();
+    var look = function () {
+        ping(function (alive) {
+            if (alive) done(true);
+            else if (Date.now() - started > SERVICE_STARTS_WITHIN) done(false);
+            else setTimeout(look, 500);
+        });
+    };
+    look();
+}
+
+function directly(done) {
+    loader.flavour = 'browser';
+    get(YOUTUBE, done);
+}
+
 function fetchPage(done) {
     if (settings().uiMode === 'stock') {
-        loader.flavour = 'browser';
-        get(YOUTUBE, done);
+        directly(done);
         return;
     }
     get(APP_PAGE, function (html) {
         if (looksLikeYouTube(html)) {
             loader.flavour = 'app';
+            loader.serviceDown = false;
             done(html);
             return;
         }
-        loader.flavour = 'browser';
-        get(YOUTUBE, done);
+        // Not answering: started now, and waited for a few seconds, before YouTube is loaded directly;
+        // once in an opening of the app, not again on each page after.
+        if (loader.serviceDown) {
+            directly(done);
+            return;
+        }
+        say('UltimatiumTube', 'Starting UltimatiumTube\u2019s service...');
+        wakeService();
+        untilServiceAnswers(function (alive) {
+            if (!alive) {
+                loader.serviceDown = true;
+                directly(done);
+                return;
+            }
+            get(APP_PAGE, function (again) {
+                if (!looksLikeYouTube(again)) {
+                    loader.serviceDown = true;
+                    directly(done);
+                    return;
+                }
+                loader.flavour = 'app';
+                loader.serviceDown = false;
+                done(again);
+            }, SERVICE_WITHIN + 2000);
+        });
     }, SERVICE_WITHIN);
 }
 
@@ -354,6 +435,42 @@ function reopen(hash) {
     if (!loader.app) openWindow();
     load();
 }
+
+// The app's own pictures (wallpapers), for YouTube's page, which cannot reach the app's files itself:
+// read here and handed back as an address the page can show (the page shares this page's origin).
+var ASSETS = {};
+
+window.tubeAsset = function (path, done) {
+    if (!/^wallpapers\/[a-z0-9-]+\.jpg$/.test(String(path))) {
+        done(null);
+        return;
+    }
+    if (ASSETS[path]) {
+        done(ASSETS[path]);
+        return;
+    }
+    var request = new XMLHttpRequest();
+    var finish = function () {
+        var ok = (request.status === 0 || request.status === 200) && request.response && request.response.size;
+        if (ok) {
+            try {
+                ASSETS[path] = URL.createObjectURL(request.response);
+            } catch (error) {
+                ASSETS[path] = null;
+            }
+        }
+        done(ASSETS[path] || null);
+    };
+    try {
+        request.open('GET', path, true);
+        request.responseType = 'blob';
+        request.onload = finish;
+        request.onerror = function () { done(null); };
+        request.send();
+    } catch (error) {
+        done(null);
+    }
+};
 
 // A press of the app's icon while it runs brings YouTube back to the front.
 document.addEventListener('visibilitychange', function () {
@@ -499,6 +616,7 @@ function guardUpdate() {
 
 function start() {
     registerKeys();
+    wakeService();
     window.addEventListener('click', function () {
         if (!loader.app || loader.app.closed) openWindow();
     });

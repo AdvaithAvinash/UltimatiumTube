@@ -70,7 +70,11 @@ const TIZEN = `(() => {
   window.__tubeKeys = window.__tubeKeys || [];
   window.tizen = {
     tvinputdevice: { registerKey: (name) => { (window.opener && window.opener.__tubeKeys || window.__tubeKeys).push(name); } },
-    application: { getCurrentApplication: () => ({ exit: () => { window.__tubeExited = true; } }) }
+    ApplicationControl: function (operation) { this.operation = operation; },
+    application: {
+      getCurrentApplication: () => ({ appInfo: { packageId: 'U1tmTube55' }, exit: () => { window.__tubeExited = true; } }),
+      launchAppControl: (control, id, ok) => { window.__tubeLaunched = (window.__tubeLaunched || []).concat([control.operation + ' ' + id]); if (ok) ok(); }
+    }
   };
 })();`;
 
@@ -105,12 +109,15 @@ const TIZEN = `(() => {
 
     const loaderPage = await context.newPage();
     loaderPage.on('pageerror', (e) => errors.push(String(e.message).slice(0, 200)));
-    const popup = context.waitForEvent('page', { timeout: 15000 }).catch(() => null);
+    const popup = context.waitForEvent('page', { timeout: 30000 }).catch(() => null);
     await loaderPage.goto('file://' + path.join(dir, 'index.html'));
 
-    // YouTube is out of reach at first.
-    await sleep(2500);
-    const waiting = await loaderPage.evaluate(() => document.body.innerText);
+    // YouTube is out of reach at first (and the app's service is not there: it is started, and waited
+    // for a few seconds, first).
+    const starting = await (async () => { const end = Date.now() + 4000; while (Date.now() < end) { const t = await loaderPage.evaluate(() => document.body.innerText).catch(() => ''); if (/Starting UltimatiumTube\u2019s service/.test(t)) return true; await sleep(200); } return false; })();
+    check('the service not answering, the loader starts it and says so', starting);
+    const waitingFor = async () => { const end = Date.now() + 20000; while (Date.now() < end) { const t = await loaderPage.evaluate(() => document.body.innerText).catch(() => ''); if (/Cannot reach YouTube/.test(t) && /Trying again/.test(t)) return t; await sleep(300); } return loaderPage.evaluate(() => document.body.innerText); };
+    const waiting = await waitingFor();
     check('while YouTube cannot be reached, the loader says so and tries again', /Cannot reach YouTube/.test(waiting) && /Trying again/.test(waiting), waiting.slice(0, 120));
 
     youtube.up = true;
@@ -155,6 +162,22 @@ const TIZEN = `(() => {
     const before = errors.length;
     // The page as Samsung's YouTube app gets it, from the app's service: used when the service answers.
     check('with no service answering, YouTube was loaded directly, as a TV browser', (await (await ourWindow()).evaluate(() => window.__tubeFlavour)) === 'browser');
+    const launched = await loaderPage.evaluate(() => window.__tubeLaunched || []);
+    check('the app starts its own service, as a Tizen app does, when it opens', launched.some((one) => one === 'http://tizen.org/appcontrol/operation/service U1tmTube55.UltimatiumTubeService'),
+        JSON.stringify(launched));
+    check('and, the service not starting, the page is told so (a notice says why YouTube\u2019s browser version is on)',
+        (await (await ourWindow()).evaluate(() => window.__tubeServiceDown)) === true);
+
+    // A wallpaper from the app's own files, with no service: handed to the page by the loader.
+    const asset = await (await ourWindow()).evaluate(() => new Promise((resolve) => window.opener.tubeAsset('wallpapers/blue-flames.jpg', (address) => {
+        if (!address) { resolve('none'); return; }
+        const picture = new Image();
+        picture.onload = () => resolve(`${address.slice(0, 5)} ${picture.naturalWidth}x${picture.naturalHeight}`);
+        picture.onerror = () => resolve(`unloadable ${address.slice(0, 20)}`);
+        picture.src = address;
+    })));
+    check('wallpapers come from the app\u2019s own files, with no service running', /^blob: \d+x\d+$/.test(asset) && !/^blob: 0x/.test(asset), asset);
+    check('and nothing outside the wallpapers is handed out', (await (await ourWindow()).evaluate(() => new Promise((resolve) => window.opener.tubeAsset('loader.js', resolve)))) === null);
     const service = await new Promise((resolve) => {
         const fake = require('http').createServer((req, res) => {
             if (req.url.indexOf('/__tube/tvpage') !== 0) { res.writeHead(404); res.end(); return; }

@@ -42,6 +42,7 @@ interface Window {
     __tubeStarted?: boolean;
     __tubeFlavour?: string;
     __tubeFirstLoad?: boolean;
+    __tubeServiceDown?: boolean;
 
     /** Ours. */
     queuedVideos: QueuedVideos;

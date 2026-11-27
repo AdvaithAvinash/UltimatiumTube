@@ -22,6 +22,7 @@ import { start as startExitConfirm } from './exitConfirm/index.js';
 import { start as startNotice } from './notice/index.js';
 import { start as startUiMode } from './uiMode/index.js';
 import { start as startSmartTube } from './smartTube/index.js';
+import { start as startAdvertSkipper } from './adblock/skipper.js';
 
 import './feed/index.js';
 import './adblock/index.js';
@@ -74,6 +75,7 @@ register('exit confirm', 'ui', startExitConfirm);
 register('startup notice', 'ui', startNotice);
 register('interface mode', 'ui', startUiMode);
 register('smarttube ui', 'ui', startSmartTube);
+register('advert skipper', 'ui', startAdvertSkipper);
 
 // Taking over JSON.parse seals registration.
 register('json', 'intercept', interceptJson);
